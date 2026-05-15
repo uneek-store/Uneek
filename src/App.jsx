@@ -1,1966 +1,900 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNEEK — Independent Fashion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--black:#0A0A0A;--white:#FAFAFA;--gray-100:#F5F5F5;--gray-200:#E5E5E5;--gray-300:#D4D4D4;--gray-400:#A3A3A3;--gray-500:#737373;--gray-600:#525252;--gray-700:#404040;--gray-800:#262626;--gradient:linear-gradient(135deg,#1a1a1a,#5a5a5a);--font-display:'Urbanist',sans-serif;--font-body:'DM Sans',sans-serif;--ease:cubic-bezier(0.16,1,0.3,1);--radius:14px;--radius-sm:10px;--radius-lg:20px;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--white);color:var(--black);font-family:var(--font-body);-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+a,button,input,select,textarea{-webkit-tap-highlight-color:transparent;color:inherit;}
+a{text-decoration:none;}
+::selection{background:rgba(90,90,90,0.2);}
+/* NAV */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 clamp(16px,4vw,48px);height:64px;display:flex;align-items:center;justify-content:space-between;background:rgba(250,250,250,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(0,0,0,0.04);transition:all 0.4s var(--ease);}
+.nav.scrolled{height:56px;background:rgba(250,250,250,0.95);}
+.nav-links{display:flex;align-items:center;gap:32px;flex:1;}
+.nav-link{font-size:11px;font-weight:500;letter-spacing:0.5px;text-transform:uppercase;cursor:pointer;position:relative;padding:4px 0;color:var(--gray-600);transition:color 0.3s;}
+.nav-link:hover,.nav-link.active{color:var(--black);}
+.nav-link::after{content:'';position:absolute;bottom:0;left:0;width:0;height:1.5px;background:var(--black);transition:width 0.3s var(--ease);}
+.nav-link:hover::after,.nav-link.active::after{width:100%;}
+.nav-logo{position:absolute;left:50%;transform:translateX(-50%);cursor:pointer;display:flex;align-items:center;}
+.nav-icons{display:flex;align-items:center;gap:20px;flex:1;justify-content:flex-end;}
+.nav-icon{cursor:pointer;color:var(--gray-600);transition:color 0.2s;display:flex;align-items:center;position:relative;background:none;border:none;padding:0;}
+.nav-icon:hover{color:var(--black);}
+.cart-badge{position:absolute;top:-6px;right:-8px;background:var(--gradient);color:#fff;border-radius:50%;width:16px;height:16px;font-size:10px;display:flex;align-items:center;justify-content:center;font-weight:700;}
+.menu-btn{display:flex;cursor:pointer;background:none;border:none;color:var(--black);}
+/* MOBILE MENU */
+.mobile-nav{position:fixed;inset:0;background:var(--white);z-index:150;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:28px;transform:translateY(-100%);transition:transform 0.6s var(--ease);}
+.mobile-nav.open{transform:translateY(0);}
+.mobile-nav-close{position:absolute;top:24px;right:24px;background:none;border:none;cursor:pointer;}
+.mobile-nav-link{font-family:var(--font-display);font-size:32px;font-weight:700;cursor:pointer;letter-spacing:-0.5px;color:rgba(10,10,10,0.45);transition:color 0.2s,transform 0.3s var(--ease);opacity:0;}
+.mobile-nav.open .mobile-nav-link{animation:mobileNavIn 0.5s var(--ease) forwards;}
+.mobile-nav.open .mobile-nav-link:nth-child(2){animation-delay:0.1s;}
+.mobile-nav.open .mobile-nav-link:nth-child(3){animation-delay:0.15s;}
+.mobile-nav.open .mobile-nav-link:nth-child(4){animation-delay:0.2s;}
+.mobile-nav.open .mobile-nav-link:nth-child(5){animation-delay:0.25s;}
+.mobile-nav.open .mobile-nav-link:nth-child(6){animation-delay:0.3s;}
+.mobile-nav.open .mobile-nav-link:nth-child(7){animation-delay:0.35s;}
+.mobile-nav-link:hover{color:var(--black);transform:translateX(8px);}
+@keyframes mobileNavIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+/* SIDE PANELS */
+.panel-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:199;opacity:0;pointer-events:none;transition:opacity 0.3s;}
+.panel-backdrop.open{opacity:1;pointer-events:all;}
+.side-panel{position:fixed;top:0;right:0;width:min(440px,100vw);height:100vh;background:var(--white);z-index:200;transform:translateX(100%);transition:transform 0.4s var(--ease);display:flex;flex-direction:column;border-left:1px solid var(--gray-200);border-radius:var(--radius-lg) 0 0 var(--radius-lg);}
+.side-panel.open{transform:translateX(0);}
+.panel-header{display:flex;justify-content:space-between;align-items:center;padding:24px;border-bottom:1px solid var(--gray-200);}
+.panel-title{font-family:var(--font-display);font-size:18px;font-weight:700;}
+.panel-close{cursor:pointer;color:var(--gray-400);background:none;border:none;display:flex;transition:color 0.2s;}
+.panel-close:hover{color:var(--black);}
+.panel-body{flex:1;overflow-y:auto;padding:24px;}
+.panel-footer{padding:24px;border-top:1px solid var(--gray-200);}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:64px 0;text-align:center;}
+.empty-state-text{font-size:14px;color:var(--gray-400);line-height:1.6;font-weight:300;}
+.cart-item{display:flex;gap:16px;padding:16px 0;border-bottom:1px solid var(--gray-100);}
+.cart-item-img{width:80px;height:100px;overflow:hidden;flex-shrink:0;background:var(--gray-100);border-radius:12px;}
+.cart-item-img img{width:100%;height:100%;object-fit:cover;}
+.cart-item-info{flex:1;display:flex;flex-direction:column;justify-content:space-between;}
+.cart-item-brand{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:2px;}
+.cart-item-name{font-family:var(--font-display);font-size:14px;font-weight:600;}
+.cart-item-meta{font-size:11px;color:var(--gray-400);margin-top:2px;}
+.cart-item-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:auto;}
+.cart-item-price{font-size:14px;font-weight:500;}
+.cart-item-remove{background:none;border:none;color:var(--gray-400);font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px;font-family:var(--font-body);transition:color 0.2s;}
+.cart-item-remove:hover{color:var(--black);}
+.cart-total{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.cart-total-label{font-size:14px;color:var(--gray-500);}
+.cart-total-amount{font-family:var(--font-display);font-size:24px;font-weight:700;}
+/* BUTTONS */
+.btn{font-family:var(--font-body);font-size:13px;font-weight:500;letter-spacing:1px;text-transform:uppercase;padding:16px 36px;border:none;cursor:pointer;transition:all 0.3s var(--ease);display:inline-flex;align-items:center;gap:10px;border-radius:var(--radius);}
+.btn-primary{background:var(--white);color:var(--black);}
+.btn-primary:hover{background:var(--gray-200);transform:translateY(-2px);}
+.btn-dark{background:var(--black);color:var(--white);}
+.btn-dark:hover{background:var(--gray-800);transform:translateY(-2px);}
+.btn-outline{background:transparent;color:var(--black);border:1px solid var(--gray-300);}
+.btn-sm{padding:10px 20px;font-size:11px;}
+/* HERO */
+.hero{height:100vh;display:flex;flex-direction:column;justify-content:flex-end;padding:clamp(24px,5vw,64px);padding-bottom:clamp(48px,8vh,96px);position:relative;overflow:hidden;background:var(--black);color:var(--white);}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(10,10,10,0.95) 0%,rgba(10,10,10,0.3) 50%,rgba(10,10,10,0.6) 100%);}
+.hero-content{position:relative;z-index:2;max-width:800px;}
+.hero-tag{font-size:11px;font-weight:500;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:24px;animation:fadeUp 0.8s var(--ease) 0.2s both;}
+.hero-title{font-family:var(--font-display);font-size:clamp(42px,7vw,88px);font-weight:800;line-height:1;letter-spacing:-2px;margin-bottom:24px;animation:fadeUp 0.8s var(--ease) 0.4s both;}
+.hero-subtitle{font-size:clamp(15px,2vw,18px);font-weight:300;color:rgba(255,255,255,0.6);max-width:500px;line-height:1.6;margin-bottom:40px;animation:fadeUp 0.8s var(--ease) 0.6s both;}
+.hero-cta{display:flex;gap:16px;animation:fadeUp 0.8s var(--ease) 0.8s both;flex-wrap:wrap;}
+.gradient-text{background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+/* SECTIONS */
+.section{padding:clamp(48px,8vw,96px) clamp(16px,4vw,48px);}
+.section-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:48px;flex-wrap:wrap;gap:16px;}
+.section-title{font-family:var(--font-display);font-size:clamp(28px,4vw,44px);font-weight:700;letter-spacing:-1px;line-height:1.1;}
+.section-subtitle{font-size:14px;color:var(--gray-500);margin-top:8px;font-weight:300;}
+.section-link{font-size:13px;font-weight:500;letter-spacing:0.5px;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--gray-500);transition:color 0.3s;background:none;border:none;}
+.section-link:hover{color:var(--black);}
+/* PRODUCT GRID */
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:24px;}
+.product-card{cursor:pointer;position:relative;}
+.product-card-image{aspect-ratio:3/4;overflow:hidden;background:var(--gray-100);position:relative;border-radius:var(--radius-lg);margin-bottom:16px;}
+.product-card-image img{width:100%;height:100%;object-fit:contain;transition:transform 0.3s ease-out;will-change:transform;}
+.product-card:hover .product-card-image img{transform:scale(1.04);}
+.product-card-fav{position:absolute;top:12px;right:12px;width:42px;height:42px;background:rgba(255,255,255,0.9);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity 0.3s;z-index:2;border:none;}
+.product-card:hover .product-card-fav{opacity:1;}
+.product-card-fav.is-fav{opacity:1;}
+.product-card-brand{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:4px;}
+.product-card-name{font-family:var(--font-display);font-size:15px;font-weight:600;margin-bottom:4px;}
+.product-card-price{font-size:14px;color:var(--gray-500);font-weight:400;}
+/* BRAND STRIP */
+.brand-strip{display:flex;gap:12px;overflow-x:auto;padding-bottom:16px;scrollbar-width:none;}
+.brand-strip::-webkit-scrollbar{display:none;}
+.brand-chip{flex-shrink:0;padding:20px 32px;background:var(--gray-100);cursor:pointer;transition:all 0.3s var(--ease);display:flex;flex-direction:column;gap:4px;min-width:200px;border-radius:var(--radius);}
+.brand-chip:hover{background:var(--black);color:var(--white);}
+.brand-chip-name{font-family:var(--font-display);font-size:18px;font-weight:700;}
+.brand-chip-city{font-size:12px;opacity:0.5;font-weight:300;}
+/* MANIFESTO */
+.manifesto-section{background:var(--black);color:var(--white);padding:clamp(64px,10vw,128px) clamp(16px,4vw,48px);text-align:center;}
+.manifesto-quote{font-family:var(--font-display);font-size:clamp(32px,5vw,64px);font-weight:700;letter-spacing:-1px;line-height:1.15;max-width:800px;margin:0 auto 40px;}
+.manifesto-text{font-size:clamp(15px,1.8vw,18px);line-height:1.8;max-width:600px;margin:0 auto 48px;opacity:0.5;font-weight:300;}
+/* TOAST */
+.toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--black);color:var(--white);padding:14px 28px;font-size:13px;font-weight:500;z-index:300;transition:transform 0.4s var(--ease);white-space:nowrap;display:flex;align-items:center;gap:8px;border-radius:var(--radius);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+/* FOOTER */
+.footer{background:var(--black);color:var(--white);padding:clamp(48px,6vw,80px) clamp(16px,4vw,48px) 32px;}
+.footer-top{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;margin-bottom:48px;}
+.footer-brand{font-family:var(--font-display);font-size:20px;font-weight:800;margin-bottom:16px;display:flex;align-items:center;gap:8px;line-height:1;}
+.footer-tagline{font-size:14px;color:rgba(255,255,255,0.4);line-height:1.6;font-weight:300;max-width:320px;}
+.footer-col-title{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px;color:rgba(255,255,255,0.5);}
+.footer-link{display:block;font-size:14px;color:rgba(255,255,255,0.35);margin-bottom:10px;cursor:pointer;transition:color 0.2s;font-weight:300;}
+.footer-link:hover{color:var(--white);}
+.footer-bottom{display:flex;justify-content:space-between;padding-top:24px;border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:rgba(255,255,255,0.25);font-weight:300;}
+/* SHOP FILTERS */
+.filter-chip{padding:8px 20px;font-size:12px;font-weight:500;letter-spacing:0.5px;text-transform:uppercase;border:1px solid var(--gray-200);background:transparent;cursor:pointer;transition:all 0.3s;font-family:var(--font-body);color:var(--gray-500);border-radius:50px;}
+.filter-chip:hover{border-color:var(--black);color:var(--black);}
+.filter-chip.active{background:var(--black);color:var(--white);border-color:var(--black);}
+.search-bar{display:flex;align-items:center;gap:8px;padding:10px 16px;border:1px solid var(--gray-200);transition:border-color 0.3s;border-radius:50px;}
+.search-bar:focus-within{border-color:var(--black);}
+.search-bar input{border:none;outline:none;font-size:13px;font-family:var(--font-body);background:transparent;width:100%;}
+/* PD SIZE BTNS */
+.pd-size{width:48px;height:48px;display:flex;align-items:center;justify-content:center;border:1px solid var(--gray-200);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s;font-family:var(--font-body);background:transparent;color:var(--black);border-radius:var(--radius-sm);}
+.pd-size:hover{border-color:var(--black);}
+.pd-size.selected{background:var(--black);color:var(--white);border-color:var(--black);}
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+@keyframes doubleTapHeart{0%{transform:translate(-50%,-50%) scale(0) rotate(-15deg);opacity:0;}10%{transform:translate(-50%,-50%) scale(1.4);opacity:1;}35%{transform:translate(-50%,-50%) scale(1.15);opacity:1;}75%{transform:translate(-50%,-50%) scale(1.05);opacity:0.8;}100%{transform:translate(-50%,-50%) scale(1.3);opacity:0;}}
+.double-tap-heart{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);z-index:10;pointer-events:none;animation:doubleTapHeart 1.1s ease forwards;filter:drop-shadow(0 4px 20px rgba(123,97,255,0.5));}
+/* MOBILE */
+@media(max-width:768px){
+  .footer-top{grid-template-columns:1fr 1fr;gap:24px;}
+  .product-grid{grid-template-columns:repeat(2,1fr);gap:12px;}
+  .product-card-name{font-size:13px;}
+  .product-card-price{font-size:12px;}
+  /* Product page */
+  .pd-grid{grid-template-columns:1fr!important;gap:24px!important;}
+  .pd-sticky{position:static!important;}
+  /* Checkout */
+  .co-grid{grid-template-columns:1fr!important;gap:32px!important;}
+  .co-summary{position:static!important;}
+  .co-form-grid-2{grid-template-columns:1fr!important;}
+  .co-form-grid-3{grid-template-columns:1fr 1fr!important;}
+  /* Brand cards */
+  .brands-grid{grid-template-columns:1fr!important;}
+}
+@media(max-width:600px){
+  .nav-links{display:none;}
+  .footer-top{grid-template-columns:1fr;gap:24px;}
+  .hero-cta{flex-direction:column;}
+  .hero-cta .btn{width:100%;justify-content:center;}
+  .section{padding:40px 16px;}
+  .section-header{margin-bottom:28px;}
+  .brand-chip{min-width:160px;padding:16px 20px;}
+  .hero-title{letter-spacing:-1px;}
+  /* Checkout mobile */
+  .co-form-grid-2{grid-template-columns:1fr!important;}
+  .co-form-grid-3{grid-template-columns:1fr!important;}
+  /* Manifesto */
+  .manifesto-section{padding:48px 16px;}
+}
+</style>
+</head>
+<body>
 
-// ============================================================
-// UNEEK — Created by Independent Fashion Marketplace
-// Multi-page prototype with routing, animations, and full UX
-// ============================================================
-
-// --- DATA ---
-const BRANDS = [
-  {
-    id: "brouillon",
-    name: "Brouillon",
-    tagline: "L'imperfection comme signature",
-    story: "Née dans un atelier parisien, Brouillon transforme les erreurs en art. Chaque pièce est un brouillon devenu chef-d'œuvre — des coupes déconstruites, des finitions brutes, une mode qui refuse la perfection.",
-    city: "Paris",
-    year: 2021,
-    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",
-    products: [0, 1, 2],
-  },
-  {
-    id: "tern",
-    name: "Tern",
-    tagline: "Between earth and motion",
-    story: "Inspirée par les migrations et la nature, Tern crée des pièces fluides et intemporelles. Des matières organiques, des teintes terreuses, un vestiaire pour ceux qui bougent sans jamais se perdre.",
-    city: "Antwerp",
-    year: 2020,
-    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",
-    products: [3, 4, 5],
-  },
-  {
-    id: "noclout",
-    name: "NoClout",
-    tagline: "Anti-hype. Pro-style.",
-    story: "NoClout est né d'un rejet : celui de la mode qui crie pour être vue. Ici, pas de logos géants ni de trends éphémères. Juste des pièces pensées pour durer, portées par ceux qui n'ont rien à prouver.",
-    city: "Brussels",
-    year: 2022,
-    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",
-    products: [6, 7, 8],
-  },
-  {
-    id: "muet",
-    name: "MUET",
-    tagline: "Le silence a du style",
-    story: "MUET parle à travers les coupes. Minimalisme radical, noir et blanc exclusivement, des silhouettes qui disent tout sans un mot. Pour ceux qui préfèrent être remarqués plutôt qu'entendus.",
-    city: "Lyon",
-    year: 2023,
-    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",
-    products: [9, 10, 11],
-  },
-];
-
-const CATEGORIES = [lang === "fr" ? "Tous" : "All", "Tops", "Bottoms", "Outerwear", "Accessories"];
-
-const PRODUCTS = [
-  { id: 0, name: "Hoodie Chromatique", brand: "brouillon", category: "Tops", price: 40, sizes: ["S", "M", "L", "XL"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "Inspiré des premiers croquis qu'on jette — sauf que celui-ci, on le porte.", color: "Blanc cassé", colors: [{name: "Blanc cassé", hex: "#F5F0E8"}, {name: "Noir", hex: "#1A1A1A"}, {name: "Gris", hex: "#8C8C8C"}] },
-  { id: 1, name: "Sweat Chromatique", brand: "brouillon", category: "Tops", price: 105, sizes: ["S", "M", "L"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "Les coutures visibles racontent le processus. Le hoodie qui assume ses imperfections.", color: "Gris béton", colors: [{name: "Gris béton", hex: "#8C8C8C"}, {name: "Noir", hex: "#1A1A1A"}] },
-  { id: 2, name: "Raw Edge Cargo", brand: "brouillon", category: "Tops", price: 95, sizes: ["28", "30", "32", "34"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "Cargo repensé avec des bords bruts et une coupe large. Le chaos organisé.", color: "Kaki délavé", colors: [{name: "Kaki délavé", hex: "#8B7D5B"}, {name: "Noir", hex: "#1A1A1A"}, {name: "Sable", hex: "#C8B898"}] },
-  { id: 3, name: "Migration Overshirt", brand: "tern", category: "Tops", price: 40, sizes: ["S", "M", "L", "XL"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "Légère comme un départ, chaude comme un retour. L'overshirt des voyageurs.", color: "Terre brûlée", colors: [{name: "Terre brûlée", hex: "#8B4513"}, {name: "Olive", hex: "#556B2F"}] },
-  { id: 4, name: "Flow Pants", brand: "tern", category: "Bottoms", price: 78, sizes: ["S", "M", "L"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "Pensé pour le mouvement. Coupe fluide, tissu organique, liberté totale.", color: "Sable", colors: [{name: "Sable", hex: "#C8B898"}, {name: "Noir", hex: "#1A1A1A"}, {name: "Olive", hex: "#556B2F"}] },
-  { id: 5, name: "Nest Beanie", brand: "tern", category: "Accessories", price: 32, sizes: ["ONE"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "Tricoté à partir de laine recyclée. Chaud dehors, cool partout.", color: "Forest", colors: [{name: "Forest", hex: "#2D5A27"}, {name: "Noir", hex: "#1A1A1A"}, {name: "Crème", hex: "#F5F0E8"}] },
-  { id: 6, name: "Silent Statement Tee", brand: "noclout", category: "Tops", price: 42, sizes: ["S", "M", "L", "XL"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "Pas de logo. Pas de slogan. Juste une coupe parfaite et du coton premium.", color: "Noir", colors: [{name: "Noir", hex: "#1A1A1A"}, {name: "Blanc", hex: "#FAFAFA"}, {name: "Gris", hex: "#8C8C8C"}] },
-  { id: 7, name: "Zero Hype Jacket", brand: "noclout", category: "Outerwear", price: 145, sizes: ["S", "M", "L"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "La veste qui ne cherche pas à impressionner. Et c'est exactement pour ça qu'elle impressionne.", color: "Navy", colors: [{name: "Navy", hex: "#1B2A4A"}, {name: "Noir", hex: "#1A1A1A"}] },
-  { id: 8, name: "Lowkey Cap", brand: "noclout", category: "Accessories", price: 28, sizes: ["ONE"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "Une casquette non-brandée. Parce que ton style parle déjà.", color: "Noir", colors: [{name: "Noir", hex: "#1A1A1A"}, {name: "Navy", hex: "#1B2A4A"}, {name: "Kaki", hex: "#556B2F"}] },
-  { id: 9, name: "Mono Turtleneck", brand: "muet", category: "Tops", price: 65, sizes: ["S", "M", "L"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "Col roulé en noir absolu. Le silence élégant.", color: "Noir", colors: [{name: "Noir", hex: "#1A1A1A"}, {name: "Blanc", hex: "#FAFAFA"}] },
-  { id: 10, name: "Shadow Trousers", brand: "muet", category: "Bottoms", price: 88, sizes: ["28", "30", "32", "34"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "Pantalon droit, noir profond, tombé impeccable. La discrétion comme luxe.", color: "Noir", colors: [{name: "Noir", hex: "#1A1A1A"}, {name: "Gris foncé", hex: "#333333"}] },
-  { id: 11, name: "Whisper Scarf", brand: "muet", category: "Accessories", price: 38, sizes: ["ONE"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "Écharpe oversize en cachemire mélangé. Dit tout sans un mot.", color: "Blanc/Noir", colors: [{name: "Blanc/Noir", hex: "#FAFAFA"}, {name: "Noir", hex: "#1A1A1A"}] },
-];
-
-const LOOKBOOKS = [
-  {
-    id: "urban-nomad",
-    title: "Urban Nomad",
-    subtitle: "Spring/Summer — Moving through the city",
-    description: "Un lookbook pour ceux qui font de la rue leur runway. Mélanges de Tern et Brouillon, entre mouvement et brouillon urbain.",
-    products: [0, 3, 4],
-    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",
-    secondImage: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",
-  },
-  {
-    id: "after-dark",
-    title: "After Dark",
-    subtitle: "Fall/Winter — When the city sleeps",
-    description: "MUET et NoClout se rencontrent après minuit. Noir sur noir, silhouettes sharp, ambiance cinématique.",
-    products: [6, 7, 9, 10],
-    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",
-    secondImage: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",
-  },
-];
-
-// --- ICONS (SVG) ---
-const StarIcon = ({ size = 24, filled, gradient, color }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill={gradient ? "url(#starGrad)" : filled ? (color || "currentColor") : "none"} stroke={filled || gradient ? "none" : "currentColor"} strokeWidth={filled || gradient ? 0 : 1.5}>
-    {gradient && (
-      <defs>
-        <linearGradient id="starGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#1a1a1a" />
-          <stop offset="100%" stopColor="#5a5a5a" />
-        </linearGradient>
-      </defs>
-    )}
-    <path d="M12 0l2.76 8.5h8.94l-7.23 5.25 2.76 8.5L12 17l-7.23 5.25 2.76-8.5L0.3 8.5h8.94z" />
-  </svg>
-);
-
-const HeartIcon = ({ size = 20, filled, gradient }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill={gradient ? "url(#heartGrad)" : filled ? "currentColor" : "none"} stroke={gradient ? "none" : "currentColor"} strokeWidth={gradient ? 0 : 1.5}>
-    {gradient && (
-      <defs>
-        <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#7B61FF" />
-          <stop offset="50%" stopColor="#A855F7" />
-          <stop offset="100%" stopColor="#FF61B6" />
-        </linearGradient>
-      </defs>
-    )}
-    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-  </svg>
-);
-
-const BagIcon = ({ size = 20, count }) => (
-  <div style={{ position: "relative", display: "inline-flex" }}>
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-      <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0" />
-    </svg>
-    {count > 0 && (
-      <span style={{ position: "absolute", top: -6, right: -8, background: "linear-gradient(135deg, #1a1a1a, #5a5a5a)", color: "#fff", borderRadius: "50%", width: 16, height: 16, fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>{count}</span>
-    )}
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <div class="nav-links">
+    <span class="nav-link active" onclick="navigate('home')">Home</span>
+    <span class="nav-link" onclick="navigate('shop')">Shop</span>
+    <span class="nav-link" onclick="navigate('brands')">Marques</span>
+    <span class="nav-link" onclick="navigate('manifesto')">Manifesto</span>
   </div>
-);
+  <div class="nav-logo" onclick="navigate('home')">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="163 276 484 460" width="36" height="36">
+      <path d="M 405 276 L 461.9 451.7 L 646.1 451.7 L 497.1 560.3 L 554 735.8 L 405 627.3 L 256 735.8 L 312.9 560.3 L 163.9 451.7 L 348.1 451.7 Z" fill="#0A0A0A"/>
+    </svg>
+  </div>
+  <div class="nav-icons">
+    <button class="nav-icon" onclick="openFav()" id="fav-btn" aria-label="Favoris">
+      <svg id="fav-icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+    </button>
+    <button class="nav-icon" onclick="openCart()" aria-label="Panier" style="position:relative">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>
+      <span class="cart-badge" id="cart-badge" style="display:none">0</span>
+    </button>
+    <button class="menu-btn" onclick="openMobileMenu()" aria-label="Menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+    </button>
+  </div>
+</nav>
 
-const ArrowIcon = ({ direction = "right", size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ transform: direction === "left" ? "rotate(180deg)" : direction === "down" ? "rotate(90deg)" : "none" }}>
-    <path d="M5 12h14M12 5l7 7-7 7" />
-  </svg>
-);
+<!-- MOBILE MENU -->
+<div class="mobile-nav" id="mobile-nav">
+  <button class="mobile-nav-close" onclick="closeMobileMenu()">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+  </button>
+  <span class="mobile-nav-link" onclick="navigate('shop')">Shop</span>
+  <span class="mobile-nav-link" onclick="navigate('brands')">Marques</span>
+  <span class="mobile-nav-link" onclick="openFav();closeMobileMenu()">Favoris</span>
+  <span class="mobile-nav-link" onclick="openCart();closeMobileMenu()">Panier</span>
+  <span class="mobile-nav-link" onclick="navigate('profile')">Mon Profil</span>
+  <span class="mobile-nav-link" onclick="navigate('partner')">Devenir Partenaire</span>
+</div>
 
-const SearchIcon = ({ size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-  </svg>
-);
+<!-- CART PANEL -->
+<div class="panel-backdrop" id="cart-backdrop" onclick="closeCart()"></div>
+<div class="side-panel" id="cart-panel">
+  <div class="panel-header">
+    <span class="panel-title" id="cart-title">Panier (0)</span>
+    <button class="panel-close" onclick="closeCart()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div class="panel-body" id="cart-body">
+    <div class="empty-state">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>
+      <div class="empty-state-text">Ton panier est vide.<br>Explore le shop pour trouver ta pièce.</div>
+    </div>
+  </div>
+  <div class="panel-footer" id="cart-footer" style="display:none">
+    <div class="cart-total"><span class="cart-total-label">Total</span><span class="cart-total-amount" id="cart-total-amount">0 €</span></div>
+    <button class="btn btn-dark" style="width:100%;justify-content:center" onclick="navigate('checkout');closeCart()">Checkout →</button>
+  </div>
+</div>
 
-const FilterIcon = ({ size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <path d="M4 6h16M6 12h12M8 18h8" />
-  </svg>
-);
+<!-- FAV PANEL -->
+<div class="panel-backdrop" id="fav-backdrop" onclick="closeFav()"></div>
+<div class="side-panel" id="fav-panel">
+  <div class="panel-header">
+    <span class="panel-title" id="fav-title">Favoris (0)</span>
+    <button class="panel-close" onclick="closeFav()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div class="panel-body" id="fav-body">
+    <div class="empty-state">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      <div class="empty-state-text">Aucun favori pour l'instant.<br>Like les pièces qui te parlent.</div>
+    </div>
+  </div>
+</div>
 
-const CloseIcon = ({ size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <path d="M18 6L6 18M6 6l12 12" />
-  </svg>
-);
+<!-- TOAST -->
+<div class="toast" id="toast">★ <span id="toast-msg"></span></div>
 
-const MenuIcon = ({ size = 22 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <path d="M3 12h18M3 6h18M3 18h18" />
-  </svg>
-);
+<!-- PAGES -->
+<div id="app"></div>
 
-const TrashIcon = ({ size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-  </svg>
-);
+<script>
+// DATA
+const BRANDS=[
+  {id:"brouillon",name:"Brouillon",tagline:"L'imperfection comme signature",story:"Née dans un atelier parisien, Brouillon transforme les erreurs en art. Chaque pièce est un brouillon devenu chef-d'œuvre — des coupes déconstruites, des finitions brutes, une mode qui refuse la perfection.",city:"Paris",year:2021,image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",products:[0,1,2]},
+  {id:"tern",name:"Tern",tagline:"Between earth and motion",story:"Inspirée par les migrations et la nature, Tern crée des pièces fluides et intemporelles. Des matières organiques, des teintes terreuses, un vestiaire pour ceux qui bougent sans jamais se perdre.",city:"Antwerp",year:2020,image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",products:[3,4,5]},
+  {id:"noclout",name:"NoClout",tagline:"Anti-hype. Pro-style.",story:"NoClout est né d'un rejet : celui de la mode qui crie pour être vue. Ici, pas de logos géants ni de trends éphémères. Juste des pièces pensées pour durer, portées par ceux qui n'ont rien à prouver.",city:"Brussels",year:2022,image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",products:[6,7,8]},
+  {id:"muet",name:"MUET",tagline:"Le silence a du style",story:"MUET parle à travers les coupes. Minimalisme radical, noir et blanc exclusivement, des silhouettes qui disent tout sans un mot.",city:"Lyon",year:2023,image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",products:[9,10,11]}
+];
+const PRODUCTS=[
+  {id:0,name:"Hoodie Chromatique",brand:"brouillon",category:"Tops",price:40,sizes:["S","M","L","XL"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Inspiré des premiers croquis qu'on jette — sauf que celui-ci, on le porte.",colors:[{name:"Blanc cassé",hex:"#F5F0E8"},{name:"Noir",hex:"#1A1A1A"}]},
+  {id:1,name:"Sweat Chromatique",brand:"brouillon",category:"Tops",price:105,sizes:["S","M","L"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Les coutures visibles racontent le processus.",colors:[{name:"Gris béton",hex:"#8C8C8C"},{name:"Noir",hex:"#1A1A1A"}]},
+  {id:2,name:"Raw Edge Cargo",brand:"brouillon",category:"Bottoms",price:95,sizes:["28","30","32","34"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Cargo repensé avec des bords bruts et une coupe large.",colors:[{name:"Kaki délavé",hex:"#8B7D5B"},{name:"Noir",hex:"#1A1A1A"}]},
+  {id:3,name:"Migration Overshirt",brand:"tern",category:"Tops",price:40,sizes:["S","M","L","XL"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Légère comme un départ, chaude comme un retour.",colors:[{name:"Terre brûlée",hex:"#8B4513"},{name:"Olive",hex:"#556B2F"}]},
+  {id:4,name:"Flow Pants",brand:"tern",category:"Bottoms",price:78,sizes:["S","M","L"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Pensé pour le mouvement. Coupe fluide, liberté totale.",colors:[{name:"Sable",hex:"#C8B898"},{name:"Noir",hex:"#1A1A1A"}]},
+  {id:5,name:"Nest Beanie",brand:"tern",category:"Accessories",price:32,sizes:["ONE"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Tricoté à partir de laine recyclée.",colors:[{name:"Forest",hex:"#2D5A27"},{name:"Noir",hex:"#1A1A1A"}]},
+  {id:6,name:"Silent Statement Tee",brand:"noclout",category:"Tops",price:42,sizes:["S","M","L","XL"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Pas de logo. Juste une coupe parfaite.",colors:[{name:"Noir",hex:"#1A1A1A"},{name:"Blanc",hex:"#FAFAFA"}]},
+  {id:7,name:"Zero Hype Jacket",brand:"noclout",category:"Outerwear",price:145,sizes:["S","M","L"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"La veste qui ne cherche pas à impressionner.",colors:[{name:"Navy",hex:"#1B2A4A"},{name:"Noir",hex:"#1A1A1A"}]},
+  {id:8,name:"Lowkey Cap",brand:"noclout",category:"Accessories",price:28,sizes:["ONE"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Une casquette non-brandée.",colors:[{name:"Noir",hex:"#1A1A1A"},{name:"Navy",hex:"#1B2A4A"}]},
+  {id:9,name:"Mono Turtleneck",brand:"muet",category:"Tops",price:65,sizes:["S","M","L"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Col roulé en noir absolu. Le silence élégant.",colors:[{name:"Noir",hex:"#1A1A1A"},{name:"Blanc",hex:"#FAFAFA"}]},
+  {id:10,name:"Shadow Trousers",brand:"muet",category:"Bottoms",price:88,sizes:["28","30","32","34"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Pantalon droit, noir profond, tombé impeccable.",colors:[{name:"Noir",hex:"#1A1A1A"},{name:"Gris foncé",hex:"#333333"}]},
+  {id:11,name:"Whisper Scarf",brand:"muet",category:"Accessories",price:38,sizes:["ONE"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Écharpe oversize en cachemire mélangé.",colors:[{name:"Blanc/Noir",hex:"#FAFAFA"},{name:"Noir",hex:"#1A1A1A"}]}
+];
 
-// --- STYLES ---
+// STATE
+let cart=[], favorites=[], currentPage='home', pageData=null;
 
-// --- STYLES ---
+// TOAST
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  document.getElementById('toast-msg').textContent=msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2500);
+}
 
-// --- STYLES ---
+// PANELS
+function openCart(){document.getElementById('cart-panel').classList.add('open');document.getElementById('cart-backdrop').classList.add('open');renderCart();}
+function closeCart(){document.getElementById('cart-panel').classList.remove('open');document.getElementById('cart-backdrop').classList.remove('open');}
+function openFav(){document.getElementById('fav-panel').classList.add('open');document.getElementById('fav-backdrop').classList.add('open');renderFav();}
+function closeFav(){document.getElementById('fav-panel').classList.remove('open');document.getElementById('fav-backdrop').classList.remove('open');}
+function openMobileMenu(){document.getElementById('mobile-nav').classList.add('open');}
+function closeMobileMenu(){document.getElementById('mobile-nav').classList.remove('open');}
 
-// --- STYLES ---
-const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap');
+// SCROLL
+window.addEventListener('scroll',()=>{
+  document.getElementById('nav').classList.toggle('scrolled',window.scrollY>20);
+});
 
-  :root {
-    --black: #0A0A0A;
-    --white: #FAFAFA;
-    --gray-100: #F5F5F5;
-    --gray-200: #E5E5E5;
-    --gray-300: #D4D4D4;
-    --gray-400: #A3A3A3;
-    --gray-500: #737373;
-    --gray-600: #525252;
-    --gray-700: #404040;
-    --gray-800: #262626;
-    --gray-900: #171717;
-    --gradient: linear-gradient(135deg, #1a1a1a, #5a5a5a);
-    --gradient-subtle: linear-gradient(135deg, rgba(26,26,26,0.08), rgba(90,90,90,0.08));
-    --font-display: 'Urbanist', sans-serif;
-    --font-body: 'DM Sans', sans-serif;
-    --ease: cubic-bezier(0.16, 1, 0.3, 1);
-    --radius: 14px;
-    --radius-sm: 10px;
-    --radius-lg: 20px;
+// CART RENDER
+function renderCart(){
+  const body=document.getElementById('cart-body');
+  const footer=document.getElementById('cart-footer');
+  const title=document.getElementById('cart-title');
+  title.textContent=`Panier (${cart.length})`;
+  document.getElementById('cart-badge').textContent=cart.length;
+  document.getElementById('cart-badge').style.display=cart.length>0?'flex':'none';
+  if(cart.length===0){
+    body.innerHTML=`<div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg><div class="empty-state-text">Ton panier est vide.<br>Explore le shop.</div></div>`;
+    footer.style.display='none';
+  } else {
+    const total=cart.reduce((s,i)=>s+i.price,0);
+    body.innerHTML=cart.map(item=>{
+      const b=BRANDS.find(x=>x.id===item.brand);
+      return `<div class="cart-item"><div class="cart-item-img"><img src="${item.image}" alt="${item.name}"></div><div class="cart-item-info"><div><div class="cart-item-brand">${b?.name||''}</div><div class="cart-item-name">${item.name}</div><div class="cart-item-meta">Taille: ${item.selectedSize}</div></div><div class="cart-item-bottom"><span class="cart-item-price">${item.price} €</span><button class="cart-item-remove" onclick="removeFromCart(${item.cartId})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Retirer</button></div></div></div>`;
+    }).join('');
+    document.getElementById('cart-total-amount').textContent=total+' €';
+    footer.style.display='block';
   }
+}
 
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--white); color: var(--black); overflow-x: hidden; max-width: 100vw; }
-  ::selection { background: rgba(90, 90, 90, 0.2); color: var(--black); }
-  .uneek-app { font-family: var(--font-body); background: var(--white); min-height: 100vh; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
-  .gradient-text { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-  .page-wrapper { min-height: 100vh; }
+function removeFromCart(cartId){
+  cart=cart.filter(i=>i.cartId!==cartId);
+  renderCart();
+  showToast('Retiré du panier');
+}
 
-  
-  .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 0 clamp(16px, 4vw, 48px); height: 64px; display: flex; align-items: center; justify-content: space-between; background: rgba(250, 250, 250, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0,0,0,0.04); transition: all 0.4s var(--ease); }
-  .nav.scrolled { height: 56px; background: rgba(250, 250, 250, 0.95); }
-  .nav-logo { font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: -0.5px; cursor: pointer; display: flex; align-items: center; gap: 1px; user-select: none; color: var(--black); }
-  .nav-links { display: flex; align-items: center; gap: 32px; }
-  .nav-link { font-family: var(--font-body); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; position: relative; padding: 4px 0; color: var(--gray-600); transition: color 0.3s; }
-  .nav-link:hover, .nav-link.active { color: var(--black); }
-  .nav-link::after { content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 1.5px; background: var(--black); transition: width 0.3s var(--ease); }
-  .nav-link:hover::after, .nav-link.active::after { width: 100%; }
-  .nav-icons { display: flex; align-items: center; gap: 20px; }
-  .nav-icon { cursor: pointer; color: var(--gray-600); transition: color 0.2s; display: flex; align-items: center; }
-  .nav-icon:hover { color: var(--black); }
-  .mobile-menu-btn { display: none; cursor: pointer; color: var(--black); }
-  a { color: inherit; text-decoration: none; }
-  a:visited { color: inherit; }
-  a:hover { color: inherit; }
-
-  
-  .hero { height: 100vh; display: flex; flex-direction: column; justify-content: flex-end; padding: clamp(24px, 5vw, 64px); padding-bottom: clamp(48px, 8vh, 96px); position: relative; overflow: hidden; background: var(--black); color: var(--white); }
-  .hero-bg { position: absolute; inset: 0; background: var(--black); opacity: 1; }
-  .hero:hover .hero-bg { transform: scale(1.03); }
-  .hero-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(10,10,10,0.95) 0%, rgba(10,10,10,0.3) 50%, rgba(10,10,10,0.6) 100%); }
-  .hero-content { position: relative; z-index: 2; max-width: 800px; }
-  .hero-tag { font-size: 11px; font-weight: 500; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 24px; animation: fadeUp 0.8s var(--ease) 0.2s both; }
-  .hero-title { font-family: var(--font-display); font-size: clamp(42px, 7vw, 88px); font-weight: 800; line-height: 1; letter-spacing: -2px; margin-bottom: 24px; animation: fadeUp 0.8s var(--ease) 0.4s both; }
-  .hero-subtitle { font-size: clamp(15px, 2vw, 18px); font-weight: 300; color: rgba(255,255,255,0.6); max-width: 500px; line-height: 1.6; margin-bottom: 40px; animation: fadeUp 0.8s var(--ease) 0.6s both; }
-  .hero-cta { display: flex; gap: 16px; animation: fadeUp 0.8s var(--ease) 0.8s both; flex-wrap: wrap; }
-
-  
-  .btn { font-family: var(--font-body); font-size: 13px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; padding: 16px 36px; border: none; cursor: pointer; transition: all 0.3s var(--ease); display: inline-flex; align-items: center; gap: 10px; border-radius: var(--radius); }
-  .btn-primary { background: var(--white); color: var(--black); }
-  .btn-primary:hover { background: var(--gray-200); transform: translateY(-2px); }
-  .btn-outline { background: transparent; color: var(--white); border: 1px solid rgba(255,255,255,0.3); }
-  .btn-outline:hover { border-color: var(--white); background: rgba(255,255,255,0.05); }
-  .btn-dark { background: var(--black); color: var(--white); }
-  .btn-dark:hover { background: var(--gray-800); transform: translateY(-2px); }
-  .btn-sm { padding: 10px 20px; font-size: 11px; }
-
-  
-  .section { padding: clamp(48px, 8vw, 96px) clamp(16px, 4vw, 48px); }
-  .section-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 48px; flex-wrap: wrap; gap: 16px; }
-  .section-title { font-family: var(--font-display); font-size: clamp(28px, 4vw, 44px); font-weight: 700; letter-spacing: -1px; line-height: 1.1; }
-  .section-subtitle { font-size: 14px; color: var(--gray-500); margin-top: 8px; font-weight: 300; }
-  .section-link { font-size: 13px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--gray-500); transition: color 0.3s; }
-  .section-link:hover { color: var(--black); }
-
-  
-  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; }
-  .product-card { cursor: pointer; position: relative; }
-  .product-card-image { aspect-ratio: 3/4; overflow: hidden; background: var(--gray-100); position: relative; border-radius: var(--radius-lg); margin-bottom: 16px; perspective: 800px; }
-  .product-card-image img { width: 100%; height: 100%; object-fit: contain; transition: transform 0.3s ease-out; transform-style: preserve-3d; will-change: transform; }
-  .product-card:hover .product-card-image img { transform: scale(1.04); }
-  .product-card-fav { position: absolute; top: 12px; right: 12px; width: 42px; height: 42px; background: rgba(255,255,255,0.9); backdrop-filter: blur(8px); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity 0.3s; z-index: 2; }
-  .product-card:hover .product-card-fav { opacity: 1; }
-  .product-card-fav.is-fav { opacity: 1; background: rgba(255,255,255,0.95); }
-  .product-card-brand { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-400); margin-bottom: 4px; }
-  .product-card-name { font-family: var(--font-display); font-size: 15px; font-weight: 600; margin-bottom: 4px; }
-  .product-card-price { font-size: 14px; color: var(--gray-500); font-weight: 400; }
-
-  
-  .brand-strip { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 16px; scrollbar-width: none; }
-  .brand-strip::-webkit-scrollbar { display: none; }
-  .brand-chip { flex-shrink: 0; padding: 20px 32px; background: var(--gray-100); cursor: pointer; transition: all 0.3s var(--ease); display: flex; flex-direction: column; gap: 4px; min-width: 200px; border-radius: var(--radius); }
-  .brand-chip:hover { background: var(--black); color: var(--white); }
-  .brand-chip-name { font-family: var(--font-display); font-size: 18px; font-weight: 700; }
-  .brand-chip-city { font-size: 12px; opacity: 0.5; font-weight: 300; }
-
-  
-  .lookbook-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; }
-  .lookbook-card { position: relative; aspect-ratio: 4/5; overflow: hidden; cursor: pointer; background: var(--black); border-radius: var(--radius-lg); }
-  .lookbook-card img { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; transition: all 0.6s var(--ease); filter: grayscale(20%); }
-  .lookbook-card:hover img { opacity: 0.4; transform: scale(1.05); }
-  .lookbook-card-content { position: absolute; bottom: 0; left: 0; right: 0; padding: 40px; color: var(--white); z-index: 2; }
-  .lookbook-card-sub { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.6; margin-bottom: 12px; }
-  .lookbook-card-title { font-family: var(--font-display); font-size: clamp(28px, 3vw, 40px); font-weight: 700; letter-spacing: -1px; margin-bottom: 16px; }
-  .lookbook-card-desc { font-size: 14px; opacity: 0.6; line-height: 1.5; max-width: 350px; font-weight: 300; }
-
-  
-  .manifesto-section { background: var(--black); color: var(--white); padding: clamp(64px, 10vw, 128px) clamp(16px, 4vw, 48px); text-align: center; position: relative; overflow: hidden; }
-  .manifesto-section::before { display: none; }
-  .manifesto-quote { font-family: var(--font-display); font-size: clamp(32px, 5vw, 64px); font-weight: 700; letter-spacing: -1px; line-height: 1.15; max-width: 800px; margin: 0 auto 40px; position: relative; z-index: 1; }
-  .manifesto-text { font-size: clamp(15px, 1.8vw, 18px); line-height: 1.8; max-width: 600px; margin: 0 auto 48px; opacity: 0.5; font-weight: 300; position: relative; z-index: 1; }
-
-  
-  .catalogue-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 40px; flex-wrap: wrap; }
-  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; }
-  .filter-chip { padding: 8px 20px; font-size: 12px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; border: 1px solid var(--gray-200); background: transparent; cursor: pointer; transition: all 0.3s; font-family: var(--font-body); color: var(--gray-500); border-radius: 50px; }
-  .filter-chip:hover { border-color: var(--black); color: var(--black); }
-  .filter-chip.active { background: var(--black); color: var(--white); border-color: var(--black); }
-  .search-bar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border: 1px solid var(--gray-200); width: 260px; transition: border-color 0.3s; border-radius: 50px; }
-  .search-bar:focus-within { border-color: var(--black); }
-  .search-bar input { border: none; outline: none; font-size: 13px; font-family: var(--font-body); width: 100%; background: transparent; }
-
-  
-  .product-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
-  .pd-image { aspect-ratio: 3/4; overflow: hidden; background: var(--gray-100); position: sticky; top: 96px; border-radius: var(--radius-lg); perspective: 1000px; }
-  .pd-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease-out; transform-style: preserve-3d; will-change: transform; }
-  .pd-info { padding-top: 32px; padding-right: clamp(16px, 4vw, 64px); }
-  .pd-brand { font-size: 12px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; color: var(--gray-400); margin-bottom: 12px; cursor: pointer; transition: color 0.3s; }
-  .pd-brand:hover { color: var(--black); }
-  .pd-name { font-family: var(--font-display); font-size: clamp(28px, 3vw, 40px); font-weight: 700; letter-spacing: -1px; margin-bottom: 8px; }
-  .pd-price { font-size: 20px; color: var(--gray-600); margin-bottom: 32px; font-weight: 300; }
-  .pd-color-name { font-size: 13px; color: var(--gray-500); margin-bottom: 12px; }
-  .pd-colors { display: flex; gap: 10px; margin-bottom: 28px; }
-  .pd-color-swatch { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s var(--ease); }
-  .pd-color-swatch:hover { transform: scale(1.15); }
-  .pd-color-swatch.selected { border-color: var(--black); box-shadow: 0 0 0 2px var(--white), 0 0 0 4px var(--black); }
-  .pd-sizes { display: flex; gap: 8px; margin-bottom: 32px; flex-wrap: wrap; }
-  .pd-size { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--gray-200); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; font-family: var(--font-body); background: transparent; color: var(--black); border-radius: var(--radius-sm); }
-  .pd-size:hover { border-color: var(--black); }
-  .pd-size.selected { background: var(--black); color: var(--white); border-color: var(--black); }
-  .pd-actions { display: flex; gap: 12px; margin-bottom: 32px; }
-  .pd-add-to-cart { flex: 1; }
-  .pd-fav-btn { width: 52px; height: 52px; border: 1px solid var(--gray-200); background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; color: var(--gray-400); border-radius: var(--radius); }
-  .pd-fav-btn:hover { border-color: var(--black); color: var(--black); }
-  .pd-fav-btn.is-fav { background: transparent; border-color: #A855F7; }
-  .pd-story { padding: 28px 0; border-top: 1px solid var(--gray-200); }
-  .pd-story-title { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-400); margin-bottom: 12px; }
-  .pd-story-text { font-size: 14px; line-height: 1.7; color: var(--gray-500); font-style: italic; font-weight: 300; }
-
-  
-  .brand-hero { height: 70vh; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--black); }
-  .brand-hero-bg { position: absolute; inset: 0; }
-  .brand-hero-bg img { width: 100%; height: 100%; object-fit: cover; opacity: 0.4; }
-  .brand-hero-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); }
-  .brand-hero-content { position: relative; z-index: 2; text-align: center; color: var(--white); }
-  .brand-hero-name { font-family: var(--font-display); font-size: clamp(48px, 7vw, 80px); font-weight: 800; letter-spacing: -2px; }
-  .brand-hero-tagline { font-size: 16px; opacity: 0.5; font-style: italic; margin-top: 8px; font-weight: 300; }
-  .brand-hero-meta { display: flex; gap: 24px; justify-content: center; margin-top: 20px; font-size: 12px; opacity: 0.4; letter-spacing: 1px; text-transform: uppercase; }
-  .brand-story { font-size: 17px; line-height: 1.9; color: var(--gray-600); max-width: 700px; font-weight: 300; margin-bottom: 48px; }
-
-  
-  .lookbook-hero { height: 85vh; position: relative; overflow: hidden; display: flex; align-items: flex-end; }
-  .lookbook-hero-bg { position: absolute; inset: 0; }
-  .lookbook-hero-bg img { width: 100%; height: 100%; object-fit: cover; }
-  .lookbook-hero-content { position: relative; z-index: 2; padding: clamp(32px, 6vw, 80px); color: var(--white); }
-  .lookbook-hero-sub { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; opacity: 0.5; margin-bottom: 16px; }
-  .lookbook-hero-title { font-family: var(--font-display); font-size: clamp(56px, 10vw, 120px); font-weight: 800; letter-spacing: -3px; line-height: 0.9; }
-  .lookbook-hero-desc { font-size: 16px; opacity: 0.6; max-width: 450px; line-height: 1.6; margin-top: 24px; font-weight: 300; }
-
-  
-  .side-panel { position: fixed; top: 0; right: 0; width: min(440px, 100vw); height: 100vh; background: var(--white); z-index: 200; transform: translateX(100%); transition: transform 0.4s var(--ease); display: flex; flex-direction: column; border-left: 1px solid var(--gray-200); border-radius: var(--radius-lg) 0 0 var(--radius-lg); }
-  .side-panel.open { transform: translateX(0); }
-  .panel-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 199; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-  .panel-backdrop.open { opacity: 1; pointer-events: all; }
-  .panel-header { display: flex; justify-content: space-between; align-items: center; padding: 24px; border-bottom: 1px solid var(--gray-200); }
-  .panel-title { font-family: var(--font-display); font-size: 18px; font-weight: 700; }
-  .panel-close { cursor: pointer; color: var(--gray-400); transition: color 0.2s; background: none; border: none; display: flex; }
-  .panel-close:hover { color: var(--black); }
-  .panel-body { flex: 1; overflow-y: auto; padding: 24px; }
-  .panel-footer { padding: 24px; border-top: 1px solid var(--gray-200); }
-  .cart-item { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--gray-100); }
-  .cart-item-img { width: 80px; height: 100px; overflow: hidden; flex-shrink: 0; background: var(--gray-100); border-radius: 12px; }
-  .cart-item-img img { width: 100%; height: 100%; object-fit: cover; }
-  .cart-item-info { flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
-  .cart-item-brand { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-400); margin-bottom: 2px; }
-  .cart-item-name { font-family: var(--font-display); font-size: 14px; font-weight: 600; }
-  .cart-item-meta { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
-  .cart-item-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
-  .cart-item-price { font-size: 14px; font-weight: 500; }
-  .cart-item-remove { background: none; border: none; color: var(--gray-400); font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px; font-family: var(--font-body); transition: color 0.2s; }
-  .cart-item-remove:hover { color: var(--black); }
-  .cart-total { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-  .cart-total-label { font-size: 14px; color: var(--gray-500); }
-  .cart-total-amount { font-family: var(--font-display); font-size: 24px; font-weight: 700; }
-  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 64px 0; text-align: center; }
-  .empty-state-text { font-size: 14px; color: var(--gray-400); line-height: 1.6; font-weight: 300; }
-
-  
-  .footer { background: var(--black); color: var(--white); padding: clamp(48px, 6vw, 80px) clamp(16px, 4vw, 48px) 32px; }
-  .footer-top { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px; }
-  .footer-brand { font-family: var(--font-display); font-size: 20px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 1px; }
-  .footer-tagline { font-size: 14px; color: rgba(255,255,255,0.4); line-height: 1.6; font-weight: 300; max-width: 320px; }
-  .footer-col-title { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 16px; color: rgba(255,255,255,0.5); }
-  .footer-link { display: block; font-size: 14px; color: rgba(255,255,255,0.35); margin-bottom: 10px; cursor: pointer; transition: color 0.2s; font-weight: 300; }
-  .footer-link:hover { color: var(--white); }
-  .footer-bottom { display: flex; justify-content: space-between; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: rgba(255,255,255,0.25); font-weight: 300; }
-
-  
-  .mobile-nav { position: fixed; inset: 0; background: var(--white); z-index: 150; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 28px; transform: translateY(-100%); transition: transform 0.6s var(--ease); }
-  .mobile-nav.open { transform: translateY(0); }
-  .mobile-nav.open .mobile-nav-link { opacity: 0; animation: mobileNavIn 0.5s var(--ease) forwards; }
-  .mobile-nav.open .mobile-nav-link:nth-child(1) { animation-delay: 0.1s; }
-  .mobile-nav.open .mobile-nav-link:nth-child(2) { animation-delay: 0.15s; }
-  .mobile-nav.open .mobile-nav-link:nth-child(3) { animation-delay: 0.2s; }
-  .mobile-nav.open .mobile-nav-link:nth-child(4) { animation-delay: 0.25s; }
-  .mobile-nav.open .mobile-nav-link:nth-child(5) { animation-delay: 0.3s; }
-  .mobile-nav.open .mobile-nav-link:nth-child(6) { animation-delay: 0.35s; }
-  @keyframes mobileNavIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-  .mobile-nav-close { position: absolute; top: 24px; right: 24px; background: none; border: none; cursor: pointer; }
-  .mobile-nav-link { font-family: var(--font-display); font-size: 32px; font-weight: 700; cursor: pointer; transition: opacity 0.3s, transform 0.3s var(--ease); letter-spacing: -0.5px; color: rgba(10,10,10,0.45); }
-  .mobile-nav-link:hover { color: var(--black); transform: translateX(8px); }
-
-  
-  .faq-item { border-bottom: 1px solid rgba(255,255,255,0.08); padding: 24px 0; cursor: pointer; }
-  .faq-question { display: flex; justify-content: space-between; align-items: center; font-family: var(--font-display); font-size: 16px; font-weight: 600; color: var(--white); transition: opacity 0.3s; }
-  .faq-question:hover { opacity: 0.7; }
-  .faq-answer { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.45); font-weight: 300; max-height: 0; overflow: hidden; transition: max-height 0.4s var(--ease), padding 0.4s var(--ease); padding-top: 0; }
-  .faq-answer.open { max-height: 200px; padding-top: 16px; }
-  .faq-toggle { font-size: 20px; color: rgba(255,255,255,0.3); transition: transform 0.3s var(--ease); }
-  .faq-toggle.open { transform: rotate(45deg); }
-
-  
-  .partner-form input, .partner-form textarea, .partner-form select { width: 100%; padding: 14px 16px; border: 1px solid var(--gray-200); font-size: 14px; font-family: var(--font-body); outline: none; transition: border-color 0.3s; background: var(--white); color: var(--black); border-radius: var(--radius-sm); }
-  .partner-form input:focus, .partner-form textarea:focus, .partner-form select:focus { border-color: var(--black); }
-  .partner-form textarea { resize: vertical; min-height: 120px; }
-  .partner-form label { font-size: 12px; font-weight: 500; color: var(--gray-500); display: block; margin-bottom: 6px; }
-
-  
-  .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--black); color: var(--white); padding: 14px 28px; font-size: 13px; font-weight: 500; z-index: 300; transition: transform 0.4s var(--ease); white-space: nowrap; display: flex; align-items: center; gap: 8px; border-radius: var(--radius); }
-  .toast.show { transform: translateX(-50%) translateY(0); }
-
-  
-  @keyframes doubleTapHeart {
-    0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; }
-    10% { transform: translate(-50%, -50%) scale(1.4) rotate(0deg); opacity: 1; }
-    25% { transform: translate(-50%, -50%) scale(0.95) rotate(0deg); opacity: 1; }
-    35% { transform: translate(-50%, -50%) scale(1.15) rotate(0deg); opacity: 1; }
-    50% { transform: translate(-50%, -50%) scale(1.05) rotate(0deg); opacity: 1; }
-    75% { transform: translate(-50%, -50%) scale(1.05) rotate(0deg); opacity: 0.8; }
-    100% { transform: translate(-50%, -50%) scale(1.3) rotate(0deg); opacity: 0; }
+// FAV RENDER
+function renderFav(){
+  const body=document.getElementById('fav-body');
+  document.getElementById('fav-title').textContent=`Favoris (${favorites.length})`;
+  updateFavIcon();
+  if(favorites.length===0){
+    body.innerHTML=`<div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div class="empty-state-text">Aucun favori pour l'instant.<br>Like les pièces qui te parlent.</div></div>`;
+  } else {
+    body.innerHTML=favorites.map(pid=>{
+      const p=PRODUCTS.find(x=>x.id===pid);
+      const b=BRANDS.find(x=>x.id===p.brand);
+      return `<div class="cart-item" style="cursor:pointer" onclick="navigate('product',${pid});closeFav()"><div class="cart-item-img"><img src="${p.image}" alt="${p.name}"></div><div class="cart-item-info"><div><div class="cart-item-brand">${b?.name||''}</div><div class="cart-item-name">${p.name}</div></div><div class="cart-item-bottom"><span class="cart-item-price">${p.price} €</span><button class="cart-item-remove" onclick="event.stopPropagation();toggleFav(${pid})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div></div></div>`;
+    }).join('');
   }
-  .double-tap-heart { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); z-index: 10; pointer-events: none; animation: doubleTapHeart 1.1s ease forwards; filter: drop-shadow(0 4px 20px rgba(123, 97, 255, 0.5)); }
+}
 
-  
-  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-  
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
-
-  
-  @media (max-width: 768px) {
-    .nav-links { display: none; }
-    .mobile-menu-btn { display: flex; }
-  }
-  @media (max-width: 600px) {
-    .product-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-    .product-card-name { font-size: 13px; }
-    .product-card-price { font-size: 12px; }
-    .product-detail { grid-template-columns: 1fr; gap: 32px; }
-    .pd-image { position: static; }
-    .footer-top { grid-template-columns: 1fr; gap: 32px; }
-    .lookbook-grid { grid-template-columns: 1fr; }
-    .hero-cta { flex-direction: column; }
-    .btn { width: 100%; justify-content: center; }
-    .pd-actions { flex-direction: column; }
-    .pd-add-to-cart { width: 100%; }
-    .section { padding-left: 16px; padding-right: 16px; }
-    .hero { padding: 16px; padding-bottom: 48px; }
-    .side-panel { width: 100vw; }
-    .checkout-grid { grid-template-columns: 1fr; gap: 32px; }
-    .brands-grid { grid-template-columns: 1fr; }
-    .lookbooks-grid { grid-template-columns: 1fr; }
-    * { box-sizing: border-box; max-width: 100vw; }
-    img, video { max-width: 100%; height: auto; }
-  }
-`;
-
-// --- MAIN APP ---
-export default function UneekApp() {
-  const [page, setPage] = useState("home");
-  const [pageData, setPageData] = useState(null);
-  const [cart, setCart] = useState([]);
-  const [favorites, setFavorites] = useState([]);
-  const [cartOpen, setCartOpen] = useState(false);
-  const [favOpen, setFavOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const [toast, setToast] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState(lang === "fr" ? "Tous" : "All");
-  const [activeBrandFilter, setActiveBrandFilter] = useState(null);
-  const [recentlyViewed, setRecentlyViewed] = useState([]);
-  const [lang, setLang] = useState("fr");
-
-  const t = {
-    fr: {
-      home: "Home", shop: "Shop", brands: "Marques", manifesto: "Manifesto",
-      heroTag: "Created by Independent Fashion",
-      heroTitle1: "They wear what's told.",
-      heroTitle2: "You wear what's",
-      heroSpecial: "special.",
-      heroSub: "UNEEK regroupe les marques indépendantes les plus créatives. Des pièces uniques, sélectionnées pour ceux qui refusent l'ordinaire.",
-      heroBtn: "Explorer le Shop",
-      selectionTitle: "Sélection du moment",
-      selectionSub: "Les pièces qui font parler",
-      seeAll: "Voir tout",
-      seeAllBrands: "Toutes les marques",
-      brandsTitle: "Nos marques",
-      brandsSub: "Des créateurs sélectionnés à la main",
-      addToCart: "Ajouter au panier",
-      addedToCart: "Ajouté au panier",
-      size: "Taille", color: "Couleur",
-      favorites: "Favoris", cart: "Panier",
-      emptyFav: "Aucun favori pour l'instant.",
-      emptyCart: "Votre panier est vide.",
-      total: "Total", checkout: "Commander",
-      backHome: t.backHome,
-      backShop: t.backShop,
-      sizeLabel: "Taille",
-      sizeItem: "Taille : ",
-      filterAll: lang === "fr" ? "Tous" : "All",
-      inStock: "En stock",
-      outOfStock: "Rupture de stock",
-      becomePartner: "Devenir Partenaire",
-      partnerTitle: "Rejoins UNEEK",
-      partnerSub: "Tu crées des pièces uniques ? On veut les montrer au monde.",
-      partnerBtn: "Postuler",
-      partnerSuccess: "Candidature envoyée !",
-      manifestoQuote: "Ils portent ce qu'on leur dit de porter. Toi, tu portes ce qui te ressemble.",
-      manifestoText: "UNEEK est une marketplace dédiée aux marques de mode indépendantes. On sélectionne à la main les créateurs les plus originaux pour offrir une alternative au mass market.",
-      manifestoBtn: "Explorer le Shop",
-      faqTitle: "Questions fréquentes",
-      faq1q: "Comment devenir partenaire UNEEK ?",
-      faq1a: "Si tu es un créateur indépendant, tu peux postuler via notre formulaire 'Devenir Partenaire' accessible depuis le menu. On étudie chaque candidature avec attention.",
-      faq2q: "Quels sont les délais de livraison ?",
-      faq2a: "Les délais varient selon le créateur, généralement entre 3 et 7 jours ouvrés en Belgique et en France. Chaque commande est préparée directement par la marque.",
-      faq3q: "Comment suivre ma commande ?",
-      faq3a: "Une fois ta commande expédiée, tu reçois un email avec un lien de suivi. Le créateur dispose de 3 jours ouvrés pour expédier après la confirmation.",
-      faq4q: "Puis-je retourner un article ?",
-      faq4a: "Les retours sont acceptés sous 14 jours si l'article est non porté et dans son état d'origine. Contacte-nous à support@uneek.store pour initier un retour.",
-      lookbooksTitle: "Lookbooks",
-      lookbooksSub: "Des univers créés par nos marques",
-      shopTitle: "Le Shop",
-      shopSub: "Toutes nos pièces",
-      footerTagline: "La marketplace qui réunit les marques de mode indépendantes les plus créatives.",
-      support: "Support", legal: "Légal",
-      faq: "FAQ", delivery: "Livraison & Retours",
-      partner: "Devenir Partenaire", contact: "Contact",
-      cgv: "CGV", privacy: "Politique de confidentialité", mentions: "Mentions légales",
-      language: "Langue",
-      copyright: "© 2026 UNEEK. The future belongs to those who create.",
-      madeIn: "Made with ★ in Belgium",
-    },
-    en: {
-      home: "Home", shop: "Shop", brands: "Brands", manifesto: "Manifesto",
-      heroTag: "Created by Independent Fashion",
-      heroTitle1: "They wear what's told.",
-      heroTitle2: "You wear what's",
-      heroSpecial: "special.",
-      heroSub: "UNEEK brings together the most creative independent fashion brands. Unique pieces, handpicked for those who refuse the ordinary.",
-      heroBtn: "Explore the Shop",
-      selectionTitle: "Featured right now",
-      selectionSub: "Pieces worth talking about",
-      seeAll: "See all",
-      seeAllBrands: "All brands",
-      brandsTitle: "Our brands",
-      brandsSub: "Handpicked creators",
-      addToCart: "Add to cart",
-      addedToCart: "Added to cart",
-      size: "Size", color: "Color",
-      favorites: "Favorites", cart: "Cart",
-      emptyFav: "No favorites yet.",
-      emptyCart: "Your cart is empty.",
-      total: "Total", checkout: "Checkout",
-      backHome: "Back to home",
-      backShop: "← Back to shop",
-      sizeLabel: "Size",
-      sizeItem: "Size: ",
-      filterAll: "All",
-      inStock: "In stock",
-      outOfStock: "Out of stock",
-      becomePartner: "Become a Partner",
-      partnerTitle: "Join UNEEK",
-      partnerSub: "You create unique pieces? We want to show them to the world.",
-      partnerBtn: "Apply",
-      partnerSuccess: "Application sent!",
-      manifestoQuote: "They wear what they're told. You wear what feels like you.",
-      manifestoText: "UNEEK is a marketplace dedicated to independent fashion brands. We handpick the most original creators to offer an alternative to mass market.",
-      manifestoBtn: "Explore the Shop",
-      faqTitle: "FAQ",
-      faq1q: "How do I become a UNEEK partner?",
-      faq1a: "If you're an independent creator, you can apply through our 'Become a Partner' form accessible from the menu. We review every application carefully.",
-      faq2q: "What are the delivery times?",
-      faq2a: "Delivery times vary by creator, generally 3 to 7 business days in Belgium and France. Each order is prepared directly by the brand.",
-      faq3q: "How do I track my order?",
-      faq3a: "Once your order is shipped, you'll receive an email with a tracking link. The creator has 3 business days to ship after confirmation.",
-      faq4q: "Can I return an item?",
-      faq4a: "Returns are accepted within 14 days if the item is unworn and in its original condition. Contact us at support@uneek.store to initiate a return.",
-      lookbooksTitle: "Lookbooks",
-      lookbooksSub: "Worlds created by our brands",
-      shopTitle: "The Shop",
-      shopSub: "All our pieces",
-      footerTagline: "The marketplace bringing together the most creative independent fashion brands.",
-      support: "Support", legal: "Legal",
-      faq: "FAQ", delivery: "Shipping & Returns",
-      partner: "Become a Partner", contact: "Contact",
-      cgv: "Terms & Conditions", privacy: "Privacy Policy", mentions: "Legal Notice",
-      language: "Language",
-      copyright: "© 2026 UNEEK. The future belongs to those who create.",
-      madeIn: "Made with ★ in Belgium",
-      emptyCart: "Your cart is empty.",
-      total: "Total", checkout: "Checkout",
-      footerTagline: "The marketplace bringing together the most creative independent fashion brands.",
-      support: "Support", legal: "Legal",
-      faq: "FAQ", delivery: "Shipping & Returns",
-      partner: "Become a Partner", contact: "Contact",
-      cgv: "Terms & Conditions", privacy: "Privacy Policy", mentions: "Legal Notice",
-      language: "Language",
-      copyright: "© 2026 UNEEK. The future belongs to those who create.",
-      madeIn: "Made with ★ in Belgium",
+function updateFavIcon(){
+  const icon=document.getElementById('fav-icon');
+  if(favorites.length>0){
+    icon.style.fill='url(#heartGrad)';
+    icon.style.stroke='none';
+    if(!document.getElementById('heartGradDef')){
+      const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.id='heartGradDef';svg.style.width='0';svg.style.height='0';svg.style.position='absolute';
+      svg.innerHTML='<defs><linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7B61FF"/><stop offset="50%" stop-color="#A855F7"/><stop offset="100%" stop-color="#FF61B6"/></linearGradient></defs>';
+      document.body.appendChild(svg);
     }
-  }[lang];
+  } else {
+    icon.style.fill='none';icon.style.stroke='currentColor';
+  }
+}
 
-  const scrollRef = useRef(null);
+function toggleFav(id){
+  const isFav=favorites.includes(id);
+  if(isFav) favorites=favorites.filter(x=>x!==id);
+  else favorites.push(id);
+  showToast(isFav?'Retiré des favoris':'Ajouté aux favoris ♥');
+  document.querySelectorAll('[data-fav="'+id+'"]').forEach(el=>{
+    el.classList.toggle('is-fav',!isFav);
+    el.innerHTML=!isFav?'<svg width="20" height="20" viewBox="0 0 24 24" fill="url(#heartGrad)" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+  });
+  updateFavIcon();
+}
 
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+function addToCart(productId,size){
+  const p=PRODUCTS.find(x=>x.id===productId);
+  cart.push({...p,selectedSize:size,cartId:Date.now()});
+  showToast('Ajouté au panier');
+  renderCart();
+}
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" });
-  }, [page, pageData]);
-
-  const showToast = useCallback((msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2500);
-  }, []);
-
-  const navigate = (p, data = null) => {
-    setPageData(data);
-    setPage(p);
-    setMobileMenuOpen(false);
-  };
-
-  const toggleFav = (productId) => {
-    setFavorites((prev) =>
-      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
-    );
-    const isFav = favorites.includes(productId);
-    showToast(isFav ? (lang === "fr" ? "Retiré des favoris" : "Removed from favorites") : (lang === "fr" ? "Ajouté aux favoris ♥" : "Added to favorites ♥"));
-  };
-
-  const addToCart = (product, size) => {
-    setCart((prev) => [...prev, { ...product, selectedSize: size, cartId: Date.now() }]);
-    showToast(lang === "fr" ? "Ajouté au panier" : "Added to cart");
-  };
-
-  const removeFromCart = (cartId) => {
-    setCart((prev) => prev.filter((item) => item.cartId !== cartId));
-  };
-
-  const cartTotal = cart.reduce((sum, item) => sum + item.price, 0);
-
-  // --- NAVIGATION BAR ---
-  const Nav = () => (
-    <nav className={`nav ${scrolled ? "scrolled" : ""}`} style={{ display: "flex", alignItems: "center", position: "fixed", top: 0, left: 0, right: 0, zIndex: 100 }}>
-      {}
-      <div className="nav-links" style={{ flex: 1 }}>
-        {[
-          [t.home, "home"],
-          [t.shop, "shop"],
-          [t.brands, "brands"],
-          [t.manifesto, "manifesto"],
-        ].map(([label, p]) => (
-          <span key={p} className={`nav-link ${page === p ? "active" : ""}`} onClick={() => navigate(p)}>
-            {label}
-          </span>
-        ))}
-      </div>
-
-      {}
-      <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", cursor: "pointer" }} onClick={() => navigate("home")}>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="163 276 484 460" width="36" height="36"><path d="M 405 276 L 461.9 451.7 L 646.1 451.7 L 497.1 560.3 L 554 735.8 L 405 627.3 L 256 735.8 L 312.9 560.3 L 163.9 451.7 L 348.1 451.7 Z" fill="#0A0A0A"/></svg>
-      </div>
-
-      {}
-      <div className="nav-icons" style={{ flex: 1, justifyContent: "flex-end" }}>
-        <span className="nav-icon" onClick={() => { setFavOpen(true); setCartOpen(false); }}>
-          <HeartIcon size={19} gradient={favorites.length > 0} />
-        </span>
-        <span className="nav-icon" onClick={() => { setCartOpen(true); setFavOpen(false); }}>
-          <BagIcon size={19} count={cart.length} />
-        </span>
-        <span className="mobile-menu-btn" onClick={() => setMobileMenuOpen(true)}>
-          <MenuIcon />
-        </span>
-      </div>
-    </nav>
-  );
-
-  // --- MOBILE MENU ---
-  const MobileMenu = () => (
-    <div className={`mobile-nav ${mobileMenuOpen ? "open" : ""}`}>
-      <button className="mobile-nav-close" onClick={() => setMobileMenuOpen(false)}>
-        <CloseIcon size={28} />
+// PRODUCT CARD HTML
+function productCardHTML(p){
+  const b=BRANDS.find(x=>x.id===p.brand);
+  const isFav=favorites.includes(p.id);
+  return `<div class="product-card" onclick="navigate('product',${p.id})">
+    <div class="product-card-image" onmousemove="tilt(event,this)" onmouseleave="tiltReset(this)">
+      <img src="${p.image}" alt="${p.name}" loading="lazy">
+      <button class="product-card-fav ${isFav?'is-fav':''}" data-fav="${p.id}" onclick="event.stopPropagation();toggleFav(${p.id})" aria-label="Favori">
+        ${isFav?'<svg width="20" height="20" viewBox="0 0 24 24" fill="url(#heartGrad)" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'}
       </button>
-      {[
-        ["Shop", "shop"],
-        ["Marques", "brands"],
-        [t.favorites, () => { setFavOpen(true); setMobileMenuOpen(false); }],
-        [t.cart, () => { setCartOpen(true); setMobileMenuOpen(false); }],
-        ["Mon Profil", "profile"],
-        [t.becomePartner, "partner"],
-      ].map(([label, action]) => (
-        <span
-          key={label}
-          className="mobile-nav-link"
-          onClick={() => typeof action === "function" ? action() : navigate(action)}
-        >
-          {label}
-        </span>
-      ))}
     </div>
-  );
+    <div class="product-card-brand">${b?.name||''}</div>
+    <div class="product-card-name">${p.name}</div>
+    <div class="product-card-price">${p.price} €</div>
+  </div>`;
+}
 
-  // --- PRODUCT CARD ---
-  const ProductCard = ({ product }) => {
-    const brand = BRANDS.find((b) => b.id === product.brand);
-    const isFav = favorites.includes(product.id);
-    const imgRef = useRef(null);
-    const [showHeart, setShowHeart] = useState(false);
-    const lastTapRef = useRef(0);
+// TILT
+function tilt(e,el){
+  const img=el.querySelector('img');
+  const r=el.getBoundingClientRect();
+  const x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
+  img.style.transform=`perspective(800px) rotateX(${(0.5-y)*20}deg) rotateY(${(x-0.5)*20}deg) scale(1.04)`;
+}
+function tiltReset(el){el.querySelector('img').style.transform='';}
 
-    const handleTilt = (e) => {
-      const img = imgRef.current;
-      if (!img) return;
-      const rect = img.parentElement.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width;
-      const y = (e.clientY - rect.top) / rect.height;
-      const rotateY = (x - 0.5) * 20;
-      const rotateX = (0.5 - y) * 20;
-      img.style.transform = `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.04)`;
-    };
-
-    const handleTiltReset = () => {
-      const img = imgRef.current;
-      if (img) img.style.transform = "perspective(800px) rotateX(0deg) rotateY(0deg) scale(1)";
-    };
-
-    const handleDoubleTap = (e) => {
-      const now = Date.now();
-      if (now - lastTapRef.current < 400) {
-        e.stopPropagation();
-        e.preventDefault();
-        if (!favorites.includes(product.id)) {
-          toggleFav(product.id);
-        }
-        setShowHeart(true);
-        setTimeout(() => setShowHeart(false), 1200);
-        lastTapRef.current = 0;
-      } else {
-        lastTapRef.current = now;
-      }
-    };
-
-    return (
-      <div className="product-card" onClick={(e) => {
-        setTimeout(() => {
-          if (Date.now() - lastTapRef.current > 350) navigate("product", product.id);
-        }, 350);
-      }}>
-        <div className="product-card-image" onMouseMove={handleTilt} onMouseLeave={handleTiltReset} onClick={handleDoubleTap}>
-          <img ref={imgRef} src={product.image} alt={product.name} loading="lazy" />
-          {showHeart && (
-            <svg className="double-tap-heart" width="100" height="100" viewBox="0 0 24 24" fill="url(#dtHeart)">
-              <defs>
-                <linearGradient id="dtHeart" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#7B61FF" />
-                  <stop offset="50%" stopColor="#A855F7" />
-                  <stop offset="100%" stopColor="#FF61B6" />
-                </linearGradient>
-              </defs>
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-            </svg>
-          )}
-          <div
-            className={`product-card-fav ${isFav ? "is-fav" : ""}`}
-            onClick={(e) => { e.stopPropagation(); toggleFav(product.id); }}
-          >
-            <HeartIcon size={20} gradient={isFav} />
-          </div>
-        </div>
-        <div className="product-card-brand">{brand?.name}</div>
-        <div className="product-card-name">{product.name}</div>
-        <div className="product-card-price">{product.price} €</div>
-      </div>
-    );
-  };
-
-  // --- SIDE PANELS (Cart & Favorites) ---
-  const SidePanel = ({ open, onClose, title, children, footer }) => (
-    <>
-      <div className={`panel-backdrop ${open ? "open" : ""}`} onClick={onClose} />
-      <div className={`side-panel ${open ? "open" : ""}`}>
-        <div className="panel-header">
-          <span className="panel-title">{title}</span>
-          <button className="panel-close" onClick={onClose}><CloseIcon /></button>
-        </div>
-        <div className="panel-body">{children}</div>
-        {footer && <div className="panel-footer">{footer}</div>}
-      </div>
-    </>
-  );
-
-  const CartPanel = () => (
-    <SidePanel
-      open={cartOpen}
-      onClose={() => setCartOpen(false)}
-      title={`Panier (${cart.length})`}
-      footer={
-        cart.length > 0 && (
-          <>
-            <div className="cart-total">
-              <span className="cart-total-label">{t.total}</span>
-              <span className="cart-total-amount">{cartTotal} €</span>
-            </div>
-            <button className="btn btn-dark" style={{ width: "100%", justifyContent: "center" }} onClick={() => { setCartOpen(false); navigate("checkout"); }}>
-              Checkout <ArrowIcon size={14} />
-            </button>
-          </>
-        )
-      }
-    >
-      {cart.length === 0 ? (
-        <div className="empty-state">
-          <BagIcon size={40} count={0} />
-          <div className="empty-state-text">Ton panier est vide.<br />Explore le shop pour trouver ta pièce.</div>
-          <button className="btn btn-dark btn-sm" onClick={() => { setCartOpen(false); navigate("shop"); }}>
-            {t.heroBtn}
-          </button>
-        </div>
-      ) : (
-        cart.map((item) => {
-          const brand = BRANDS.find((b) => b.id === item.brand);
-          return (
-            <div key={item.cartId} className="cart-item">
-              <div className="cart-item-img"><img src={item.image} alt={item.name} /></div>
-              <div className="cart-item-info">
-                <div>
-                  <div className="cart-item-brand">{brand?.name}</div>
-                  <div className="cart-item-name">{item.name}</div>
-                  <div className="cart-item-meta">Taille: {item.selectedSize}</div>
-                </div>
-                <div className="cart-item-bottom">
-                  <span className="cart-item-price">{item.price} €</span>
-                  <button className="cart-item-remove" onClick={() => removeFromCart(item.cartId)}>
-                    <TrashIcon />
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })
-      )}
-    </SidePanel>
-  );
-
-  const FavPanel = () => (
-    <SidePanel open={favOpen} onClose={() => setFavOpen(false)} title={`${t.favorites} (${favorites.length})`}>
-      {favorites.length === 0 ? (
-        <div className="empty-state">
-          <HeartIcon size={40} />
-          <div className="empty-state-text">{t.emptyFav}<br />Like les pièces qui te parlent.</div>
-        </div>
-      ) : (
-        favorites.map((pid) => {
-          const product = PRODUCTS.find((p) => p.id === pid);
-          const brand = BRANDS.find((b) => b.id === product.brand);
-          return (
-            <div key={pid} className="cart-item" style={{ cursor: "pointer" }} onClick={() => { setFavOpen(false); navigate("product", pid); }}>
-              <div className="cart-item-img"><img src={product.image} alt={product.name} /></div>
-              <div className="cart-item-info">
-                <div>
-                  <div className="cart-item-brand">{brand?.name}</div>
-                  <div className="cart-item-name">{product.name}</div>
-                </div>
-                <div className="cart-item-bottom">
-                  <span className="cart-item-price">{product.price} €</span>
-                  <button className="cart-item-remove" onClick={(e) => { e.stopPropagation(); toggleFav(pid); }}>
-                    <CloseIcon size={14} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })
-      )}
-    </SidePanel>
-  );
-
-  // --- FOOTER ---
-  const Footer = () => (
-    <footer className="footer">
-      <div className="footer-top">
-        <div>
-          <div className="footer-brand"><StarIcon size={20} gradient /> Uneek</div>
-          <div className="footer-tagline">
-            La mode indépendante, créée pour ceux qui refusent de ressembler à tout le monde. Dress different. Feel different.
-          </div>
-        </div>
-        <div>
-          <div className="footer-col-title">Navigation</div>
-          {[t.shop, t.brands, t.lookbooks, t.manifesto].map((l) => (
-            <span key={l} className="footer-link" onClick={() => navigate(l.toLowerCase() === "marques" ? "brands" : l.toLowerCase())}>{l}</span>
-          ))}
-        </div>
-        <div>
-          <div className="footer-col-title">{t.support}</div>
-          <span className="footer-link" onClick={() => navigate("manifesto")}>{t.faq}</span>
-          <span className="footer-link" onClick={() => navigate("cgv")}>{t.delivery}</span>
-          <span className="footer-link" onClick={() => navigate("partner")}>{t.partner}</span>
-          <span className="footer-link" onClick={() => { window.location.href = "mailto:support@uneek.store"; }}>{t.contact}</span>
-          <div style={{ marginTop: 16 }}>
-            <div className="footer-col-title" style={{ marginBottom: 10 }}>{t.language}</div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <span onClick={() => setLang("fr")} style={{ fontSize: 12, cursor: "pointer", padding: "5px 14px", border: `1px solid ${lang === "fr" ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.15)"}`, color: lang === "fr" ? "#fff" : "rgba(255,255,255,0.35)", borderRadius: 20, transition: "all 0.2s", fontWeight: lang === "fr" ? 600 : 300 }}>FR</span>
-              <span onClick={() => setLang("en")} style={{ fontSize: 12, cursor: "pointer", padding: "5px 14px", border: `1px solid ${lang === "en" ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.15)"}`, color: lang === "en" ? "#fff" : "rgba(255,255,255,0.35)", borderRadius: 20, transition: "all 0.2s", fontWeight: lang === "en" ? 600 : 300 }}>EN</span>
-            </div>
-          </div>
-        </div>
-        <div>
-          <div className="footer-col-title">{t.legal}</div>
-          <span className="footer-link" onClick={() => navigate("cgv")}>{t.cgv}</span>
-          <span className="footer-link" onClick={() => navigate("privacy")}>{t.privacy}</span>
-          <span className="footer-link" onClick={() => navigate("legal")}>{t.mentions}</span>
-        </div>
-      </div>
-      <div className="footer-bottom">
-        <span>{t.copyright}</span>
-        <span>{t.madeIn}</span>
-      </div>
-    </footer>
-  );
-
-  // =====================
-  // PAGES
-  // =====================
-
-  // --- HOME ---
-  const HomePage = () => (
-    <div className="page-wrapper">
-      {}
-      <section className="hero">
-        <div className="hero-bg" />
-        <div className="hero-overlay" />
-        <div className="hero-content">
-          <p className="hero-tag">{t.heroTag}</p>
-          <h1 className="hero-title">
-            {t.heroTitle1}<br />You wear what's <span className="gradient-text">{t.heroSpecial}</span>
-          </h1>
-          <p className="hero-subtitle">{t.heroSub}</p>
-          <div className="hero-cta">
-            <button className="btn btn-primary" onClick={() => navigate("shop")}>
-              {t.heroBtn} <ArrowIcon size={14} />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {}
-      <section className="section">
-        <div className="section-header">
-          <div>
-            <h2 className="section-title">{t.selectionTitle}</h2>
-            <p className="section-subtitle">{t.selectionSub}</p>
-          </div>
-          <span className="section-link" onClick={() => navigate("shop")}>
-            {t.seeAll} <ArrowIcon size={14} />
-          </span>
-        </div>
-        <div className="product-grid">
-          {[PRODUCTS[0], PRODUCTS[1], PRODUCTS[2], PRODUCTS[3]].map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-      </section>
-
-      {}
-      <section className="section" style={{ paddingTop: 0 }}>
-        <div className="section-header">
-          <div>
-            <h2 className="section-title">Les marques</h2>
-            <p className="section-subtitle">Créateurs indépendants, sélectionnés avec soin</p>
-          </div>
-          <span className="section-link" onClick={() => navigate("brands")}>
-            {t.seeAllBrands} <ArrowIcon size={14} />
-          </span>
-        </div>
-        <div className="brand-strip">
-          {BRANDS.map((b) => (
-            <div key={b.id} className="brand-chip" onClick={() => navigate("brand", b.id)}>
-              <span className="brand-chip-name">{b.name}</span>
-              <span className="brand-chip-city">{b.city} — {b.year}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {}
-      <section className="manifesto-section">
-        <h2 className="manifesto-quote">
-          The future belongs<br />to those who <span className="gradient-text">create.</span>
-        </h2>
-        <p className="manifesto-text">
-          On ne vend pas des vêtements. On donne une voix aux créateurs qui osent, et un style à ceux qui refusent de se fondre dans la masse.
-        </p>
-        <button className="btn btn-gradient" onClick={() => navigate("manifesto")}>
-          Lire le Manifesto
-        </button>
-      </section>
-
-      {}
-      <section className="section">
-        <div className="section-header">
-          <div>
-            <h2 className="section-title">Lookbooks</h2>
-            <p className="section-subtitle">Des éditos pour s'inspirer</p>
-          </div>
-        </div>
-        <div className="lookbook-grid">
-          {LOOKBOOKS.map((lb) => (
-            <div key={lb.id} className="lookbook-card" onClick={() => navigate("lookbook", lb.id)}>
-              <img src={lb.image} alt={lb.title} loading="lazy" />
-              <div className="lookbook-card-content">
-                <div className="lookbook-card-sub">{lb.subtitle}</div>
-                <h3 className="lookbook-card-title">{lb.title}</h3>
-                <p className="lookbook-card-desc">{lb.description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {}
-      <section className="section">
-        <div className="section-header">
-          <div>
-            <h2 className="section-title">Nouveautés</h2>
-            <p className="section-subtitle">Les dernières pièces ajoutées</p>
-          </div>
-          <span className="section-link" onClick={() => navigate("shop")}>
-            Tout voir <ArrowIcon size={14} />
-          </span>
-        </div>
-        <div className="product-grid">
-          {[PRODUCTS[7], PRODUCTS[10], PRODUCTS[4], PRODUCTS[2]].map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-      </section>
-
-      <Footer />
-    </div>
-  );
-
-  // --- SHOP / CATALOGUE ---
-  const ShopPage = () => {
-    const filtered = PRODUCTS.filter((p) => {
-      const matchCat = activeCategory === lang === "fr" ? "Tous" : "All" || p.category === activeCategory;
-      const matchBrand = !activeBrandFilter || p.brand === activeBrandFilter;
-      const matchSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.brand.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchCat && matchBrand && matchSearch;
-    });
-
-    return (
-      <div className="page-wrapper">
-        <section className="section" style={{ paddingTop: 96 }}>
-          <h1 className="section-title" style={{ marginBottom: 8 }}>Shop</h1>
-          <p className="section-subtitle" style={{ marginBottom: 32 }}>{filtered.length} pièces disponibles</p>
-
-          <div className="catalogue-top">
-            <div className="filter-bar">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  className={`filter-chip ${activeCategory === cat ? "active" : ""}`}
-                  onClick={() => setActiveCategory(cat)}
-                >
-                  {cat}
-                </button>
-              ))}
-              <span style={{ width: 1, background: "var(--gray-200)", margin: "0 4px" }} />
-              {BRANDS.map((b) => (
-                <button
-                  key={b.id}
-                  className={`filter-chip ${activeBrandFilter === b.id ? "active" : ""}`}
-                  onClick={() => setActiveBrandFilter(activeBrandFilter === b.id ? null : b.id)}
-                >
-                  {b.name}
-                </button>
-              ))}
-            </div>
-            <div className="search-bar">
-              <SearchIcon />
-              <input
-                type="text"
-                placeholder="Rechercher..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="product-grid">
-            {filtered.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-
-          {filtered.length === 0 && (
-            <div className="empty-state" style={{ height: 400 }}>
-              <SearchIcon size={40} />
-              <div className="empty-state-text">Aucun produit trouvé.<br />Essaie avec d'autres filtres.</div>
-            </div>
-          )}
-        </section>
-        <Footer />
-      </div>
-    );
-  };
-
-  // --- PRODUCT DETAIL ---
-  const ProductPage = () => {
-    const product = PRODUCTS.find((p) => p.id === pageData);
-    const [selectedSize, setSelectedSize] = useState(null);
-    const [selectedColorName, setSelectedColorName] = useState(null);
-    const [pdHeart, setPdHeart] = useState(false);
-    const pdLastTap = useRef(0);
-
-    if (!product) return null;
-
-    const brand = BRANDS.find((b) => b.id === product.brand);
-    const isFav = favorites.includes(product.id);
-    const activeColor = product.colors.find(c => c.name === selectedColorName) || product.colors[0];
-    const relatedProducts = PRODUCTS.filter((p) => p.brand === product.brand && p.id !== product.id);
-
-    const [currentImg, setCurrentImg] = useState(0);
-    const productImages = product.images || [product.image];
-
-    const handlePdDoubleTap = (e) => {
-      const now = Date.now();
-      if (now - pdLastTap.current < 400) {
-        if (!favorites.includes(product.id)) toggleFav(product.id);
-        setPdHeart(true);
-        setTimeout(() => setPdHeart(false), 1200);
-        pdLastTap.current = 0;
-      } else {
-        pdLastTap.current = now;
-      }
-    };
-
-    return (
-      <div className="page-wrapper">
-        <section className="section">
-          <div className="product-detail">
-            <div style={{ position: "relative" }}>
-              <div className="pd-image" onClick={handlePdDoubleTap} onMouseMove={(e) => {
-                const img = e.currentTarget.querySelector('img');
-                const rect = e.currentTarget.getBoundingClientRect();
-                const x = (e.clientX - rect.left) / rect.width;
-                const y = (e.clientY - rect.top) / rect.height;
-                const rotateY = (x - 0.5) * 14;
-                const rotateX = (0.5 - y) * 14;
-                img.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
-              }} onMouseLeave={(e) => {
-                const img = e.currentTarget.querySelector('img');
-                img.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)";
-              }}>
-                <img src={productImages[currentImg]} alt={product.name} />
-                {pdHeart && (
-                  <svg className="double-tap-heart" width="120" height="120" viewBox="0 0 24 24" fill="url(#dtHeart2)">
-                    <defs>
-                      <linearGradient id="dtHeart2" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#7B61FF" />
-                        <stop offset="50%" stopColor="#A855F7" />
-                        <stop offset="100%" stopColor="#FF61B6" />
-                      </linearGradient>
-                    </defs>
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                  </svg>
-                )}
-                {productImages.length > 1 && (
-                  <>
-                    <div onClick={(e) => { e.stopPropagation(); setCurrentImg(i => i > 0 ? i - 1 : productImages.length - 1); }} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 36, height: 36, background: "rgba(255,255,255,0.85)", backdropFilter: "blur(8px)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, color: "#0A0A0A", zIndex: 5 }}>‹</div>
-                    <div onClick={(e) => { e.stopPropagation(); setCurrentImg(i => i < productImages.length - 1 ? i + 1 : 0); }} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 36, height: 36, background: "rgba(255,255,255,0.85)", backdropFilter: "blur(8px)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, color: "#0A0A0A", zIndex: 5 }}>›</div>
-                  </>
-                )}
-              </div>
-              {productImages.length > 1 && (
-                <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 12 }}>
-                  {productImages.map((_, i) => (
-                    <div key={i} onClick={() => setCurrentImg(i)} style={{ width: i === currentImg ? 24 : 8, height: 8, borderRadius: 4, background: i === currentImg ? "var(--black)" : "var(--gray-300)", cursor: "pointer", transition: "all 0.3s" }} />
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="pd-info">
-              <div className="pd-brand" onClick={() => navigate("brand", brand?.id)}>
-                {brand?.name} <ArrowIcon size={12} />
-              </div>
-              <h1 className="pd-name">{product.name}</h1>
-              <div className="pd-price">{product.price} €</div>
-
-              <div className="pd-color-name">Couleur : {activeColor.name}</div>
-              <div className="pd-colors">
-                {product.colors.map((c) => (
-                  <div
-                    key={c.name}
-                    className={`pd-color-swatch ${activeColor.name === c.name ? "selected" : ""}`}
-                    style={{ background: c.hex }}
-                    onClick={() => setSelectedColorName(c.name)}
-                    title={c.name}
-                  />
-                ))}
-              </div>
-
-              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--gray-400)", marginBottom: 12 }}>{t.size}</div>
-              <div className="pd-sizes">
-                {product.sizes.map((s) => (
-                  <button
-                    key={s}
-                    className={`pd-size ${selectedSize === s ? "selected" : ""}`}
-                    onClick={() => setSelectedSize(s)}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-
-              <div className="pd-actions">
-                <button
-                  className="btn btn-dark pd-add-to-cart"
-                  style={{ justifyContent: "center", opacity: selectedSize ? 1 : 0.4 }}
-                  onClick={() => selectedSize && addToCart(product, selectedSize)}
-                  disabled={!selectedSize}
-                >
-                  {selectedSize ? t.addToCart : (lang === "fr" ? "Sélectionne une taille" : "Select a size")}
-                </button>
-                <button
-                  className={`pd-fav-btn ${isFav ? "is-fav" : ""}`}
-                  onClick={() => toggleFav(product.id)}
-                >
-                  <HeartIcon size={20} gradient={isFav} />
-                </button>
-              </div>
-
-              <div className="pd-story">
-                <div className="pd-story-title">The Story Behind</div>
-                <p className="pd-story-text">"{product.story}"</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {relatedProducts.length > 0 && (
-          <section className="section" style={{ paddingTop: 0 }}>
-            <div className="section-header">
-              <h2 className="section-title">Du même créateur</h2>
-            </div>
-            <div className="product-grid">
-              {relatedProducts.map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
-            </div>
-          </section>
-        )}
-        <Footer />
-      </div>
-    );
-  };
-
-  // --- BRANDS LIST ---
-  const BrandsPage = () => (
-    <div className="page-wrapper">
-      <section className="section" style={{ paddingTop: 96 }}>
-        <h1 className="section-title" style={{ marginBottom: 8 }}>Les Marques</h1>
-        <p className="section-subtitle" style={{ marginBottom: 48 }}>
-          Chaque marque est sélectionnée à la main. Pas de mass market, pas de compromis.
-        </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 24 }}>
-          {BRANDS.map((b) => (
-            <div
-              key={b.id}
-              style={{
-                position: "relative",
-                aspectRatio: "4/5",
-                overflow: "hidden",
-                cursor: "pointer",
-                background: "var(--black)",
-              }}
-              onClick={() => navigate("brand", b.id)}
-            >
-              <img
-                src={b.image}
-                alt={b.name}
-                style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.5, transition: "all 0.6s var(--ease)" }}
-                onMouseOver={(e) => { e.target.style.opacity = 0.3; e.target.style.transform = "scale(1.05)"; }}
-                onMouseOut={(e) => { e.target.style.opacity = 0.5; e.target.style.transform = "scale(1)"; }}
-              />
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: 32, color: "var(--white)", zIndex: 2 }}>
-                <div style={{ fontSize: 11, letterSpacing: 2, textTransform: "uppercase", opacity: 0.5, marginBottom: 8 }}>
-                  {b.city} — Est. {b.year}
-                </div>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: "clamp(28px, 3vw, 40px)", fontWeight: 700, letterSpacing: -1, marginBottom: 8 }}>
-                  {b.name}
-                </div>
-                <div style={{ fontSize: 14, opacity: 0.6, fontStyle: "italic", fontWeight: 300 }}>
-                  {b.tagline}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-      <Footer />
-    </div>
-  );
-
-  // --- BRAND DETAIL ---
-  const BrandPage = () => {
-    const brand = BRANDS.find((b) => b.id === pageData);
-    if (!brand) return null;
-    const brandProducts = PRODUCTS.filter((p) => p.brand === brand.id);
-
-    return (
-      <div className="page-wrapper">
-        <div className="brand-hero">
-          <div className="brand-hero-bg"><img src={brand.image} alt={brand.name} /></div>
-          <div className="brand-hero-overlay" />
-          <div className="brand-hero-content">
-            <h1 className="brand-hero-name">{brand.name}</h1>
-            <div className="brand-hero-tagline">{brand.tagline}</div>
-            <div className="brand-hero-meta">
-              <span>{brand.city}</span>
-              <span>Est. {brand.year}</span>
-              <span>{brandProducts.length} pièces</span>
-            </div>
-          </div>
-        </div>
-
-        <section className="section">
-          <p className="brand-story">{brand.story}</p>
-          <div className="section-header">
-            <h2 className="section-title">Les pièces</h2>
-          </div>
-          <div className="product-grid">
-            {brandProducts.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-        </section>
-        <Footer />
-      </div>
-    );
-  };
-
-  // --- LOOKBOOKS LIST ---
-  const LookbooksPage = () => (
-    <div className="page-wrapper">
-      <section className="section" style={{ paddingTop: 96 }}>
-        <h1 className="section-title" style={{ marginBottom: 8 }}>Lookbooks</h1>
-        <p className="section-subtitle" style={{ marginBottom: 48 }}>
-          Des éditos pour découvrir nos pièces autrement
-        </p>
-        <div className="lookbook-grid">
-          {LOOKBOOKS.map((lb) => (
-            <div key={lb.id} className="lookbook-card" onClick={() => navigate("lookbook", lb.id)}>
-              <img src={lb.image} alt={lb.title} loading="lazy" />
-              <div className="lookbook-card-content">
-                <div className="lookbook-card-sub">{lb.subtitle}</div>
-                <h3 className="lookbook-card-title">{lb.title}</h3>
-                <p className="lookbook-card-desc">{lb.description}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-      <Footer />
-    </div>
-  );
-
-  // --- LOOKBOOK DETAIL ---
-  const LookbookPage = () => {
-    const lb = LOOKBOOKS.find((l) => l.id === pageData);
-    if (!lb) return null;
-    const lbProducts = lb.products.map((pid) => PRODUCTS.find((p) => p.id === pid)).filter(Boolean);
-
-    return (
-      <div className="page-wrapper">
-        <div className="lookbook-hero">
-          <div className="lookbook-hero-bg"><img src={lb.image} alt={lb.title} /></div>
-          <div className="lookbook-hero-content">
-            <div className="lookbook-hero-sub">{lb.subtitle}</div>
-            <h1 className="lookbook-hero-title">{lb.title}</h1>
-            <p className="lookbook-hero-desc">{lb.description}</p>
-          </div>
-        </div>
-
-        {lb.secondImage && (
-          <div style={{ width: "100%", aspectRatio: "16/9", overflow: "hidden" }}>
-            <img src={lb.secondImage} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          </div>
-        )}
-
-        <section className="section">
-          <div className="section-header">
-            <h2 className="section-title">Shop the look</h2>
-          </div>
-          <div className="product-grid">
-            {lbProducts.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
-        </section>
-        <Footer />
-      </div>
-    );
-  };
-
-  // --- MANIFESTO ---
-  const ManifestoPage = () => (
-    <div className="page-wrapper">
-      <section className="manifesto-section" style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-        <div style={{ position: "relative", zIndex: 1, maxWidth: 720, margin: "0 auto" }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, textTransform: "uppercase", opacity: 0.4, marginBottom: 40 }}>
-            Le Manifesto UNEEK
-          </div>
-          <h1 className="manifesto-quote" style={{ textAlign: "left", marginBottom: 48, fontSize: "clamp(36px, 5vw, 56px)" }}>
-            The future belongs to those who <span className="gradient-text">create.</span>
-          </h1>
-          <div style={{ textAlign: "left", fontSize: "clamp(16px, 1.8vw, 19px)", lineHeight: 1.9, opacity: 0.55, fontWeight: 300 }}>
-            <p style={{ marginBottom: 24 }}>
-              La mode ne devrait pas être un uniforme. Pas un algorithme qui te dit quoi porter. Pas une tendance TikTok qui s'oublie en deux semaines.
-            </p>
-            <p style={{ marginBottom: 24 }}>
-              La mode, c'est une expression. Un choix. Un acte créatif. Et les vrais créateurs — ceux qui dessinent dans leur chambre, qui cousent dans leur garage, qui rêvent plus grand que les enseignes qu'on voit partout — méritent d'être vus.
-            </p>
-            <p style={{ marginBottom: 24 }}>
-              UNEEK existe pour ça. Pour donner une vitrine aux marques indépendantes. Pour offrir à chacun la possibilité de porter quelque chose qui a une histoire, un nom, une âme.
-            </p>
-            <p style={{ marginBottom: 24 }}>
-              On ne vend pas du volume. On vend du caractère. Chaque pièce sur UNEEK a été sélectionnée, pas générée. Chaque marque a été choisie, pas acceptée par défaut.
-            </p>
-            <p>
-              Parce que s'habiller, c'est se raconter. Et ton histoire mérite mieux qu'un copier-coller.
-            </p>
-          </div>
-          <div style={{ marginTop: 48, paddingTop: 32, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-            <div style={{ fontStyle: "italic", opacity: 0.4, fontSize: 15, fontWeight: 300 }}>
-              "Dress different. Feel different."
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="section" style={{ textAlign: "center", background: "var(--white)", color: "var(--black)" }}>
-        <h2 className="section-title" style={{ marginBottom: 24 }}>Prêt à découvrir ?</h2>
-        <p style={{ fontSize: 16, color: "var(--gray-500)", marginBottom: 32, fontWeight: 300 }}>
-          Explore les marques qui font la mode de demain.
-        </p>
-        <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
-          <button className="btn btn-dark" onClick={() => navigate("shop")}>
-            {t.manifestoBtn} <ArrowIcon size={14} />
-          </button>
-          <button className="btn btn-outline" style={{ color: "var(--black)", borderColor: "var(--gray-300)" }} onClick={() => navigate("brands")}>
-            Voir les Marques
-          </button>
-        </div>
-      </section>
-
-      <section style={{ background: "var(--black)", color: "var(--white)", padding: "clamp(64px, 8vw, 96px) clamp(16px, 4vw, 48px)" }}>
-        <div style={{ maxWidth: 700, margin: "0 auto" }}>
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(24px, 3vw, 36px)", fontWeight: 700, letterSpacing: -1, marginBottom: 48 }}>{t.faqTitle}</h2>
-          <FaqSection />
-        </div>
-      </section>
-      <Footer />
-    </div>
-  );
-
-  // --- CHECKOUT PAGE ---
-  const CheckoutPage = () => {
-    const [step, setStep] = useState("form"); // form | success
-    const [form, setForm] = useState({ prenom: "", nom: "", email: "", adresse: "", ville: "", code: "", pays: "Belgique" });
-
-    const handleSubmit = () => {
-      if (!form.prenom || !form.nom || !form.email || !form.adresse || !form.ville || !form.code) {
-        showToast(lang === "fr" ? "Remplis tous les champs" : "Please fill all fields");
-        return;
-      }
-      setStep("success");
-    };
-
-    if (step === "success") {
-      return (
-        <div className="page-wrapper">
-          <section className="section" style={{ paddingTop: 120, minHeight: "80vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
-            <div style={{ width: 80, height: 80, borderRadius: "50%", background: "var(--gradient)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 32 }}>
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2}><path d="M20 6L9 17l-5-5"/></svg>
-            </div>
-            <h1 className="section-title" style={{ marginBottom: 16 }}>Commande confirmée !</h1>
-            <p style={{ fontSize: 16, color: "var(--gray-500)", fontWeight: 300, maxWidth: 440, lineHeight: 1.7, marginBottom: 12 }}>
-              Merci <strong>{form.prenom}</strong> ! Ta commande de <strong>{cart.length} pièce{cart.length > 1 ? "s" : ""}</strong> pour un total de <strong>{cartTotal} €</strong> a bien été enregistrée.
-            </p>
-            <p style={{ fontSize: 14, color: "var(--gray-400)", fontWeight: 300, marginBottom: 40 }}>
-              Un email de confirmation a été envoyé à {form.email}
-            </p>
-            <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
-              <button className="btn btn-dark" onClick={() => { setCart([]); navigate("shop"); }}>
-                Continuer le shopping <ArrowIcon size={14} />
-              </button>
-              <button className="btn" style={{ border: "1px solid var(--gray-300)", color: "var(--black)" }} onClick={() => { setCart([]); navigate("home"); }}>
-                {t.backHome}
-              </button>
-            </div>
-          </section>
-          <Footer />
-        </div>
-      );
-    }
-
-    return (
-      <div className="page-wrapper">
-        <section className="section" style={{ paddingTop: 112 }}>
-          <h1 className="section-title" style={{ marginBottom: 48 }}>Checkout</h1>
-          <div style={{ display: "grid", gridTemplateColumns: "clamp(1fr, 100%, 1fr) clamp(0px, 380px, 380px)", gap: 64, alignItems: "start" }} className="checkout-grid">
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--gray-400)", marginBottom: 24 }}>Informations de livraison</div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 500, color: "var(--gray-500)", display: "block", marginBottom: 6 }}>Prénom</label>
-                  <input type="text" value={form.prenom} onChange={e => setForm({...form, prenom: e.target.value})} placeholder="John" style={{ width: "100%", padding: "14px 16px", border: "1px solid var(--gray-200)", fontSize: 14, fontFamily: "var(--font-body)", outline: "none", transition: "border-color 0.3s" }} onFocus={e => e.target.style.borderColor="var(--black)"} onBlur={e => e.target.style.borderColor="var(--gray-200)"} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 500, color: "var(--gray-500)", display: "block", marginBottom: 6 }}>Nom</label>
-                  <input type="text" value={form.nom} onChange={e => setForm({...form, nom: e.target.value})} placeholder="Doe" style={{ width: "100%", padding: "14px 16px", border: "1px solid var(--gray-200)", fontSize: 14, fontFamily: "var(--font-body)", outline: "none", transition: "border-color 0.3s" }} onFocus={e => e.target.style.borderColor="var(--black)"} onBlur={e => e.target.style.borderColor="var(--gray-200)"} />
-                </div>
-              </div>
-
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ fontSize: 12, fontWeight: 500, color: "var(--gray-500)", display: "block", marginBottom: 6 }}>Email</label>
-                <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="john@exemple.com" style={{ width: "100%", padding: "14px 16px", border: "1px solid var(--gray-200)", fontSize: 14, fontFamily: "var(--font-body)", outline: "none", transition: "border-color 0.3s" }} onFocus={e => e.target.style.borderColor="var(--black)"} onBlur={e => e.target.style.borderColor="var(--gray-200)"} />
-              </div>
-
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ fontSize: 12, fontWeight: 500, color: "var(--gray-500)", display: "block", marginBottom: 6 }}>Adresse</label>
-                <input type="text" value={form.adresse} onChange={e => setForm({...form, adresse: e.target.value})} placeholder="Rue de la Mode 42" style={{ width: "100%", padding: "14px 16px", border: "1px solid var(--gray-200)", fontSize: 14, fontFamily: "var(--font-body)", outline: "none", transition: "border-color 0.3s" }} onFocus={e => e.target.style.borderColor="var(--black)"} onBlur={e => e.target.style.borderColor="var(--gray-200)"} />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 40 }}>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 500, color: "var(--gray-500)", display: "block", marginBottom: 6 }}>Ville</label>
-                  <input type="text" value={form.ville} onChange={e => setForm({...form, ville: e.target.value})} placeholder="Hasselt" style={{ width: "100%", padding: "14px 16px", border: "1px solid var(--gray-200)", fontSize: 14, fontFamily: "var(--font-body)", outline: "none", transition: "border-color 0.3s" }} onFocus={e => e.target.style.borderColor="var(--black)"} onBlur={e => e.target.style.borderColor="var(--gray-200)"} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 500, color: "var(--gray-500)", display: "block", marginBottom: 6 }}>Code postal</label>
-                  <input type="text" value={form.code} onChange={e => setForm({...form, code: e.target.value})} placeholder="3500" style={{ width: "100%", padding: "14px 16px", border: "1px solid var(--gray-200)", fontSize: 14, fontFamily: "var(--font-body)", outline: "none", transition: "border-color 0.3s" }} onFocus={e => e.target.style.borderColor="var(--black)"} onBlur={e => e.target.style.borderColor="var(--gray-200)"} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, fontWeight: 500, color: "var(--gray-500)", display: "block", marginBottom: 6 }}>Pays</label>
-                  <select value={form.pays} onChange={e => setForm({...form, pays: e.target.value})} style={{ width: "100%", padding: "14px 16px", border: "1px solid var(--gray-200)", fontSize: 14, fontFamily: "var(--font-body)", outline: "none", background: "var(--white)", cursor: "pointer" }}>
-                    <option>Belgique</option>
-                    <option>France</option>
-                    <option>Pays-Bas</option>
-                    <option>Luxembourg</option>
-                    <option>Allemagne</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--gray-400)", marginBottom: 24 }}>Paiement</div>
-              <div style={{ padding: 32, border: "1px solid var(--gray-200)", textAlign: "center", marginBottom: 24 }}>
-                <div style={{ fontSize: 14, color: "var(--gray-400)", fontWeight: 300 }}>💳 Paiement sécurisé par Stripe</div>
-                <div style={{ fontSize: 12, color: "var(--gray-300)", marginTop: 8 }}>(Simulation — aucun paiement réel)</div>
-              </div>
-            </div>
-
-            <div style={{ background: "var(--gray-100)", padding: 36, position: "sticky", top: 96 }}>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, marginBottom: 28 }}>Récapitulatif</div>
-
-              {cart.map((item, i) => (
-                <div key={i} style={{ display: "flex", gap: 12, marginBottom: 16, paddingBottom: 16, borderBottom: "1px solid var(--gray-200)" }}>
-                  <div style={{ width: 56, height: 72, overflow: "hidden", flexShrink: 0, background: "var(--gray-200)" }}>
-                    <img src={item.image} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 10, letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--gray-400)" }}>{BRANDS.find(b => b.id === item.brand)?.name}</div>
-                    <div style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600 }}>{item.name}</div>
-                    <div style={{ fontSize: 12, color: "var(--gray-500)", marginTop: 2 }}>{t.sizeItem}{item.selectedSize}</div>
-                  </div>
-                  <div style={{ fontSize: 14, fontWeight: 500, flexShrink: 0 }}>{item.price} €</div>
-                </div>
-              ))}
-
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 12, color: "var(--gray-600)", fontWeight: 300 }}>
-                <span>Sous-total</span><span>{cartTotal} €</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 12, color: "var(--gray-600)", fontWeight: 300 }}>
-                <span>Livraison</span><span>Gratuite</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 18, fontWeight: 600, paddingTop: 20, borderTop: "1px solid var(--gray-300)", marginTop: 20, marginBottom: 28 }}>
-                <span>Total</span>
-                <span style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 700 }}>{cartTotal} €</span>
-              </div>
-
-              <button className="btn btn-gradient" style={{ width: "100%", justifyContent: "center" }} onClick={handleSubmit}>
-                Confirmer la commande <ArrowIcon size={14} />
-              </button>
-
-              <div style={{ marginTop: 16, textAlign: "center" }}>
-                <span className="section-link" style={{ fontSize: 12, justifyContent: "center" }} onClick={() => navigate("shop")}>
-                  {t.backShop}
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
-        <Footer />
-      </div>
-    );
-  };
-
-  // --- FAQ SECTION ---
-  const FaqSection = () => {
-    const [openFaq, setOpenFaq] = useState(null);
-    const faqs = [
-      { q: "C'est quoi UNEEK exactement ?", a: "UNEEK est une marketplace qui regroupe des marques de mode indépendantes soigneusement sélectionnées. On ne vend pas nos propres vêtements — on donne une vitrine aux créateurs qui méritent d'être vus." },
-      { q: "Comment sont sélectionnées les marques ?", a: "Chaque marque est évaluée sur la qualité de ses créations, son originalité et son histoire. On refuse volontairement le mass market. Si une marque est sur UNEEK, c'est qu'elle a quelque chose d'unique." },
-      { q: "Quels sont les délais de livraison ?", a: "Les délais varient selon le créateur, généralement entre 3 et 7 jours ouvrés en Belgique et en France. Chaque commande est préparée directement par la marque." },
-      { q: "Comment devenir partenaire UNEEK ?", a: "Si tu es un créateur indépendant, tu peux postuler via notre formulaire 'Devenir Partenaire' accessible depuis le menu. On étudie chaque candidature avec attention." },
-    ];
-    return (
+// FOOTER
+function footerHTML(){
+  return `<footer class="footer">
+    <div class="footer-top">
       <div>
-        {faqs.map((faq, i) => (
-          <div key={i} className="faq-item" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
-            <div className="faq-question">
-              <span>{faq.q}</span>
-              <span className={`faq-toggle ${openFaq === i ? "open" : ""}`}>+</span>
-            </div>
-            <div className={`faq-answer ${openFaq === i ? "open" : ""}`}>{faq.a}</div>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  // --- PARTNER PAGE ---
-  const PartnerPage = () => {
-    const [partnerForm, setPartnerForm] = useState({ brand: "", name: "", email: "", city: "", website: "", instagram: "", description: "", category: "Mode" });
-    const [submitted, setSubmitted] = useState(false);
-
-    if (submitted) {
-      return (
-        <div className="page-wrapper">
-          <section className="section" style={{ paddingTop: 120, minHeight: "80vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}>
-            <div style={{ width: 80, height: 80, borderRadius: "50%", background: "var(--gradient)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 32 }}>
-              <StarIcon size={32} filled color="#fff" />
-            </div>
-            <h1 className="section-title" style={{ marginBottom: 16 }}>Candidature envoyée !</h1>
-            <p style={{ fontSize: 16, color: "var(--gray-500)", fontWeight: 300, maxWidth: 480, lineHeight: 1.7, marginBottom: 12 }}>
-              Merci <strong>{partnerForm.name}</strong> ! On a bien reçu ta candidature pour <strong>{partnerForm.brand}</strong>. Notre équipe l'étudie et te recontacte sous 48h.
-            </p>
-            <p style={{ fontSize: 14, color: "var(--gray-400)", fontWeight: 300, marginBottom: 40 }}>
-              En attendant, explore les marques déjà sur UNEEK.
-            </p>
-            <button className="btn btn-dark" onClick={() => navigate("brands")}>
-              Voir les Marques <ArrowIcon size={14} />
-            </button>
-          </section>
-          <Footer />
+        <div class="footer-brand">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="163 276 484 460" width="20" height="20"><path d="M 405 276 L 461.9 451.7 L 646.1 451.7 L 497.1 560.3 L 554 735.8 L 405 627.3 L 256 735.8 L 312.9 560.3 L 163.9 451.7 L 348.1 451.7 Z" fill="#fff"/></svg>
+          Uneek
         </div>
-      );
-    }
+        <div class="footer-tagline">La mode indépendante, créée pour ceux qui refusent de ressembler à tout le monde. Dress different. Feel different.</div>
+      </div>
+      <div>
+        <div class="footer-col-title">Navigation</div>
+        <span class="footer-link" onclick="navigate('shop')">Shop</span>
+        <span class="footer-link" onclick="navigate('brands')">Marques</span>
+        <span class="footer-link" onclick="navigate('manifesto')">Manifesto</span>
+      </div>
+      <div>
+        <div class="footer-col-title">Support</div>
+        <span class="footer-link" onclick="navigate('manifesto')">FAQ</span>
+        <span class="footer-link" onclick="navigate('cgv')">Livraison & Retours</span>
+        <span class="footer-link" onclick="navigate('partner')">Devenir Partenaire</span>
+        <span class="footer-link" onclick="window.location.href='mailto:contact@uneek.store'">Contact</span>
+      </div>
+      <div>
+        <div class="footer-col-title">Légal</div>
+        <span class="footer-link" onclick="navigate('cgv')">CGV</span>
+        <span class="footer-link" onclick="navigate('privacy')">Politique de confidentialité</span>
+        <span class="footer-link" onclick="navigate('legal')">Mentions légales</span>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 UNEEK. The future belongs to those who create.</span>
+      <span>Made with ★ in Belgium</span>
+    </div>
+  </footer>`;
+}
 
-    return (
-      <div className="page-wrapper">
-        <section style={{ background: "var(--black)", color: "var(--white)", padding: "clamp(120px, 15vw, 180px) clamp(16px, 4vw, 48px) clamp(64px, 8vw, 96px)", textAlign: "center", position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", width: 600, height: 600, background: "radial-gradient(circle, rgba(123,97,255,0.1) 0%, transparent 70%)", top: "50%", left: "50%", transform: "translate(-50%, -50%)", pointerEvents: "none" }}></div>
-          <div style={{ position: "relative", zIndex: 1 }}>
-            <div style={{ fontSize: 11, letterSpacing: 3, textTransform: "uppercase", opacity: 0.4, marginBottom: 24 }}>Pour les créateurs</div>
-            <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 800, letterSpacing: -2, marginBottom: 24 }}>Devenir Partenaire <span className="gradient-text">UNEEK</span></h1>
-            <p style={{ fontSize: "clamp(15px, 1.8vw, 18px)", opacity: 0.5, fontWeight: 300, maxWidth: 500, margin: "0 auto", lineHeight: 1.7 }}>
-              {lang === "fr" ? "Tu crées des pièces uniques ? Tu mérites une vitrine à la hauteur. Rejoins la communauté UNEEK." : "You create unique pieces? You deserve a worthy showcase. Join the UNEEK community."}
-            </p>
+// NAVIGATE
+function navigate(page, data=null){
+  currentPage=page; pageData=data;
+  closeMobileMenu();
+  window.scrollTo({top:0,behavior:'instant'});
+  renderPage();
+  // Update active nav link
+  document.querySelectorAll('.nav-link').forEach(el=>{
+    el.classList.toggle('active', el.getAttribute('onclick')===`navigate('${page}')`);
+  });
+}
+
+// PAGES
+function homePage(){
+  return `<div>
+    <section class="hero">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <p class="hero-tag">Created by Independent Fashion</p>
+        <h1 class="hero-title">They wear what's told.<br>You wear what's <span class="gradient-text">special.</span></h1>
+        <p class="hero-subtitle">UNEEK regroupe les marques indépendantes les plus créatives. Des pièces uniques, sélectionnées pour ceux qui refusent l'ordinaire.</p>
+        <div class="hero-cta">
+          <button class="btn btn-primary" onclick="navigate('shop')">Explorer le Shop <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <div><h2 class="section-title">Sélection du moment</h2><p class="section-subtitle">Les pièces qui font parler</p></div>
+        <button class="section-link" onclick="navigate('shop')">Voir tout <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+      </div>
+      <div class="product-grid">${[0,1,2,3].map(i=>productCardHTML(PRODUCTS[i])).join('')}</div>
+    </section>
+
+    <section class="section" style="padding-top:0">
+      <div class="section-header">
+        <div><h2 class="section-title">Les marques</h2><p class="section-subtitle">Créateurs indépendants, sélectionnés avec soin</p></div>
+        <button class="section-link" onclick="navigate('brands')">Toutes les marques <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+      </div>
+      <div class="brand-strip">
+        ${BRANDS.map(b=>`<div class="brand-chip" onclick="navigate('brand',${JSON.stringify(b.id)})"><span class="brand-chip-name">${b.name}</span><span class="brand-chip-city">${b.city} — ${b.year}</span></div>`).join('')}
+      </div>
+    </section>
+
+    <section class="manifesto-section">
+      <h2 class="manifesto-quote">The future belongs<br>to those who <span class="gradient-text">create.</span></h2>
+      <p class="manifesto-text">On ne vend pas des vêtements. On donne une voix aux créateurs qui osent, et un style à ceux qui refusent de se fondre dans la masse.</p>
+      <button class="btn btn-primary" onclick="navigate('manifesto')">Lire le Manifesto</button>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <div><h2 class="section-title">Nouveautés</h2><p class="section-subtitle">Les dernières pièces ajoutées</p></div>
+        <button class="section-link" onclick="navigate('shop')">Tout voir <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+      </div>
+      <div class="product-grid">${[7,10,4,2].map(i=>productCardHTML(PRODUCTS[i])).join('')}</div>
+    </section>
+
+    ${footerHTML()}
+  </div>`;
+}
+
+function shopPage(){
+  return `<div style="padding-top:96px">
+    <section class="section">
+      <h1 class="section-title" style="margin-bottom:8px">Shop</h1>
+      <p style="font-size:14px;color:var(--gray-500);margin-bottom:32px;font-weight:300">${PRODUCTS.length} pièces disponibles</p>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:40px;flex-wrap:wrap">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          ${['Tous','Tops','Bottoms','Outerwear','Accessories'].map(c=>`<button class="filter-chip ${c==='Tous'?'active':''}" onclick="filterShop('${c}',this)">${c}</button>`).join('')}
+          <span style="width:1px;height:20px;background:var(--gray-200);display:inline-block;margin:0 4px"></span>
+          ${BRANDS.map(b=>`<button class="filter-chip" onclick="filterBrand('${b.id}',this)">${b.name}</button>`).join('')}
+        </div>
+        <div class="search-bar" style="width:260px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" placeholder="Rechercher..." oninput="searchShop(this.value)">
+        </div>
+      </div>
+      <div class="product-grid" id="shop-grid">${PRODUCTS.map(p=>productCardHTML(p)).join('')}</div>
+    </section>
+    ${footerHTML()}
+  </div>`;
+}
+
+let activeCategory='Tous', activeBrand=null, searchQuery='';
+function filterShop(cat,btn){
+  activeCategory=cat;
+  document.querySelectorAll('.filter-chip').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderShopGrid();
+}
+function filterBrand(brandId,btn){
+  activeBrand=activeBrand===brandId?null:brandId;
+  document.querySelectorAll('.filter-chip').forEach(b=>{if(b.getAttribute('onclick')===`filterBrand('${brandId}',this)`) b.classList.toggle('active');});
+  renderShopGrid();
+}
+function searchShop(val){searchQuery=val;renderShopGrid();}
+function renderShopGrid(){
+  const grid=document.getElementById('shop-grid');
+  if(!grid) return;
+  const filtered=PRODUCTS.filter(p=>{
+    const catOk=activeCategory==='Tous'||p.category===activeCategory;
+    const brandOk=!activeBrand||p.brand===activeBrand;
+    const searchOk=!searchQuery||p.name.toLowerCase().includes(searchQuery.toLowerCase())||p.brand.toLowerCase().includes(searchQuery.toLowerCase());
+    return catOk&&brandOk&&searchOk;
+  });
+  grid.innerHTML=filtered.length>0?filtered.map(p=>productCardHTML(p)).join(''):'<div style="grid-column:1/-1;text-align:center;padding:80px 0;color:var(--gray-400);font-size:14px">Aucun produit trouvé.</div>';
+}
+
+function productPage(){
+  const p=PRODUCTS.find(x=>x.id===pageData);
+  if(!p) return '<div style="padding:120px 24px;text-align:center"><h2>Produit introuvable</h2></div>';
+  const b=BRANDS.find(x=>x.id===p.brand);
+  const isFav=favorites.includes(p.id);
+  const related=PRODUCTS.filter(x=>x.brand===p.brand&&x.id!==p.id);
+  return `<div>
+    <section class="section" style="padding-top:96px">
+      <div class="pd-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start">
+        <div class="pd-sticky" style="aspect-ratio:3/4;overflow:hidden;background:var(--gray-100);border-radius:var(--radius-lg);position:sticky;top:96px"
+             onmousemove="tilt(event,this)" onmouseleave="tiltReset(this)">
+          <img src="${p.image}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease-out">
+        </div>
+        <div style="padding-top:32px">
+          <div style="font-size:12px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px;cursor:pointer" onclick="navigate('brand','${b?.id}')">${b?.name||''} →</div>
+          <h1 style="font-family:var(--font-display);font-size:clamp(28px,3vw,40px);font-weight:700;letter-spacing:-1px;margin-bottom:8px">${p.name}</h1>
+          <div style="font-size:20px;color:var(--gray-600);margin-bottom:32px;font-weight:300">${p.price} €</div>
+
+          <div style="font-size:13px;color:var(--gray-500);margin-bottom:12px" id="color-label">Couleur : ${p.colors[0].name}</div>
+          <div style="display:flex;gap:10px;margin-bottom:28px">
+            ${p.colors.map((c,i)=>`<div onclick="selectColor(this,'${c.name}')" style="width:32px;height:32px;border-radius:50%;background:${c.hex};cursor:pointer;border:2px solid ${i===0?'var(--black)':'transparent'};${i===0?'box-shadow:0 0 0 2px var(--white),0 0 0 4px var(--black)':''}transition:all 0.2s" title="${c.name}"></div>`).join('')}
           </div>
-        </section>
 
-        <section className="section" style={{ maxWidth: 640, margin: "0 auto" }}>
-          <div className="partner-form">
-            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--gray-400)", marginBottom: 24 }}>Ta marque</div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px">Taille</div>
+          <div style="display:flex;gap:8px;margin-bottom:32px;flex-wrap:wrap" id="size-btns">
+            ${p.sizes.map(s=>`<button class="pd-size" onclick="selectSize(this,'${s}')">${s}</button>`).join('')}
+          </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-              <div><label>Nom de ta marque</label><input type="text" value={partnerForm.brand} onChange={e => setPartnerForm({...partnerForm, brand: e.target.value})} placeholder="Ex: Brouillon" /></div>
-              <div><label>Ton nom</label><input type="text" value={partnerForm.name} onChange={e => setPartnerForm({...partnerForm, name: e.target.value})} placeholder="Prénom Nom" /></div>
+          <div style="display:flex;gap:12px;margin-bottom:32px">
+            <button id="add-btn" class="btn btn-dark" style="flex:1;justify-content:center;opacity:0.4" onclick="doAddToCart(${p.id})" disabled>Sélectionne une taille</button>
+            <button class="pd-fav-btn ${isFav?'is-fav':''}" data-fav="${p.id}" onclick="toggleFav(${p.id})" style="width:52px;height:52px;border:1px solid var(--gray-200);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:var(--radius)">
+              ${isFav?'<svg width="20" height="20" viewBox="0 0 24 24" fill="url(#heartGrad)" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'}
+            </button>
+          </div>
+
+          <div style="padding:28px 0;border-top:1px solid var(--gray-200)">
+            <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px">The Story Behind</div>
+            <p style="font-size:14px;line-height:1.7;color:var(--gray-500);font-style:italic;font-weight:300">"${p.story}"</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    ${related.length>0?`<section class="section" style="padding-top:0"><div class="section-header"><h2 class="section-title">Du même créateur</h2></div><div class="product-grid">${related.map(x=>productCardHTML(x)).join('')}</div></section>`:''}
+    ${footerHTML()}
+  </div>`;
+}
+
+let selectedSize=null;
+function selectSize(btn,size){
+  selectedSize=size;
+  document.querySelectorAll('.pd-size').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const addBtn=document.getElementById('add-btn');
+  addBtn.textContent='Ajouter au panier';addBtn.style.opacity='1';addBtn.disabled=false;
+}
+function selectColor(el,name){
+  document.getElementById('color-label').textContent='Couleur : '+name;
+  el.parentElement.querySelectorAll('div').forEach(d=>{d.style.border='2px solid transparent';d.style.boxShadow='';});
+  el.style.border='2px solid var(--black)';el.style.boxShadow='0 0 0 2px var(--white),0 0 0 4px var(--black)';
+}
+function doAddToCart(id){
+  if(!selectedSize) return;
+  addToCart(id,selectedSize);
+}
+
+function brandsPage(){
+  return `<div>
+    <section class="section" style="padding-top:96px">
+      <h1 class="section-title" style="margin-bottom:8px">Les Marques</h1>
+      <p style="font-size:14px;color:var(--gray-500);margin-bottom:48px;font-weight:300">Chaque marque est sélectionnée à la main. Pas de mass market, pas de compromis.</p>
+      <div class="brands-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px">
+        ${BRANDS.map(b=>`
+          <div style="position:relative;aspect-ratio:4/5;overflow:hidden;cursor:pointer;background:var(--black);border-radius:var(--radius-lg)" onclick="navigate('brand','${b.id}')"
+               onmouseover="this.querySelector('img').style.opacity=0.3;this.querySelector('img').style.transform='scale(1.05)'"
+               onmouseout="this.querySelector('img').style.opacity=0.5;this.querySelector('img').style.transform='scale(1)'">
+            <img src="${b.image}" alt="${b.name}" style="width:100%;height:100%;object-fit:cover;opacity:0.5;transition:all 0.6s">
+            <div style="position:absolute;bottom:0;left:0;right:0;padding:32px;color:var(--white)">
+              <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;opacity:0.5;margin-bottom:8px">${b.city} — Est. ${b.year}</div>
+              <div style="font-family:var(--font-display);font-size:clamp(28px,3vw,40px);font-weight:700;letter-spacing:-1px;margin-bottom:8px">${b.name}</div>
+              <div style="font-size:14px;opacity:0.6;font-style:italic;font-weight:300">${b.tagline}</div>
             </div>
+          </div>`).join('')}
+      </div>
+    </section>
+    ${footerHTML()}
+  </div>`;
+}
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-              <div><label>Email</label><input type="email" value={partnerForm.email} onChange={e => setPartnerForm({...partnerForm, email: e.target.value})} placeholder="hello@tamarque.com" /></div>
-              <div><label>Ville</label><input type="text" value={partnerForm.city} onChange={e => setPartnerForm({...partnerForm, city: e.target.value})} placeholder="Bruxelles" /></div>
+function brandPage(){
+  const b=BRANDS.find(x=>x.id===pageData);
+  if(!b) return brandsPage();
+  const bp=PRODUCTS.filter(x=>x.brand===b.id);
+  return `<div>
+    <div style="height:70vh;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--black)">
+      <img src="${b.image}" alt="${b.name}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.4">
+      <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.8),transparent)"></div>
+      <div style="position:relative;z-index:2;text-align:center;color:var(--white)">
+        <h1 style="font-family:var(--font-display);font-size:clamp(48px,7vw,80px);font-weight:800;letter-spacing:-2px">${b.name}</h1>
+        <div style="font-size:16px;opacity:0.5;font-style:italic;margin-top:8px;font-weight:300">${b.tagline}</div>
+        <div style="display:flex;gap:24px;justify-content:center;margin-top:20px;font-size:12px;opacity:0.4;letter-spacing:1px;text-transform:uppercase">
+          <span>${b.city}</span><span>Est. ${b.year}</span><span>${bp.length} pièces</span>
+        </div>
+      </div>
+    </div>
+    <section class="section">
+      <p style="font-size:17px;line-height:1.9;color:var(--gray-600);max-width:700px;font-weight:300;margin-bottom:48px">${b.story}</p>
+      <div class="section-header"><h2 class="section-title">Les pièces</h2></div>
+      <div class="product-grid">${bp.map(p=>productCardHTML(p)).join('')}</div>
+    </section>
+    ${footerHTML()}
+  </div>`;
+}
+
+function manifestoPage(){
+  const faqs=[
+    ["C'est quoi UNEEK exactement ?","UNEEK est une marketplace qui regroupe des marques de mode indépendantes soigneusement sélectionnées. On donne une vitrine aux créateurs qui méritent d'être vus."],
+    ["Comment sont sélectionnées les marques ?","Chaque marque est évaluée sur la qualité de ses créations, son originalité et son histoire. On refuse volontairement le mass market."],
+    ["Quels sont les délais de livraison ?","Entre 3 et 7 jours ouvrés en Belgique et en France. Chaque commande est préparée directement par la marque."],
+    ["Comment devenir partenaire UNEEK ?","Si tu es un créateur indépendant, tu peux postuler via notre formulaire 'Devenir Partenaire' accessible depuis le menu."],
+  ];
+  return `<div>
+    <section style="background:var(--black);color:var(--white);padding:clamp(64px,10vw,128px) clamp(16px,4vw,48px);min-height:100vh;display:flex;flex-direction:column;justify-content:center">
+      <div style="max-width:720px;margin:0 auto">
+        <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;opacity:0.4;margin-bottom:40px">Le Manifesto UNEEK</div>
+        <h1 style="font-family:var(--font-display);font-size:clamp(36px,5vw,56px);font-weight:700;letter-spacing:-1px;line-height:1.15;margin-bottom:48px">The future belongs to those who <span class="gradient-text">create.</span></h1>
+        <div style="font-size:clamp(16px,1.8vw,19px);line-height:1.9;opacity:0.55;font-weight:300">
+          <p style="margin-bottom:24px">La mode ne devrait pas être un uniforme. Pas un algorithme qui te dit quoi porter. Pas une tendance TikTok qui s'oublie en deux semaines.</p>
+          <p style="margin-bottom:24px">La mode, c'est une expression. Un choix. Un acte créatif. Et les vrais créateurs — ceux qui dessinent dans leur chambre, qui cousent dans leur garage — méritent d'être vus.</p>
+          <p style="margin-bottom:24px">UNEEK existe pour ça. Pour donner une vitrine aux marques indépendantes. Pour offrir à chacun la possibilité de porter quelque chose qui a une histoire, un nom, une âme.</p>
+          <p>Parce que s'habiller, c'est se raconter. Et ton histoire mérite mieux qu'un copier-coller.</p>
+        </div>
+        <div style="margin-top:48px;padding-top:32px;border-top:1px solid rgba(255,255,255,0.08);font-style:italic;opacity:0.4;font-size:15px;font-weight:300">"Dress different. Feel different."</div>
+      </div>
+    </section>
+    <section class="section" style="text-align:center">
+      <h2 class="section-title" style="margin-bottom:24px">Prêt à découvrir ?</h2>
+      <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-dark" onclick="navigate('shop')">Explorer le Shop →</button>
+        <button class="btn btn-outline" onclick="navigate('brands')">Voir les Marques</button>
+      </div>
+    </section>
+    <section style="background:var(--black);color:var(--white);padding:clamp(64px,8vw,96px) clamp(16px,4vw,48px)">
+      <div style="max-width:700px;margin:0 auto">
+        <h2 style="font-family:var(--font-display);font-size:clamp(24px,3vw,36px);font-weight:700;letter-spacing:-1px;margin-bottom:48px">Questions fréquentes</h2>
+        ${faqs.map((faq,i)=>`
+          <div style="border-bottom:1px solid rgba(255,255,255,0.08);padding:24px 0;cursor:pointer" onclick="toggleFaq(${i})">
+            <div style="display:flex;justify-content:space-between;align-items:center;font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--white)">
+              <span>${faq[0]}</span>
+              <span id="faq-toggle-${i}" style="font-size:20px;color:rgba(255,255,255,0.3);transition:transform 0.3s">+</span>
             </div>
+            <div id="faq-answer-${i}" style="font-size:14px;line-height:1.7;color:rgba(255,255,255,0.45);font-weight:300;max-height:0;overflow:hidden;transition:max-height 0.4s,padding 0.4s">${faq[1]}</div>
+          </div>`).join('')}
+      </div>
+    </section>
+    ${footerHTML()}
+  </div>`;
+}
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-              <div><label>Site web (optionnel)</label><input type="text" value={partnerForm.website} onChange={e => setPartnerForm({...partnerForm, website: e.target.value})} placeholder="https://tamarque.com" /></div>
-              <div><label>Instagram</label><input type="text" value={partnerForm.instagram} onChange={e => setPartnerForm({...partnerForm, instagram: e.target.value})} placeholder="@tamarque" /></div>
-            </div>
+function toggleFaq(i){
+  const a=document.getElementById('faq-answer-'+i);
+  const t=document.getElementById('faq-toggle-'+i);
+  const isOpen=a.style.maxHeight!=='0px'&&a.style.maxHeight!=='';
+  a.style.maxHeight=isOpen?'0':'200px';
+  a.style.paddingTop=isOpen?'0':'16px';
+  t.style.transform=isOpen?'':'rotate(45deg)';
+}
 
-            <div style={{ marginBottom: 16 }}>
-              <label>Catégorie</label>
-              <select value={partnerForm.category} onChange={e => setPartnerForm({...partnerForm, category: e.target.value})}>
-                <option>Mode</option>
-                <option>Streetwear</option>
-                <option>Accessories</option>
-                <option>Chaussures</option>
-                <option>Autre</option>
+function partnerPage(){
+  return `<div>
+    <section style="background:var(--black);color:var(--white);padding:clamp(120px,15vw,180px) clamp(16px,4vw,48px) clamp(64px,8vw,96px);text-align:center">
+      <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;opacity:0.4;margin-bottom:24px">Pour les créateurs</div>
+      <h1 style="font-family:var(--font-display);font-size:clamp(36px,5vw,56px);font-weight:800;letter-spacing:-2px;margin-bottom:24px">Devenir Partenaire <span class="gradient-text">UNEEK</span></h1>
+      <p style="font-size:clamp(15px,1.8vw,18px);opacity:0.5;font-weight:300;max-width:500px;margin:0 auto;line-height:1.7">Tu crées des pièces uniques ? Tu mérites une vitrine à la hauteur. Rejoins la communauté UNEEK.</p>
+    </section>
+    <section class="section" style="max-width:640px;margin:0 auto">
+      <div id="partner-form">
+        <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:24px">Ta marque</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Nom de ta marque</label><input id="pf-brand" type="text" placeholder="Ex: Brouillon" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
+          <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Ton nom</label><input id="pf-name" type="text" placeholder="Prénom Nom" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Email</label><input id="pf-email" type="email" placeholder="hello@tamarque.com" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
+          <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Instagram</label><input id="pf-ig" type="text" placeholder="@tamarque" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
+        </div>
+        <div style="margin-bottom:32px"><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Parle-nous de ta marque</label><textarea id="pf-desc" placeholder="Ton histoire, ton style, ce qui te rend unique..." style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm);resize:vertical;min-height:120px"></textarea></div>
+        <button class="btn btn-dark" style="width:100%;justify-content:center" onclick="submitPartner()">Envoyer ma candidature →</button>
+      </div>
+    </section>
+    ${footerHTML()}
+  </div>`;
+}
+
+function submitPartner(){
+  const brand=document.getElementById('pf-brand')?.value;
+  const name=document.getElementById('pf-name')?.value;
+  const email=document.getElementById('pf-email')?.value;
+  if(!brand||!name||!email){showToast('Remplis au moins le nom, l\'email et la marque');return;}
+  document.getElementById('partner-form').innerHTML=`<div style="text-align:center;padding:80px 0">
+    <div style="width:80px;height:80px;border-radius:50%;background:var(--gradient);display:flex;align-items:center;justify-content:center;margin:0 auto 32px">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+    </div>
+    <h2 style="font-family:var(--font-display);font-size:32px;font-weight:700;margin-bottom:16px">Candidature envoyée !</h2>
+    <p style="font-size:16px;color:var(--gray-500);font-weight:300;max-width:480px;margin:0 auto 40px;line-height:1.7">Merci <strong>${name}</strong> ! Notre équipe étudie ta candidature pour <strong>${brand}</strong> et te recontacte sous 48h.</p>
+    <button class="btn btn-dark" onclick="navigate('brands')">Voir les Marques →</button>
+  </div>`;
+}
+
+function checkoutPage(){
+  const total=cart.reduce((s,i)=>s+i.price,0);
+  return `<div>
+    <section class="section" style="padding-top:112px">
+      <h1 style="font-family:var(--font-display);font-size:clamp(28px,4vw,44px);font-weight:700;letter-spacing:-1px;margin-bottom:48px">Checkout</h1>
+      <div class="co-grid" style="display:grid;grid-template-columns:1fr 380px;gap:64px;align-items:start">
+        <div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:24px">Informations de livraison</div>
+          <div class="co-form-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+            <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Prénom</label><input id="co-prenom" type="text" placeholder="John" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
+            <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Nom</label><input id="co-nom" type="text" placeholder="Doe" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
+          </div>
+          <div style="margin-bottom:16px"><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Email</label><input id="co-email" type="email" placeholder="john@exemple.com" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
+          <div style="margin-bottom:16px"><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Adresse</label><input id="co-addr" type="text" placeholder="Rue de la Mode 42" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
+          <div class="co-form-grid-3" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:40px">
+            <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Ville</label><input id="co-ville" type="text" placeholder="Bruxelles" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
+            <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Code postal</label><input id="co-code" type="text" placeholder="1000" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
+            <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Pays</label>
+              <select style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm);background:var(--white)">
+                <option>Belgique</option><option>France</option><option>Pays-Bas</option><option>Luxembourg</option>
               </select>
             </div>
-
-            <div style={{ marginBottom: 32 }}>
-              <label>Parle-nous de ta marque</label>
-              <textarea value={partnerForm.description} onChange={e => setPartnerForm({...partnerForm, description: e.target.value})} placeholder="Ton histoire, ton style, ce qui te rend unique..." />
-            </div>
-
-            <button className="btn btn-gradient" style={{ width: "100%", justifyContent: "center" }} onClick={() => {
-              if (!partnerForm.brand || !partnerForm.name || !partnerForm.email) {
-                showToast("Remplis au moins le nom, l'email et la marque");
-                return;
-              }
-              setSubmitted(true);
-            }}>
-              Envoyer ma candidature <ArrowIcon size={14} />
-            </button>
           </div>
-        </section>
-        <Footer />
-      </div>
-    );
-  };
-
-  // --- LEGAL PAGES ---
-  const legalPageStyle = { paddingTop: 112, maxWidth: 720, margin: "0 auto" };
-  const legalTitle = { fontFamily: "var(--font-display)", fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 700, letterSpacing: -1, marginBottom: 32 };
-  const legalH2 = { fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 700, marginTop: 36, marginBottom: 12 };
-  const legalP = { fontSize: 14, lineHeight: 1.8, color: "var(--gray-600)", fontWeight: 300, marginBottom: 12 };
-
-  const CGVPage = () => (
-    <div className="page-wrapper">
-      <section className="section" style={legalPageStyle}>
-        <h1 style={legalTitle}>Conditions Générales de Vente</h1>
-        <p style={{ fontSize: 13, color: "var(--gray-400)", marginBottom: 40 }}>Dernière mise à jour : [date]</p>
-
-        <h2 style={legalH2}>Article 1 — Préambule</h2>
-        <p style={legalP}>Les présentes Conditions Générales de Vente régissent l'ensemble des transactions effectuées sur le site UNEEK. UNEEK est une marketplace de mode indépendante qui met en relation des créateurs de mode et des acheteurs. UNEEK agit en qualité d'intermédiaire. Les produits sont vendus directement par les créateurs.</p>
-        <p style={legalP}>Toute commande passée sur la Plateforme implique l'acceptation pleine et entière des présentes CGV.</p>
-
-        <h2 style={legalH2}>Article 2 — Produits et prix</h2>
-        <p style={legalP}>Les produits proposés sont des vêtements, accessoires et pièces de mode créés par des marques indépendantes sélectionnées par UNEEK. Les prix sont indiqués en euros (€) TTC et fixés librement par chaque créateur. Les photos sont présentées à titre indicatif.</p>
-
-        <h2 style={legalH2}>Article 3 — Commande et paiement</h2>
-        <p style={legalP}>La validation du paiement constitue l'acceptation de la commande et des présentes CGV. Le paiement s'effectue via les moyens proposés sur la Plateforme (carte bancaire, Bancontact, etc.) et est sécurisé par Mollie. UNEEK ne stocke aucune donnée bancaire.</p>
-
-        <h2 style={legalH2}>Article 4 — Livraison</h2>
-        <p style={legalP}>Les produits sont expédiés par le créateur dans un délai de 3 jours ouvrés. Délais de livraison : 3 à 7 jours ouvrés en Belgique/France, 5 à 10 jours pour le reste de l'Europe. Un numéro de suivi est communiqué par email. En cas de commande multi-créateurs, les articles peuvent être expédiés séparément.</p>
-
-        <h2 style={legalH2}>Article 5 — Droit de rétractation et retours</h2>
-        <p style={legalP}>Le client dispose d'un délai de 14 jours à compter de la réception pour exercer son droit de rétractation. Le produit doit être retourné dans son état d'origine, non porté, non lavé, étiquettes intactes. Les frais de retour sont à la charge du client, sauf produit défectueux ou non conforme. Le remboursement est effectué sous 14 jours après vérification du retour.</p>
-
-        <h2 style={legalH2}>Article 6 — Produits défectueux</h2>
-        <p style={legalP}>En cas de produit défectueux ou non conforme, le client contacte UNEEK avec photos du défaut. Le retour est aux frais du créateur et le remboursement est intégral (produit + livraison + retour).</p>
-
-        <h2 style={legalH2}>Article 7 — Garantie légale</h2>
-        <p style={legalP}>Les produits bénéficient de la garantie légale de conformité de 2 ans à compter de la livraison, conformément au Code civil belge.</p>
-
-        <h2 style={legalH2}>Article 8 — Abonnement premium</h2>
-        <p style={legalP}>UNEEK peut proposer un abonnement premium offrant des avantages (accès anticipé, réductions, livraison gratuite). L'abonnement est mensuel, résiliable à tout moment. Tout changement de prix est communiqué avec 30 jours de préavis.</p>
-
-        <h2 style={legalH2}>Article 9 — Responsabilité</h2>
-        <p style={legalP}>UNEEK agit en qualité d'intermédiaire et ne peut être tenu responsable des défauts, retards ou litiges directement imputables au créateur. En cas de litige, UNEEK s'engage à jouer un rôle de médiateur.</p>
-
-        <h2 style={legalH2}>Article 10 — Droit applicable</h2>
-        <p style={legalP}>Les présentes CGV sont soumises au droit belge. Le client peut recourir à la plateforme européenne de règlement en ligne des litiges : ec.europa.eu/consumers/odr. À défaut de résolution amiable, les tribunaux compétents de Belgique seront saisis.</p>
-
-        <p style={{ ...legalP, marginTop: 40, fontSize: 12, color: "var(--gray-400)" }}>Le document complet des CGV est disponible sur demande à support@uneek.be</p>
-      </section>
-      <Footer />
-    </div>
-  );
-
-  const PrivacyPage = () => (
-    <div className="page-wrapper">
-      <section className="section" style={legalPageStyle}>
-        <h1 style={legalTitle}>Politique de confidentialité</h1>
-        <p style={{ fontSize: 13, color: "var(--gray-400)", marginBottom: 40 }}>Dernière mise à jour : [date]</p>
-
-        <h2 style={legalH2}>Données collectées</h2>
-        <p style={legalP}>UNEEK collecte les données suivantes : nom, prénom, adresse email, adresse de livraison et historique de commandes. Ces données sont collectées lors de la création de compte ou de la passation d'une commande.</p>
-
-        <h2 style={legalH2}>Utilisation des données</h2>
-        <p style={legalP}>Vos données sont utilisées exclusivement pour : le traitement et le suivi des commandes, le service client, l'envoi de communications commerciales (avec votre consentement), et l'amélioration de la Plateforme.</p>
-
-        <h2 style={legalH2}>Partage des données</h2>
-        <p style={legalP}>Les données de livraison (nom, adresse) sont transmises au créateur concerné uniquement pour l'expédition. Le créateur s'engage à ne pas utiliser ces données à d'autres fins. UNEEK ne vend ni ne loue les données personnelles à des tiers.</p>
-
-        <h2 style={legalH2}>Cookies</h2>
-        <p style={legalP}>La Plateforme utilise des cookies essentiels au fonctionnement et, avec votre consentement, des cookies analytiques et marketing. Vous pouvez gérer vos préférences lors de votre première visite.</p>
-
-        <h2 style={legalH2}>Vos droits</h2>
-        <p style={legalP}>Vous disposez d'un droit d'accès, de rectification, de suppression et de portabilité de vos données (RGPD). Pour exercer ces droits, contactez support@uneek.be.</p>
-
-        <h2 style={legalH2}>Sécurité</h2>
-        <p style={legalP}>Les paiements sont sécurisés par Mollie (certifié PCI-DSS). UNEEK ne stocke aucune donnée bancaire. Vos données personnelles sont protégées par des mesures de sécurité appropriées.</p>
-      </section>
-      <Footer />
-    </div>
-  );
-
-  const LegalPage = () => (
-    <div className="page-wrapper">
-      <section className="section" style={legalPageStyle}>
-        <h1 style={legalTitle}>Mentions légales</h1>
-
-        <h2 style={legalH2}>Éditeur du site</h2>
-        <p style={legalP}>UNEEK — Marketplace de mode indépendante</p>
-        <p style={legalP}>Forme juridique : [à compléter]</p>
-        <p style={legalP}>Numéro BCE : [à compléter]</p>
-        <p style={legalP}>Numéro de TVA : BE [à compléter]</p>
-        <p style={legalP}>Siège social : [adresse à compléter]</p>
-        <p style={legalP}>Email : support@uneek.be</p>
-
-        <h2 style={legalH2}>Hébergement</h2>
-        <p style={legalP}>Le site est hébergé par Vercel Inc., 340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis.</p>
-
-        <h2 style={legalH2}>Paiements</h2>
-        <p style={legalP}>Les paiements sont gérés par Mollie B.V., Keizersgracht 126, 1015 CW Amsterdam, Pays-Bas. Certifié PCI-DSS.</p>
-
-        <h2 style={legalH2}>Propriété intellectuelle</h2>
-        <p style={legalP}>L'ensemble du contenu du site (textes, images, logos, design, code) est protégé par le droit de la propriété intellectuelle. Toute reproduction non autorisée est interdite. La marque UNEEK est [déposée auprès de l'EUIPO / en cours de dépôt].</p>
-
-        <h2 style={legalH2}>Règlement des litiges</h2>
-        <p style={legalP}>Plateforme européenne de règlement en ligne des litiges : ec.europa.eu/consumers/odr</p>
-      </section>
-      <Footer />
-    </div>
-  );
-
-  // --- PROFILE PAGE ---
-  const ProfilePage = () => {
-    const [profileForm, setProfileForm] = useState({ prenom: "", nom: "", email: "", adresse: "", ville: "", code: "", pays: "Belgique" });
-    const [saved, setSaved] = useState(false);
-
-    return (
-      <div className="page-wrapper">
-        <section className="section" style={{ paddingTop: 112, maxWidth: 640, margin: "0 auto" }}>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 700, letterSpacing: -1, marginBottom: 8 }}>Mon Profil</h1>
-          <p style={{ fontSize: 14, color: "var(--gray-400)", fontWeight: 300, marginBottom: 40 }}>Tes informations personnelles</p>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 40 }}>
-            <div style={{ width: 72, height: 72, borderRadius: "50%", background: "var(--gradient)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 700, color: "#fff" }}>
-                {profileForm.prenom ? profileForm.prenom[0].toUpperCase() : "U"}
-              </span>
-            </div>
-            <div>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 700 }}>
-                {profileForm.prenom && profileForm.nom ? `${profileForm.prenom} ${profileForm.nom}` : "UNEEK Member"}
-              </div>
-              <div style={{ fontSize: 13, color: "var(--gray-400)" }}>{profileForm.email || "Pas encore configuré"}</div>
-            </div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:24px">Paiement</div>
+          <div style="padding:32px;border:1px solid var(--gray-200);text-align:center;border-radius:var(--radius);margin-bottom:24px">
+            <div style="font-size:14px;color:var(--gray-400);font-weight:300">💳 Paiement sécurisé par Mollie</div>
+            <div style="font-size:12px;color:var(--gray-300);margin-top:8px">(Simulation — aucun paiement réel)</div>
           </div>
-
-          <div className="partner-form">
-            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--gray-400)", marginBottom: 24 }}>Informations personnelles</div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-              <div><label>Prénom</label><input type="text" value={profileForm.prenom} onChange={e => setProfileForm({...profileForm, prenom: e.target.value})} placeholder="Ton prénom" /></div>
-              <div><label>Nom</label><input type="text" value={profileForm.nom} onChange={e => setProfileForm({...profileForm, nom: e.target.value})} placeholder="Ton nom" /></div>
-            </div>
-
-            <div style={{ marginBottom: 16 }}>
-              <label>Email</label>
-              <input type="email" value={profileForm.email} onChange={e => setProfileForm({...profileForm, email: e.target.value})} placeholder="ton@email.com" />
-            </div>
-
-            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--gray-400)", marginBottom: 24, marginTop: 32 }}>Adresse de livraison</div>
-
-            <div style={{ marginBottom: 16 }}>
-              <label>Adresse</label>
-              <input type="text" value={profileForm.adresse} onChange={e => setProfileForm({...profileForm, adresse: e.target.value})} placeholder="Rue et numéro" />
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 32 }}>
-              <div><label>Ville</label><input type="text" value={profileForm.ville} onChange={e => setProfileForm({...profileForm, ville: e.target.value})} placeholder="Ville" /></div>
-              <div><label>Code postal</label><input type="text" value={profileForm.code} onChange={e => setProfileForm({...profileForm, code: e.target.value})} placeholder="Code" /></div>
-              <div><label>Pays</label>
-                <select value={profileForm.pays} onChange={e => setProfileForm({...profileForm, pays: e.target.value})}>
-                  <option>Belgique</option><option>France</option><option>Pays-Bas</option><option>Luxembourg</option><option>Allemagne</option>
-                </select>
-              </div>
-            </div>
-
-            <button className="btn btn-dark" style={{ width: "100%", justifyContent: "center" }} onClick={() => { setSaved(true); showToast("Profil sauvegardé"); setTimeout(() => setSaved(false), 2000); }}>
-              {saved ? "Sauvegardé ✓" : "Sauvegarder"}
-            </button>
-
-            <div style={{ marginTop: 40, paddingTop: 24, borderTop: "1px solid var(--gray-200)" }}>
-              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--gray-400)", marginBottom: 16 }}>Mes stats</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-                <div style={{ background: "var(--gray-100)", padding: 16, textAlign: "center" }}>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 700 }}>{favorites.length}</div>
-                  <div style={{ fontSize: 11, color: "var(--gray-400)", marginTop: 4 }}>Favoris</div>
-                </div>
-                <div style={{ background: "var(--gray-100)", padding: 16, textAlign: "center" }}>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 700 }}>{cart.length}</div>
-                  <div style={{ fontSize: 11, color: "var(--gray-400)", marginTop: 4 }}>Panier</div>
-                </div>
-                <div style={{ background: "var(--gray-100)", padding: 16, textAlign: "center" }}>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 700 }}>0</div>
-                  <div style={{ fontSize: 11, color: "var(--gray-400)", marginTop: 4 }}>Commandes</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-        <Footer />
-      </div>
-    );
-  };
-
-  // --- RENDER ---
-  const renderPage = () => {
-    switch (page) {
-      case "home": return <HomePage />;
-      case "shop": return <ShopPage />;
-      case "product": return <ProductPage />;
-      case "brands": return <BrandsPage />;
-      case "brand": return <BrandPage />;
-      case "lookbooks": return <LookbooksPage />;
-      case "lookbook": return <LookbookPage />;
-      case "manifesto": return <ManifestoPage />;
-      case "checkout": return <CheckoutPage />;
-      case "partner": return <PartnerPage />;
-      case "profile": return <ProfilePage />;
-      case "cgv": return <CGVPage />;
-      case "privacy": return <PrivacyPage />;
-      case "legal": return <LegalPage />;
-      default: return <HomePage />;
-    }
-  };
-
-  return (
-    <>
-      <style>{styles}</style>
-      <div className="uneek-app">
-        <Nav />
-        <MobileMenu />
-        <CartPanel />
-        <FavPanel />
-        {renderPage()}
-        <div className={`toast ${toast ? "show" : ""}`}>
-          <StarIcon size={14} filled color="#fff" /> {toast}
+        </div>
+        <div class="co-summary" style="background:var(--gray-100);padding:36px;border-radius:var(--radius-lg);position:sticky;top:96px">
+          <div style="font-family:var(--font-display);font-size:18px;font-weight:700;margin-bottom:28px">Récapitulatif</div>
+          ${cart.map(item=>{
+            const b=BRANDS.find(x=>x.id===item.brand);
+            return `<div style="display:flex;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--gray-200)">
+              <div style="width:56px;height:72px;overflow:hidden;background:var(--gray-200);border-radius:8px"><img src="${item.image}" style="width:100%;height:100%;object-fit:cover"></div>
+              <div style="flex:1"><div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400)">${b?.name||''}</div><div style="font-family:var(--font-display);font-size:13px;font-weight:600">${item.name}</div><div style="font-size:12px;color:var(--gray-500)">Taille : ${item.selectedSize}</div></div>
+              <div style="font-size:14px;font-weight:500">${item.price} €</div>
+            </div>`;
+          }).join('')}
+          ${cart.length===0?'<p style="color:var(--gray-400);font-size:14px;text-align:center;padding:24px 0">Panier vide</p>':''}
+          <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:12px;color:var(--gray-600);font-weight:300"><span>Sous-total</span><span>${total} €</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:12px;color:var(--gray-600);font-weight:300"><span>Livraison</span><span>Gratuite</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:600;padding-top:20px;border-top:1px solid var(--gray-300);margin-top:20px;margin-bottom:28px"><span>Total</span><span>${total} €</span></div>
+          <button class="btn btn-dark" style="width:100%;justify-content:center" onclick="confirmOrder()">Confirmer la commande →</button>
         </div>
       </div>
-    </>
-  );
+    </section>
+    ${footerHTML()}
+  </div>`;
 }
+
+function confirmOrder(){
+  const p=document.getElementById('co-prenom')?.value;
+  const n=document.getElementById('co-nom')?.value;
+  const e=document.getElementById('co-email')?.value;
+  const a=document.getElementById('co-addr')?.value;
+  const v=document.getElementById('co-ville')?.value;
+  const c=document.getElementById('co-code')?.value;
+  if(!p||!n||!e||!a||!v||!c){showToast('Remplis tous les champs');return;}
+  cart=[];renderCart();navigate('home');
+  showToast('Commande confirmée ! Merci '+p+' ♥');
+}
+
+function legalPage(type){
+  const pages={
+    cgv:{title:"Conditions Générales de Vente",items:[["Article 1 — Préambule","UNEEK est une marketplace de mode indépendante mettant en relation créateurs et acheteurs. UNEEK agit en qualité d'intermédiaire. Les produits sont vendus directement par les créateurs."],["Article 2 — Produits et prix","Les produits sont des vêtements et accessoires de marques indépendantes sélectionnées. Les prix sont en euros TTC, fixés librement par chaque créateur."],["Article 3 — Commande et paiement","La validation du paiement constitue l'acceptation de la commande. Le paiement est sécurisé par Mollie. UNEEK ne stocke aucune donnée bancaire."],["Article 4 — Livraison","Expédition par le créateur sous 3 jours ouvrés. Délais : 3–7 jours BE/FR, 5–10 jours reste de l'Europe."],["Article 5 — Droit de rétractation","14 jours à compter de la réception. Produit non porté, étiquettes intactes. Frais de retour à charge du client sauf produit défectueux."],["Article 6 — Garantie légale","Garantie légale de conformité de 2 ans conformément au Code civil belge."],["Article 7 — Droit applicable","Droit belge applicable. Règlement en ligne : ec.europa.eu/consumers/odr"]]},
+    privacy:{title:"Politique de confidentialité",items:[["Données collectées","Nom, prénom, email, adresse de livraison et historique de commandes."],["Utilisation","Traitement des commandes, service client, amélioration de la plateforme."],["Partage","Données de livraison transmises au créateur uniquement. UNEEK ne vend aucune donnée."],["Vos droits (RGPD)","Droit d'accès, rectification, suppression et portabilité. Contact : support@uneek.store"],["Sécurité","Paiements sécurisés par Mollie (PCI-DSS). UNEEK ne stocke aucune donnée bancaire."]]},
+    legal:{title:"Mentions légales",items:[["Éditeur","UNEEK — Marketplace de mode indépendante\nBCE : [à compléter] — TVA : BE [à compléter]\nEmail : contact@uneek.store"],["Hébergement","Vercel Inc., 340 S Lemon Ave #4133, Walnut CA 91789, USA"],["Paiements","Mollie B.V., Keizersgracht 126, Amsterdam. Certifié PCI-DSS."],["Propriété intellectuelle","Tout le contenu du site est protégé. Reproduction interdite sans autorisation."]]}
+  };
+  const pg=pages[type];
+  return `<div>
+    <section class="section" style="padding-top:112px;max-width:720px;margin:0 auto">
+      <h1 style="font-family:var(--font-display);font-size:clamp(28px,4vw,40px);font-weight:700;letter-spacing:-1px;margin-bottom:32px">${pg.title}</h1>
+      ${pg.items.map(([h,p])=>`<div><h2 style="font-family:var(--font-display);font-size:18px;font-weight:700;margin-top:36px;margin-bottom:12px">${h}</h2><p style="font-size:14px;line-height:1.8;color:var(--gray-600);font-weight:300;white-space:pre-line">${p}</p></div>`).join('')}
+    </section>
+    ${footerHTML()}
+  </div>`;
+}
+
+function profilePage(){
+  return `<div>
+    <section class="section" style="padding-top:112px;max-width:640px;margin:0 auto">
+      <h1 style="font-family:var(--font-display);font-size:clamp(28px,4vw,40px);font-weight:700;letter-spacing:-1px;margin-bottom:8px">Mon Profil</h1>
+      <p style="font-size:14px;color:var(--gray-400);font-weight:300;margin-bottom:40px">Tes informations personnelles</p>
+      <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:24px">Informations personnelles</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Prénom</label><input type="text" placeholder="Ton prénom" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
+        <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Nom</label><input type="text" placeholder="Ton nom" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
+      </div>
+      <div style="margin-bottom:32px"><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Email</label><input type="email" placeholder="ton@email.com" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
+      <button class="btn btn-dark" style="width:100%;justify-content:center" onclick="showToast('Profil sauvegardé ✓')">Sauvegarder</button>
+      <div style="margin-top:40px;padding-top:24px;border-top:1px solid var(--gray-200)">
+        <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:16px">Mes stats</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <div style="background:var(--gray-100);padding:16px;text-align:center;border-radius:var(--radius-sm)"><div style="font-family:var(--font-display);font-size:24px;font-weight:700">${favorites.length}</div><div style="font-size:11px;color:var(--gray-400);margin-top:4px">Favoris</div></div>
+          <div style="background:var(--gray-100);padding:16px;text-align:center;border-radius:var(--radius-sm)"><div style="font-family:var(--font-display);font-size:24px;font-weight:700">${cart.length}</div><div style="font-size:11px;color:var(--gray-400);margin-top:4px">Panier</div></div>
+          <div style="background:var(--gray-100);padding:16px;text-align:center;border-radius:var(--radius-sm)"><div style="font-family:var(--font-display);font-size:24px;font-weight:700">0</div><div style="font-size:11px;color:var(--gray-400);margin-top:4px">Commandes</div></div>
+        </div>
+      </div>
+    </section>
+    ${footerHTML()}
+  </div>`;
+}
+
+// ROUTER
+function renderPage(){
+  const app=document.getElementById('app');
+  selectedSize=null;
+  switch(currentPage){
+    case 'home': app.innerHTML=homePage(); break;
+    case 'shop': app.innerHTML=shopPage(); break;
+    case 'product': app.innerHTML=productPage(); break;
+    case 'brands': app.innerHTML=brandsPage(); break;
+    case 'brand': app.innerHTML=brandPage(); break;
+    case 'manifesto': app.innerHTML=manifestoPage(); break;
+    case 'partner': app.innerHTML=partnerPage(); break;
+    case 'checkout': app.innerHTML=checkoutPage(); break;
+    case 'cgv': app.innerHTML=legalPage('cgv'); break;
+    case 'privacy': app.innerHTML=legalPage('privacy'); break;
+    case 'legal': app.innerHTML=legalPage('legal'); break;
+    case 'profile': app.innerHTML=profilePage(); break;
+    default: app.innerHTML=homePage();
+  }
+}
+
+// INIT
+renderPage();
+</script>
+</body>
+</html>
