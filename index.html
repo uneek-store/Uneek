@@ -1,13 +1,1230 @@
-<!DOCTYPE html>
-<html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>UNEEK — Independent Fashion Marketplace</title>
-    <meta name="description" content="La marketplace qui regroupe les marques de mode indépendantes les plus créatives." />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
-</html>
+import { useState, useEffect, useRef, useCallback } from "react";
+
+// ============================================================
+// UNEEK ‚Äî Created by Independent Fashion Marketplace
+// Multi-page prototype with routing, animations, and full UX
+// ============================================================
+
+// --- DATA ---
+const BRANDS = [
+  {
+    id: "brouillon",
+    name: "Brouillon",
+    tagline: "L'imperfection comme signature",
+    story: "N√©e dans un atelier parisien, Brouillon transforme les erreurs en art. Chaque pi√®ce est un brouillon devenu chef-d'≈ìuvre ‚Äî des coupes d√©construites, des finitions brutes, une mode qui refuse la perfection.",
+    city: "Paris",
+    year: 2021,
+    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",
+    products: [0, 1, 2],
+  },
+  {
+    id: "tern",
+    name: "Tern",
+    tagline: "Between earth and motion",
+    story: "Inspir√©e par les migrations et la nature, Tern cr√©e des pi√®ces fluides et intemporelles. Des mati√®res organiques, des teintes terreuses, un vestiaire pour ceux qui bougent sans jamais se perdre.",
+    city: "Antwerp",
+    year: 2020,
+    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",
+    products: [3, 4, 5],
+  },
+  {
+    id: "noclout",
+    name: "NoClout",
+    tagline: "Anti-hype. Pro-style.",
+    story: "NoClout est n√© d'un rejet : celui de la mode qui crie pour √™tre vue. Ici, pas de logos g√©ants ni de trends √©ph√©m√®res. Juste des pi√®ces pens√©es pour durer, port√©es par ceux qui n'ont rien √† prouver.",
+    city: "Brussels",
+    year: 2022,
+    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",
+    products: [6, 7, 8],
+  },
+  {
+    id: "muet",
+    name: "MUET",
+    tagline: "Le silence a du style",
+    story: "MUET parle √† travers les coupes. Minimalisme radical, noir et blanc exclusivement, des silhouettes qui disent tout sans un mot. Pour ceux qui pr√©f√®rent √™tre remarqu√©s plut√¥t qu'entendus.",
+    city: "Lyon",
+    year: 2023,
+    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",
+    products: [9, 10, 11],
+  },
+];
+
+const CATEGORIES = [lang === "fr" ? "Tous" : "All", "Tops", "Bottoms", "Outerwear", "Accessories"];
+
+const PRODUCTS = [
+  { id: 0, name: "Hoodie Chromatique", brand: "brouillon", category: "Tops", price: 40, sizes: ["S", "M", "L", "XL"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "Inspir√© des premiers croquis qu'on jette ‚Äî sauf que celui-ci, on le porte.", color: "Blanc cass√©", colors: [{name: "Blanc cass√©", hex: "#F5F0E8"}, {name: "Noir", hex: "#1A1A1A"}, {name: "Gris", hex: "#8C8C8C"}] },
+  { id: 1, name: "Sweat Chromatique", brand: "brouillon", category: "Tops", price: 105, sizes: ["S", "M", "L"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "Les coutures visibles racontent le processus. Le hoodie qui assume ses imperfections.", color: "Gris b√©ton", colors: [{name: "Gris b√©ton", hex: "#8C8C8C"}, {name: "Noir", hex: "#1A1A1A"}] },
+  { id: 2, name: "Raw Edge Cargo", brand: "brouillon", category: "Tops", price: 95, sizes: ["28", "30", "32", "34"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "Cargo repens√© avec des bords bruts et une coupe large. Le chaos organis√©.", color: "Kaki d√©lav√©", colors: [{name: "Kaki d√©lav√©", hex: "#8B7D5B"}, {name: "Noir", hex: "#1A1A1A"}, {name: "Sable", hex: "#C8B898"}] },
+  { id: 3, name: "Migration Overshirt", brand: "tern", category: "Tops", price: 40, sizes: ["S", "M", "L", "XL"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "L√©g√®re comme un d√©part, chaude comme un retour. L'overshirt des voyageurs.", color: "Terre br√ªl√©e", colors: [{name: "Terre br√ªl√©e", hex: "#8B4513"}, {name: "Olive", hex: "#556B2F"}] },
+  { id: 4, name: "Flow Pants", brand: "tern", category: "Bottoms", price: 78, sizes: ["S", "M", "L"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "Pens√© pour le mouvement. Coupe fluide, tissu organique, libert√© totale.", color: "Sable", colors: [{name: "Sable", hex: "#C8B898"}, {name: "Noir", hex: "#1A1A1A"}, {name: "Olive", hex: "#556B2F"}] },
+  { id: 5, name: "Nest Beanie", brand: "tern", category: "Accessories", price: 32, sizes: ["ONE"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "Tricot√© √† partir de laine recycl√©e. Chaud dehors, cool partout.", color: "Forest", colors: [{name: "Forest", hex: "#2D5A27"}, {name: "Noir", hex: "#1A1A1A"}, {name: "Cr√®me", hex: "#F5F0E8"}] },
+  { id: 6, name: "Silent Statement Tee", brand: "noclout", category: "Tops", price: 42, sizes: ["S", "M", "L", "XL"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "Pas de logo. Pas de slogan. Juste une coupe parfaite et du coton premium.", color: "Noir", colors: [{name: "Noir", hex: "#1A1A1A"}, {name: "Blanc", hex: "#FAFAFA"}, {name: "Gris", hex: "#8C8C8C"}] },
+  { id: 7, name: "Zero Hype Jacket", brand: "noclout", category: "Outerwear", price: 145, sizes: ["S", "M", "L"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "La veste qui ne cherche pas √† impressionner. Et c'est exactement pour √ßa qu'elle impressionne.", color: "Navy", colors: [{name: "Navy", hex: "#1B2A4A"}, {name: "Noir", hex: "#1A1A1A"}] },
+  { id: 8, name: "Lowkey Cap", brand: "noclout", category: "Accessories", price: 28, sizes: ["ONE"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "Une casquette non-brand√©e. Parce que ton style parle d√©j√†.", color: "Noir", colors: [{name: "Noir", hex: "#1A1A1A"}, {name: "Navy", hex: "#1B2A4A"}, {name: "Kaki", hex: "#556B2F"}] },
+  { id: 9, name: "Mono Turtleneck", brand: "muet", category: "Tops", price: 65, sizes: ["S", "M", "L"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "Col roul√© en noir absolu. Le silence √©l√©gant.", color: "Noir", colors: [{name: "Noir", hex: "#1A1A1A"}, {name: "Blanc", hex: "#FAFAFA"}] },
+  { id: 10, name: "Shadow Trousers", brand: "muet", category: "Bottoms", price: 88, sizes: ["28", "30", "32", "34"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "Pantalon droit, noir profond, tomb√© impeccable. La discr√©tion comme luxe.", color: "Noir", colors: [{name: "Noir", hex: "#1A1A1A"}, {name: "Gris fonc√©", hex: "#333333"}] },
+  { id: 11, name: "Whisper Scarf", brand: "muet", category: "Accessories", price: 38, sizes: ["ONE"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "√âcharpe oversize en cachemire m√©lang√©. Dit tout sans un mot.", color: "Blanc/Noir", colors: [{name: "Blanc/Noir", hex: "#FAFAFA"}, {name: "Noir", hex: "#1A1A1A"}] },
+];
+
+const LOOKBOOKS = [
+  {
+    id: "urban-nomad",
+    title: "Urban Nomad",
+    subtitle: "Spring/Summer ‚Äî Moving through the city",
+    description: "Un lookbook pour ceux qui font de la rue leur runway. M√©langes de Tern et Brouillon, entre mouvement et brouillon urbain.",
+    products: [0, 3, 4],
+    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",
+    secondImage: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",
+  },
+  {
+    id: "after-dark",
+    title: "After Dark",
+    subtitle: "Fall/Winter ‚Äî When the city sleeps",
+    description: "MUET et NoClout se rencontrent apr√®s minuit. Noir sur noir, silhouettes sharp, ambiance cin√©matique.",
+    products: [6, 7, 9, 10],
+    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",
+    secondImage: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",
+  },
+];
+
+// --- ICONS (SVG) ---
+const StarIcon = ({ size = 24, filled, gradient, color }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={gradient ? "url(#starGrad)" : filled ? (color || "currentColor") : "none"} stroke={filled || gradient ? "none" : "currentColor"} strokeWidth={filled || gradient ? 0 : 1.5}>
+    {gradient && (
+      <defs>
+        <linearGradient id="starGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#1a1a1a" />
+          <stop offset="100%" stopColor="#5a5a5a" />
+        </linearGradient>
+      </defs>
+    )}
+    <path d="M12 0l2.76 8.5h8.94l-7.23 5.25 2.76 8.5L12 17l-7.23 5.25 2.76-8.5L0.3 8.5h8.94z" />
+  </svg>
+);
+
+const HeartIcon = ({ size = 20, filled, gradient }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={gradient ? "url(#heartGrad)" : filled ? "currentColor" : "none"} stroke={gradient ? "none" : "currentColor"} strokeWidth={gradient ? 0 : 1.5}>
+    {gradient && (
+      <defs>
+        <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#7B61FF" />
+          <stop offset="50%" stopColor="#A855F7" />
+          <stop offset="100%" stopColor="#FF61B6" />
+        </linearGradient>
+      </defs>
+    )}
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+  </svg>
+);
+
+const BagIcon = ({ size = 20, count }) => (
+  <div style={{ position: "relative", display: "inline-flex" }}>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+      <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0" />
+    </svg>
+    {count > 0 && (
+      <span style={{ position: "absolute", top: -6, right: -8, background: "linear-gradient(135deg, #1a1a1a, #5a5a5a)", color: "#fff", borderRadius: "50%", width: 16, height: 16, fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>{count}</span>
+    )}
+  </div>
+);
+
+const ArrowIcon = ({ direction = "right", size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ transform: direction === "left" ? "rotate(180deg)" : direction === "down" ? "rotate(90deg)" : "none" }}>
+    <path d="M5 12h14M12 5l7 7-7 7" />
+  </svg>
+);
+
+const SearchIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+  </svg>
+);
+
+const FilterIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <path d="M4 6h16M6 12h12M8 18h8" />
+  </svg>
+);
+
+const CloseIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <path d="M18 6L6 18M6 6l12 12" />
+  </svg>
+);
+
+const MenuIcon = ({ size = 22 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <path d="M3 12h18M3 6h18M3 18h18" />
+  </svg>
+);
+
+const TrashIcon = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+  </svg>
+);
+
+// --- STYLES ---
+
+// --- STYLES ---
+
+// --- STYLES ---
+
+// --- STYLES ---
+const styles = `
+  @import url('https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap');
+
+  :root {
+    --black: #0A0A0A;
+    --white: #FAFAFA;
+    --gray-100: #F5F5F5;
+    --gray-200: #E5E5E5;
+    --gray-300: #D4D4D4;
+    --gray-400: #A3A3A3;
+    --gray-500: #737373;
+    --gray-600: #525252;
+    --gray-700: #404040;
+    --gray-800: #262626;
+    --gray-900: #171717;
+    --gradient: linear-gradient(135deg, #1a1a1a, #5a5a5a);
+    --gradient-subtle: linear-gradient(135deg, rgba(26,26,26,0.08), rgba(90,90,90,0.08));
+    --font-display: 'Urbanist', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --radius: 14px;
+    --radius-sm: 10px;
+    --radius-lg: 20px;
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--white); color: var(--black); overflow-x: hidden; max-width: 100vw; }
+  ::selection { background: rgba(90, 90, 90, 0.2); color: var(--black); }
+  .uneek-app { font-family: var(--font-body); background: var(--white); min-height: 100vh; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+  .gradient-text { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .page-wrapper { min-height: 100vh; }
+
+  
+  .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 0 clamp(16px, 4vw, 48px); height: 64px; display: flex; align-items: center; justify-content: space-between; background: rgba(250, 250, 250, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0,0,0,0.04); transition: all 0.4s var(--ease); }
+  .nav.scrolled { height: 56px; background: rgba(250, 250, 250, 0.95); }
+  .nav-logo { font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: -0.5px; cursor: pointer; display: flex; align-items: center; gap: 1px; user-select: none; color: var(--black); }
+  .nav-links { display: flex; align-items: center; gap: 32px; }
+  .nav-link { font-family: var(--font-body); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; position: relative; padding: 4px 0; color: var(--gray-600); transition: color 0.3s; }
+  .nav-link:hover, .nav-link.active { color: var(--black); }
+  .nav-link::after { content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 1.5px; background: var(--black); transition: width 0.3s var(--ease); }
+  .nav-link:hover::after, .nav-link.active::after { width: 100%; }
+  .nav-icons { display: flex; align-items: center; gap: 20px; }
+  .nav-icon { cursor: pointer; color: var(--gray-600); transition: color 0.2s; display: flex; align-items: center; }
+  .nav-icon:hover { color: var(--black); }
+  .mobile-menu-btn { display: none; cursor: pointer; color: var(--black); }
+  a { color: inherit; text-decoration: none; }
+  a:visited { color: inherit; }
+  a:hover { color: inherit; }
+
+  
+  .hero { height: 100vh; display: flex; flex-direction: column; justify-content: flex-end; padding: clamp(24px, 5vw, 64px); padding-bottom: clamp(48px, 8vh, 96px); position: relative; overflow: hidden; background: var(--black); color: var(--white); }
+  .hero-bg { position: absolute; inset: 0; background: var(--black); opacity: 1; }
+  .hero:hover .hero-bg { transform: scale(1.03); }
+  .hero-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(10,10,10,0.95) 0%, rgba(10,10,10,0.3) 50%, rgba(10,10,10,0.6) 100%); }
+  .hero-content { position: relative; z-index: 2; max-width: 800px; }
+  .hero-tag { font-size: 11px; font-weight: 500; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 24px; animation: fadeUp 0.8s var(--ease) 0.2s both; }
+  .hero-title { font-family: var(--font-display); font-size: clamp(42px, 7vw, 88px); font-weight: 800; line-height: 1; letter-spacing: -2px; margin-bottom: 24px; animation: fadeUp 0.8s var(--ease) 0.4s both; }
+  .hero-subtitle { font-size: clamp(15px, 2vw, 18px); font-weight: 300; color: rgba(255,255,255,0.6); max-width: 500px; line-height: 1.6; margin-bottom: 40px; animation: fadeUp 0.8s var(--ease) 0.6s both; }
+  .hero-cta { display: flex; gap: 16px; animation: fadeUp 0.8s var(--ease) 0.8s both; flex-wrap: wrap; }
+
+  
+  .btn { font-family: var(--font-body); font-size: 13px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; padding: 16px 36px; border: none; cursor: pointer; transition: all 0.3s var(--ease); display: inline-flex; align-items: center; gap: 10px; border-radius: var(--radius); }
+  .btn-primary { background: var(--white); color: var(--black); }
+  .btn-primary:hover { background: var(--gray-200); transform: translateY(-2px); }
+  .btn-outline { background: transparent; color: var(--white); border: 1px solid rgba(255,255,255,0.3); }
+  .btn-outline:hover { border-color: var(--white); background: rgba(255,255,255,0.05); }
+  .btn-dark { background: var(--black); color: var(--white); }
+  .btn-dark:hover { background: var(--gray-800); transform: translateY(-2px); }
+  .btn-sm { padding: 10px 20px; font-size: 11px; }
+
+  
+  .section { padding: clamp(48px, 8vw, 96px) clamp(16px, 4vw, 48px); }
+  .section-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 48px; flex-wrap: wrap; gap: 16px; }
+  .section-title { font-family: var(--font-display); font-size: clamp(28px, 4vw, 44px); font-weight: 700; letter-spacing: -1px; line-height: 1.1; }
+  .section-subtitle { font-size: 14px; color: var(--gray-500); margin-top: 8px; font-weight: 300; }
+  .section-link { font-size: 13px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--gray-500); transition: color 0.3s; }
+  .section-link:hover { color: var(--black); }
+
+  
+  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; }
+  .product-card { cursor: pointer; position: relative; }
+  .product-card-image { aspect-ratio: 3/4; overflow: hidden; background: var(--gray-100); position: relative; border-radius: var(--radius-lg); margin-bottom: 16px; perspective: 800px; }
+  .product-card-image img { width: 100%; height: 100%; object-fit: contain; transition: transform 0.3s ease-out; transform-style: preserve-3d; will-change: transform; }
+  .product-card:hover .product-card-image img { transform: scale(1.04); }
+  .product-card-fav { position: absolute; top: 12px; right: 12px; width: 42px; height: 42px; background: rgba(255,255,255,0.9); backdrop-filter: blur(8px); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity 0.3s; z-index: 2; }
+  .product-card:hover .product-card-fav { opacity: 1; }
+  .product-card-fav.is-fav { opacity: 1; background: rgba(255,255,255,0.95); }
+  .product-card-brand { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-400); margin-bottom: 4px; }
+  .product-card-name { font-family: var(--font-display); font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .product-card-price { font-size: 14px; color: var(--gray-500); font-weight: 400; }
+
+  
+  .brand-strip { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 16px; scrollbar-width: none; }
+  .brand-strip::-webkit-scrollbar { display: none; }
+  .brand-chip { flex-shrink: 0; padding: 20px 32px; background: var(--gray-100); cursor: pointer; transition: all 0.3s var(--ease); display: flex; flex-direction: column; gap: 4px; min-width: 200px; border-radius: var(--radius); }
+  .brand-chip:hover { background: var(--black); color: var(--white); }
+  .brand-chip-name { font-family: var(--font-display); font-size: 18px; font-weight: 700; }
+  .brand-chip-city { font-size: 12px; opacity: 0.5; font-weight: 300; }
+
+  
+  .lookbook-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; }
+  .lookbook-card { position: relative; aspect-ratio: 4/5; overflow: hidden; cursor: pointer; background: var(--black); border-radius: var(--radius-lg); }
+  .lookbook-card img { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; transition: all 0.6s var(--ease); filter: grayscale(20%); }
+  .lookbook-card:hover img { opacity: 0.4; transform: scale(1.05); }
+  .lookbook-card-content { position: absolute; bottom: 0; left: 0; right: 0; padding: 40px; color: var(--white); z-index: 2; }
+  .lookbook-card-sub { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.6; margin-bottom: 12px; }
+  .lookbook-card-title { font-family: var(--font-display); font-size: clamp(28px, 3vw, 40px); font-weight: 700; letter-spacing: -1px; margin-bottom: 16px; }
+  .lookbook-card-desc { font-size: 14px; opacity: 0.6; line-height: 1.5; max-width: 350px; font-weight: 300; }
+
+  
+  .manifesto-section { background: var(--black); color: var(--white); padding: clamp(64px, 10vw, 128px) clamp(16px, 4vw, 48px); text-align: center; position: relative; overflow: hidden; }
+  .manifesto-section::before { display: none; }
+  .manifesto-quote { font-family: var(--font-display); font-size: clamp(32px, 5vw, 64px); font-weight: 700; letter-spacing: -1px; line-height: 1.15; max-width: 800px; margin: 0 auto 40px; position: relative; z-index: 1; }
+  .manifesto-text { font-size: clamp(15px, 1.8vw, 18px); line-height: 1.8; max-width: 600px; margin: 0 auto 48px; opacity: 0.5; font-weight: 300; position: relative; z-index: 1; }
+
+  
+  .catalogue-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 40px; flex-wrap: wrap; }
+  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter-chip { padding: 8px 20px; font-size: 12px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; border: 1px solid var(--gray-200); background: transparent; cursor: pointer; transition: all 0.3s; font-family: var(--font-body); color: var(--gray-500); border-radius: 50px; }
+  .filter-chip:hover { border-color: var(--black); color: var(--black); }
+  .filter-chip.active { background: var(--black); color: var(--white); border-color: var(--black); }
+  .search-bar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border: 1px solid var(--gray-200); width: 260px; transition: border-color 0.3s; border-radius: 50px; }
+  .search-bar:focus-within { border-color: var(--black); }
+  .search-bar input { border: none; outline: none; font-size: 13px; font-family: var(--font-body); width: 100%; background: transparent; }
+
+  
+  .product-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+  .pd-image { aspect-ratio: 3/4; overflow: hidden; background: var(--gray-100); position: sticky; top: 96px; border-radius: var(--radius-lg); perspective: 1000px; }
+  .pd-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease-out; transform-style: preserve-3d; will-change: transform; }
+  .pd-info { padding-top: 32px; padding-right: clamp(16px, 4vw, 64px); }
+  .pd-brand { font-size: 12px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; color: var(--gray-400); margin-bottom: 12px; cursor: pointer; transition: color 0.3s; }
+  .pd-brand:hover { color: var(--black); }
+  .pd-name { font-family: var(--font-display); font-size: clamp(28px, 3vw, 40px); font-weight: 700; letter-spacing: -1px; margin-bottom: 8px; }
+  .pd-price { font-size: 20px; color: var(--gray-600); margin-bottom: 32px; font-weight: 300; }
+  .pd-color-name { font-size: 13px; color: var(--gray-500); margin-bottom: 12px; }
+  .pd-colors { display: flex; gap: 10px; margin-bottom: 28px; }
+  .pd-color-swatch { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s var(--ease); }
+  .pd-color-swatch:hover { transform: scale(1.15); }
+  .pd-color-swatch.selected { border-color: var(--black); box-shadow: 0 0 0 2px var(--white), 0 0 0 4px var(--black); }
+  .pd-sizes { display: flex; gap: 8px; margin-bottom: 32px; flex-wrap: wrap; }
+  .pd-size { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--gray-200); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; font-family: var(--font-body); background: transparent; color: var(--black); border-radius: var(--radius-sm); }
+  .pd-size:hover { border-color: var(--black); }
+  .pd-size.selected { background: var(--black); color: var(--white); border-color: var(--black); }
+  .pd-actions { display: flex; gap: 12px; margin-bottom: 32px; }
+  .pd-add-to-cart { flex: 1; }
+  .pd-fav-btn { width: 52px; height: 52px; border: 1px solid var(--gray-200); background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; color: var(--gray-400); border-radius: var(--radius); }
+  .pd-fav-btn:hover { border-color: var(--black); color: var(--black); }
+  .pd-fav-btn.is-fav { background: transparent; border-color: #A855F7; }
+  .pd-story { padding: 28px 0; border-top: 1px solid var(--gray-200); }
+  .pd-story-title { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-400); margin-bottom: 12px; }
+  .pd-story-text { font-size: 14px; line-height: 1.7; color: var(--gray-500); font-style: italic; font-weight: 300; }
+
+  
+  .brand-hero { height: 70vh; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--black); }
+  .brand-hero-bg { position: absolute; inset: 0; }
+  .brand-hero-bg img { width: 100%; height: 100%; object-fit: cover; opacity: 0.4; }
+  .brand-hero-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); }
+  .brand-hero-content { position: relative; z-index: 2; text-align: center; color: var(--white); }
+  .brand-hero-name { font-family: var(--font-display); font-size: clamp(48px, 7vw, 80px); font-weight: 800; letter-spacing: -2px; }
+  .brand-hero-tagline { font-size: 16px; opacity: 0.5; font-style: italic; margin-top: 8px; font-weight: 300; }
+  .brand-hero-meta { display: flex; gap: 24px; justify-content: center; margin-top: 20px; font-size: 12px; opacity: 0.4; letter-spacing: 1px; text-transform: uppercase; }
+  .brand-story { font-size: 17px; line-height: 1.9; color: var(--gray-600); max-width: 700px; font-weight: 300; margin-bottom: 48px; }
+
+  
+  .lookbook-hero { height: 85vh; position: relative; overflow: hidden; display: flex; align-items: flex-end; }
+  .lookbook-hero-bg { position: absolute; inset: 0; }
+  .lookbook-hero-bg img { width: 100%; height: 100%; object-fit: cover; }
+  .lookbook-hero-content { position: relative; z-index: 2; padding: clamp(32px, 6vw, 80px); color: var(--white); }
+  .lookbook-hero-sub { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; opacity: 0.5; margin-bottom: 16px; }
+  .lookbook-hero-title { font-family: var(--font-display); font-size: clamp(56px, 10vw, 120px); font-weight: 800; letter-spacing: -3px; line-height: 0.9; }
+  .lookbook-hero-desc { font-size: 16px; opacity: 0.6; max-width: 450px; line-height: 1.6; margin-top: 24px; font-weight: 300; }
+
+  
+  .side-panel { position: fixed; top: 0; right: 0; width: min(440px, 100vw); height: 100vh; background: var(--white); z-index: 200; transform: translateX(100%); transition: transform 0.4s var(--ease); display: flex; flex-direction: column; border-left: 1px solid var(--gray-200); border-radius: var(--radius-lg) 0 0 var(--radius-lg); }
+  .side-panel.open { transform: translateX(0); }
+  .panel-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 199; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  .panel-backdrop.open { opacity: 1; pointer-events: all; }
+  .panel-header { display: flex; justify-content: space-between; align-items: center; padding: 24px; border-bottom: 1px solid var(--gray-200); }
+  .panel-title { font-family: var(--font-display); font-size: 18px; font-weight: 700; }
+  .panel-close { cursor: pointer; color: var(--gray-400); transition: color 0.2s; background: none; border: none; display: flex; }
+  .panel-close:hover { color: var(--black); }
+  .panel-body { flex: 1; overflow-y: auto; padding: 24px; }
+  .panel-footer { padding: 24px; border-top: 1px solid var(--gray-200); }
+  .cart-item { display: flex; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--gray-100); }
+  .cart-item-img { width: 80px; height: 100px; overflow: hidden; flex-shrink: 0; background: var(--gray-100); border-radius: 12px; }
+  .cart-item-img img { width: 100%; height: 100%; object-fit: cover; }
+  .cart-item-info { flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+  .cart-item-brand { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-400); margin-bottom: 2px; }
+  .cart-item-name { font-family: var(--font-display); font-size: 14px; font-weight: 600; }
+  .cart-item-meta { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+  .cart-item-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+  .cart-item-price { font-size: 14px; font-weight: 500; }
+  .cart-item-remove { background: none; border: none; color: var(--gray-400); font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px; font-family: var(--font-body); transition: color 0.2s; }
+  .cart-item-remove:hover { color: var(--black); }
+  .cart-total { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .cart-total-label { font-size: 14px; color: var(--gray-500); }
+  .cart-total-amount { font-family: var(--font-display); font-size: 24px; font-weight: 700; }
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 64px 0; text-align: center; }
+  .empty-state-text { font-size: 14px; color: var(--gray-400); line-height: 1.6; font-weight: 300; }
+
+  
+  .footer { background: var(--black); color: var(--white); padding: clamp(48px, 6vw, 80px) clamp(16px, 4vw, 48px) 32px; }
+  .footer-top { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px; }
+  .footer-brand { font-family: var(--font-display); font-size: 20px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 1px; }
+  .footer-tagline { font-size: 14px; color: rgba(255,255,255,0.4); line-height: 1.6; font-weight: 300; max-width: 320px; }
+  .footer-col-title { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 16px; color: rgba(255,255,255,0.5); }
+  .footer-link { display: block; font-size: 14px; color: rgba(255,255,255,0.35); margin-bottom: 10px; cursor: pointer; transition: color 0.2s; font-weight: 300; }
+  .footer-link:hover { color: var(--white); }
+  .footer-bottom { display: flex; justify-content: space-between; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: rgba(255,255,255,0.25); font-weight: 300; }
+
+  
+  .mobile-nav { position: fixed; inset: 0; background: var(--white); z-index: 150; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 28px; transform: translateY(-100%); transition: transform 0.6s var(--ease); }
+  .mobile-nav.open { transform: translateY(0); }
+  .mobile-nav.open .mobile-nav-link { opacity: 0; animation: mobileNavIn 0.5s var(--ease) forwards; }
+  .mobile-nav.open .mobile-nav-link:nth-child(1) { animation-delay: 0.1s; }
+  .mobile-nav.open .mobile-nav-link:nth-child(2) { animation-delay: 0.15s; }
+  .mobile-nav.open .mobile-nav-link:nth-child(3) { animation-delay: 0.2s; }
+  .mobile-nav.open .mobile-nav-link:nth-child(4) { animation-delay: 0.25s; }
+  .mobile-nav.open .mobile-nav-link:nth-child(5) { animation-delay: 0.3s; }
+  .mobile-nav.open .mobile-nav-link:nth-child(6) { animation-delay: 0.35s; }
+  @keyframes mobileNavIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .mobile-nav-close { position: absolute; top: 24px; right: 24px; background: none; border: none; cursor: pointer; }
+  .mobile-nav-link { font-family: var(--font-display); font-size: 32px; font-weight: 700; cursor: pointer; transition: opacity 0.3s, transform 0.3s var(--ease); letter-spacing: -0.5px; color: rgba(10,10,10,0.45); }
+  .mobile-nav-link:hover { color: var(--black); transform: translateX(8px); }
+
+  
+  .faq-item { border-bottom: 1px solid rgba(255,255,255,0.08); padding: 24px 0; cursor: pointer; }
+  .faq-question { display: flex; justify-content: space-between; align-items: center; font-family: var(--font-display); font-size: 16px; font-weight: 600; color: var(--white); transition: opacity 0.3s; }
+  .faq-question:hover { opacity: 0.7; }
+  .faq-answer { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.45); font-weight: 300; max-height: 0; overflow: hidden; transition: max-height 0.4s var(--ease), padding 0.4s var(--ease); padding-top: 0; }
+  .faq-answer.open { max-height: 200px; padding-top: 16px; }
+  .faq-toggle { font-size: 20px; color: rgba(255,255,255,0.3); transition: transform 0.3s var(--ease); }
+  .faq-toggle.open { transform: rotate(45deg); }
+
+  
+  .partner-form input, .partner-form textarea, .partner-form select { width: 100%; padding: 14px 16px; border: 1px solid var(--gray-200); font-size: 14px; font-family: var(--font-body); outline: none; transition: border-color 0.3s; background: var(--white); color: var(--black); border-radius: var(--radius-sm); }
+  .partner-form input:focus, .partner-form textarea:focus, .partner-form select:focus { border-color: var(--black); }
+  .partner-form textarea { resize: vertical; min-height: 120px; }
+  .partner-form label { font-size: 12px; font-weight: 500; color: var(--gray-500); display: block; margin-bottom: 6px; }
+
+  
+  .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--black); color: var(--white); padding: 14px 28px; font-size: 13px; font-weight: 500; z-index: 300; transition: transform 0.4s var(--ease); white-space: nowrap; display: flex; align-items: center; gap: 8px; border-radius: var(--radius); }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  
+  @keyframes doubleTapHeart {
+    0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; }
+    10% { transform: translate(-50%, -50%) scale(1.4) rotate(0deg); opacity: 1; }
+    25% { transform: translate(-50%, -50%) scale(0.95) rotate(0deg); opacity: 1; }
+    35% { transform: translate(-50%, -50%) scale(1.15) rotate(0deg); opacity: 1; }
+    50% { transform: translate(-50%, -50%) scale(1.05) rotate(0deg); opacity: 1; }
+    75% { transform: translate(-50%, -50%) scale(1.05) rotate(0deg); opacity: 0.8; }
+    100% { transform: translate(-50%, -50%) scale(1.3) rotate(0deg); opacity: 0; }
+  }
+  .double-tap-heart { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); z-index: 10; pointer-events: none; animation: doubleTapHeart 1.1s ease forwards; filter: drop-shadow(0 4px 20px rgba(123, 97, 255, 0.5)); }
+
+  
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+
+  
+  @media (max-width: 768px) {
+    .nav-links { display: none; }
+    .mobile-menu-btn { display: flex; }
+  }
+  @media (max-width: 600px) {
+    .product-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .product-card-name { font-size: 13px; }
+    .product-card-price { font-size: 12px; }
+    .product-detail { grid-template-columns: 1fr; gap: 32px; }
+    .pd-image { position: static; }
+    .footer-top { grid-template-columns: 1fr; gap: 32px; }
+    .lookbook-grid { grid-template-columns: 1fr; }
+    .hero-cta { flex-direction: column; }
+    .btn { width: 100%; justify-content: center; }
+    .pd-actions { flex-direction: column; }
+    .pd-add-to-cart { width: 100%; }
+    .section { padding-left: 16px; padding-right: 16px; }
+    .hero { padding: 16px; padding-bottom: 48px; }
+    .side-panel { width: 100vw; }
+    .checkout-grid { grid-template-columns: 1fr; gap: 32px; }
+    .brands-grid { grid-template-columns: 1fr; }
+    .lookbooks-grid { grid-template-columns: 1fr; }
+    * { box-sizing: border-box; max-width: 100vw; }
+    img, video { max-width: 100%; height: auto; }
+  }
+`;
+
+// --- MAIN APP ---
+export default function UneekApp() {
+  const [page, setPage] = useState("home");
+  const [pageData, setPageData] = useState(null);
+  const [cart, setCart] = useState([]);
+  const [favorites, setFavorites] = useState([]);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [favOpen, setFavOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState(lang === "fr" ? "Tous" : "All");
+  const [activeBrandFilter, setActiveBrandFilter] = useState(null);
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
+  const [lang, setLang] = useState("fr");
+
+  const t = {
+    fr: {
+      home: "Home", shop: "Shop", brands: "Marques", manifesto: "Manifesto",
+      heroTag: "Created by Independent Fashion",
+      heroTitle1: "They wear what's told.",
+      heroTitle2: "You wear what's",
+      heroSpecial: "special.",
+      heroSub: "UNEEK regroupe les marques ind√©pendantes les plus cr√©atives. Des pi√®ces uniques, s√©lectionn√©es pour ceux qui refusent l'ordinaire.",
+      heroBtn: "Explorer le Shop",
+      selectionTitle: "S√©lection du moment",
+      selectionSub: "Les pi√®ces qui font parler",
+      seeAll: "Voir tout",
+      seeAllBrands: "Toutes les marques",
+      brandsTitle: "Nos marques",
+      brandsSub: "Des cr√©ateurs s√©lectionn√©s √† la main",
+      addToCart: "Ajouter au panier",
+      addedToCart: "Ajout√© au panier",
+      size: "Taille", color: "Couleur",
+      favorites: "Favoris", cart: "Panier",
+      emptyFav: "Aucun favori pour l'instant.",
+      emptyCart: "Votre panier est vide.",
+      total: "Total", checkout: "Commander",
+      backHome: t.backHome,
+      backShop: t.backShop,
+      sizeLabel: "Taille",
+      sizeItem: "Taille : ",
+      filterAll: lang === "fr" ? "Tous" : "All",
+      inStock: "En stock",
+      outOfStock: "Rupture de stock",
+      becomePartner: "Devenir Partenaire",
+      partnerTitle: "Rejoins UNEEK",
+      partnerSub: "Tu cr√©es des pi√®ces uniques ? On veut les montrer au monde.",
+      partnerBtn: "Postuler",
+      partnerSuccess: "Candidature envoy√©e !",
+      manifestoQuote: "Ils portent ce qu'on leur dit de porter. Toi, tu portes ce qui te ressemble.",
+      manifestoText: "UNEEK est une marketplace d√©di√©e aux marques de mode ind√©pendantes. On s√©lectionne √† la main les cr√©ateurs les plus originaux pour offrir une alternative au mass market.",
+      manifestoBtn: "Explorer le Shop",
+      faqTitle: "Questions fr√©quentes",
+      faq1q: "Comment devenir partenaire UNEEK ?",
+      faq1a: "Si tu es un cr√©ateur ind√©pendant, tu peux postuler via notre formulaire 'Devenir Partenaire' accessible depuis le menu. On √©tudie chaque candidature avec attention.",
+      faq2q: "Quels sont les d√©lais de livraison ?",
+      faq2a: "Les d√©lais varient selon le cr√©ateur, g√©n√©ralement entre 3 et 7 jours ouvr√©s en Belgique et en France. Chaque commande est pr√©par√©e directement par la marque.",
+      faq3q: "Comment suivre ma commande ?",
+      faq3a: "Une fois ta commande exp√©di√©e, tu re√ßois un email avec un lien de suivi. Le cr√©ateur dispose de 3 jours ouvr√©s pour exp√©dier apr√®s la confirmation.",
+      faq4q: "Puis-je retourner un article ?",
+      faq4a: "Les retours sont accept√©s sous 14 jours si l'article est non port√© et dans son √©tat d'origine. Contacte-nous √† support@uneek.store pour initier un retour.",
+      lookbooksTitle: "Lookbooks",
+      lookbooksSub: "Des univers cr√©√©s par nos marques",
+      shopTitle: "Le Shop",
+      shopSub: "Toutes nos pi√®ces",
+      footerTagline: "La marketplace qui r√©unit les marques de mode ind√©pendantes les plus cr√©atives.",
+      support: "Support", legal: "L√©gal",
+      faq: "FAQ", delivery: "Livraison & Retours",
+      partner: "Devenir Partenaire", contact: "Contact",
+      cgv: "CGV", privacy: "Politique de confidentialit√©", mentions: "Mentions l√©gales",
+      language: "Langue",
+      copyright: "¬© 2026 UNEEK. The future belongs to those who create.",
+      madeIn: "Made with ‚òÖ in Belgium",
+    },
+    en: {
+      home: "Home", shop: "Shop", brands: "Brands", manifesto: "Manifesto",
+      heroTag: "Created by Independent Fashion",
+      heroTitle1: "They wear what's told.",
+      heroTitle2: "You wear what's",
+      heroSpecial: "special.",
+      heroSub: "UNEEK brings together the most creative independent fashion brands. Unique pieces, handpicked for those who refuse the ordinary.",
+      heroBtn: "Explore the Shop",
+      selectionTitle: "Featured right now",
+      selectionSub: "Pieces worth talking about",
+      seeAll: "See all",
+      seeAllBrands: "All brands",
+      brandsTitle: "Our brands",
+      brandsSub: "Handpicked creators",
+      addToCart: "Add to cart",
+      addedToCart: "Added to cart",
+      size: "Size", color: "Color",
+      favorites: "Favorites", cart: "Cart",
+      emptyFav: "No favorites yet.",
+      emptyCart: "Your cart is empty.",
+      total: "Total", checkout: "Checkout",
+      backHome: "Back to home",
+      backShop: "‚Üê Back to shop",
+      sizeLabel: "Size",
+      sizeItem: "Size: ",
+      filterAll: "All",
+      inStock: "In stock",
+      outOfStock: "Out of stock",
+      becomePartner: "Become a Partner",
+      partnerTitle: "Join UNEEK",
+      partnerSub: "You create unique pieces? We want to show them to the world.",
+      partnerBtn: "Apply",
+      partnerSuccess: "Application sent!",
+      manifestoQuote: "They wear what they're told. You wear what feels like you.",
+      manifestoText: "UNEEK is a marketplace dedicated to independent fashion brands. We handpick the most original creators to offer an alternative to mass market.",
+      manifestoBtn: "Explore the Shop",
+      faqTitle: "FAQ",
+      faq1q: "How do I become a UNEEK partner?",
+      faq1a: "If you're an independent creator, you can apply through our 'Become a Partner' form accessible from the menu. We review every application carefully.",
+      faq2q: "What are the delivery times?",
+      faq2a: "Delivery times vary by creator, generally 3 to 7 business days in Belgium and France. Each order is prepared directly by the brand.",
+      faq3q: "How do I track my order?",
+      faq3a: "Once your order is shipped, you'll receive an email with a tracking link. The creator has 3 business days to ship after confirmation.",
+      faq4q: "Can I return an item?",
+      faq4a: "Returns are accepted within 14 days if the item is unworn and in its original condition. Contact us at support@uneek.store to initiate a return.",
+      lookbooksTitle: "Lookbooks",
+      lookbooksSub: "Worlds created by our brands",
+      shopTitle: "The Shop",
+      shopSub: "All our pieces",
+      footerTagline: "The marketplace bringing together the most creative independent fashion brands.",
+      support: "Support", legal: "Legal",
+      faq: "FAQ", delivery: "Shipping & Returns",
+      partner: "Become a Partner", contact: "Contact",
+      cgv: "Terms & Conditions", privacy: "Privacy Policy", mentions: "Legal Notice",
+      language: "Language",
+      copyright: "¬© 2026 UNEEK. The future belongs to those who create.",
+      madeIn: "Made with ‚òÖ in Belgium",
+      emptyCart: "Your cart is empty.",
+      total: "Total", checkout: "Checkout",
+      footerTagline: "The marketplace bringing together the most creative independent fashion brands.",
+      support: "Support", legal: "Legal",
+      faq: "FAQ", delivery: "Shipping & Returns",
+      partner: "Become a Partner", contact: "Contact",
+      cgv: "Terms & Conditions", privacy: "Privacy Policy", mentions: "Legal Notice",
+      language: "Language",
+      copyright: "¬© 2026 UNEEK. The future belongs to those who create.",
+      madeIn: "Made with ‚òÖ in Belgium",
+    }
+  }[lang];
+
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [page, pageData]);
+
+  const showToast = useCallback((msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  }, []);
+
+  const navigate = (p, data = null) => {
+    setPageData(data);
+    setPage(p);
+    setMobileMenuOpen(false);
+  };
+
+  const toggleFav = (productId) => {
+    setFavorites((prev) =>
+      prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
+    );
+    const isFav = favorites.includes(productId);
+    showToast(isFav ? (lang === "fr" ? "Retir√© des favoris" : "Removed from favorites") : (lang === "fr" ? "Ajout√© aux favoris ‚ô•" : "Added to favorites ‚ô•"));
+  };
+
+  const addToCart = (product, size) => {
+    setCart((prev) => [...prev, { ...product, selectedSize: size, cartId: Date.now() }]);
+    showToast(lang === "fr" ? "Ajout√© au panier" : "Added to cart");
+  };
+
+  const removeFromCart = (cartId) => {
+    setCart((prev) => prev.filter((item) => item.cartId !== cartId));
+  };
+
+  const cartTotal = cart.reduce((sum, item) => sum + item.price, 0);
+
+  // --- NAVIGATION BAR ---
+  const Nav = () => (
+    <nav className={`nav ${scrolled ? "scrolled" : ""}`} style={{ display: "flex", alignItems: "center", position: "fixed", top: 0, left: 0, right: 0, zIndex: 100 }}>
+      {}
+      <div className="nav-links" style={{ flex: 1 }}>
+        {[
+          [t.home, "home"],
+          [t.shop, "shop"],
+          [t.brands, "brands"],
+          [t.manifesto, "manifesto"],
+        ].map(([label, p]) => (
+          <span key={p} className={`nav-link ${page === p ? "active" : ""}`} onClick={() => navigate(p)}>
+            {label}
+          </span>
+        ))}
+      </div>
+
+      {}
+      <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", cursor: "pointer" }} onClick={() => navigate("home")}>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="163 276 484 460" width="36" height="36"><path d="M 405 276 L 461.9 451.7 L 646.1 451.7 L 497.1 560.3 L 554 735.8 L 405 627.3 L 256 735.8 L 312.9 560.3 L 163.9 451.7 L 348.1 451.7 Z" fill="#0A0A0A"/></svg>
+      </div>
+
+      {}
+      <div className="nav-icons" style={{ flex: 1, justifyContent: "flex-end" }}>
+        <span className="nav-icon" onClick={() => { setFavOpen(true); setCartOpen(false); }}>
+          <HeartIcon size={19} gradient={favorites.length > 0} />
+        </span>
+        <span className="nav-icon" onClick={() => { setCartOpen(true); setFavOpen(false); }}>
+          <BagIcon size={19} count={cart.length} />
+        </span>
+        <span className="mobile-menu-btn" onClick={() => setMobileMenuOpen(true)}>
+          <MenuIcon />
+        </span>
+      </div>
+    </nav>
+  );
+
+  // --- MOBILE MENU ---
+  const MobileMenu = () => (
+    <div className={`mobile-nav ${mobileMenuOpen ? "open" : ""}`}>
+      <button className="mobile-nav-close" onClick={() => setMobileMenuOpen(false)}>
+        <CloseIcon size={28} />
+      </button>
+      {[
+        ["Shop", "shop"],
+        ["Marques", "brands"],
+        [t.favorites, () => { setFavOpen(true); setMobileMenuOpen(false); }],
+        [t.cart, () => { setCartOpen(true); setMobileMenuOpen(false); }],
+        ["Mon Profil", "profile"],
+        [t.becomePartner, "partner"],
+      ].map(([label, action]) => (
+        <span
+          key={label}
+          className="mobile-nav-link"
+          onClick={() => typeof action === "function" ? action() : navigate(action)}
+        >
+          {label}
+        </span>
+      ))}
+    </div>
+  );
+
+  // --- PRODUCT CARD ---
+  const ProductCard = ({ product }) => {
+    const brand = BRANDS.find((b) => b.id === product.brand);
+    const isFav = favorites.includes(product.id);
+    const imgRef = useRef(null);
+    const [showHeart, setShowHeart] = useState(false);
+    const lastTapRef = useRef(0);
+
+    const handleTilt = (e) => {
+      const img = imgRef.current;
+      if (!img) return;
+      const rect = img.parentElement.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const y = (e.clientY - rect.top) / rect.height;
+      const rotateY = (x - 0.5) * 20;
+      const rotateX = (0.5 - y) * 20;
+      img.style.transform = `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.04)`;
+    };
+
+    const handleTiltReset = () => {
+      const img = imgRef.current;
+      if (img) img.style.transform = "perspective(800px) rotateX(0deg) rotateY(0deg) scale(1)";
+    };
+
+    const handleDoubleTap = (e) => {
+      const now = Date.now();
+      if (now - lastTapRef.current < 400) {
+        e.stopPropagation();
+        e.preventDefault();
+        if (!favorites.includes(product.id)) {
+          toggleFav(product.id);
+        }
+        setShowHeart(true);
+        setTimeout(() => setShowHeart(false), 1200);
+        lastTapRef.current = 0;
+      } else {
+        lastTapRef.current = now;
+      }
+    };
+
+    return (
+      <div className="product-card" onClick={(e) => {
+        setTimeout(() => {
+          if (Date.now() - lastTapRef.current > 350) navigate("product", product.id);
+        }, 350);
+      }}>
+        <div className="product-card-image" onMouseMove={handleTilt} onMouseLeave={handleTiltReset} onClick={handleDoubleTap}>
+          <img ref={imgRef} src={product.image} alt={product.name} loading="lazy" />
+          {showHeart && (
+            <svg className="double-tap-heart" width="100" height="100" viewBox="0 0 24 24" fill="url(#dtHeart)">
+              <defs>
+                <linearGradient id="dtHeart" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#7B61FF" />
+                  <stop offset="50%" stopColor="#A855F7" />
+                  <stop offset="100%" stopColor="#FF61B6" />
+                </linearGradient>
+              </defs>
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+          )}
+          <div
+            className={`product-card-fav ${isFav ? "is-fav" : ""}`}
+            onClick={(e) => { e.stopPropagation(); toggleFav(product.id); }}
+          >
+            <HeartIcon size={20} gradient={isFav} />
+          </div>
+        </div>
+        <div className="product-card-brand">{brand?.name}</div>
+        <div className="product-card-name">{product.name}</div>
+        <div className="product-card-price">{product.price} ‚Ç¨</div>
+      </div>
+    );
+  };
+
+  // --- SIDE PANELS (Cart & Favorites) ---
+  const SidePanel = ({ open, onClose, title, children, footer }) => (
+    <>
+      <div className={`panel-backdrop ${open ? "open" : ""}`} onClick={onClose} />
+      <div className={`side-panel ${open ? "open" : ""}`}>
+        <div className="panel-header">
+          <span className="panel-title">{title}</span>
+          <button className="panel-close" onClick={onClose}><CloseIcon /></button>
+        </div>
+        <div className="panel-body">{children}</div>
+        {footer && <div className="panel-footer">{footer}</div>}
+      </div>
+    </>
+  );
+
+  const CartPanel = () => (
+    <SidePanel
+      open={cartOpen}
+      onClose={() => setCartOpen(false)}
+      title={`Panier (${cart.length})`}
+      footer={
+        cart.length > 0 && (
+          <>
+            <div className="cart-total">
+              <span className="cart-total-label">{t.total}</span>
+              <span className="cart-total-amount">{cartTotal} ‚Ç¨</span>
+            </div>
+            <button className="btn btn-dark" style={{ width: "100%", justifyContent: "center" }} onClick={() => { setCartOpen(false); navigate("checkout"); }}>
+              Checkout <ArrowIcon size={14} />
+            </button>
+          </>
+        )
+      }
+    >
+      {cart.length === 0 ? (
+        <div className="empty-state">
+          <BagIcon size={40} count={0} />
+          <div className="empty-state-text">Ton panier est vide.<br />Explore le shop pour trouver ta pi√®ce.</div>
+          <button className="btn btn-dark btn-sm" onClick={() => { setCartOpen(false); navigate("shop"); }}>
+            {t.heroBtn}
+          </button>
+        </div>
+      ) : (
+        cart.map((item) => {
+          const brand = BRANDS.find((b) => b.id === item.brand);
+          return (
+            <div key={item.cartId} className="cart-item">
+              <div className="cart-item-img"><img src={item.image} alt={item.name} /></div>
+              <div className="cart-item-info">
+                <div>
+                  <div className="cart-item-brand">{brand?.name}</div>
+                  <div className="cart-item-name">{item.name}</div>
+                  <div className="cart-item-meta">Taille: {item.selectedSize}</div>
+                </div>
+                <div className="cart-item-bottom">
+                  <span className="cart-item-price">{item.price} ‚Ç¨</span>
+                  <button className="cart-item-remove" onClick={() => removeFromCart(item.cartId)}>
+                    <TrashIcon />
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })
+      )}
+    </SidePanel>
+  );
+
+  const FavPanel = () => (
+    <SidePanel open={favOpen} onClose={() => setFavOpen(false)} title={`${t.favorites} (${favorites.length})`}>
+      {favorites.length === 0 ? (
+        <div className="empty-state">
+          <HeartIcon size={40} />
+          <div className="empty-state-text">{t.emptyFav}<br />Like les pi√®ces qui te parlent.</div>
+        </div>
+      ) : (
+        favorites.map((pid) => {
+          const product = PRODUCTS.find((p) => p.id === pid);
+          const brand = BRANDS.find((b) => b.id === product.brand);
+          return (
+            <div key={pid} className="cart-item" style={{ cursor: "pointer" }} onClick={() => { setFavOpen(false); navigate("product", pid); }}>
+              <div className="cart-item-img"><img src={product.image} alt={product.name} /></div>
+              <div className="cart-item-info">
+                <div>
+                  <div className="cart-item-brand">{brand?.name}</div>
+                  <div className="cart-item-name">{product.name}</div>
+                </div>
+                <div className="cart-item-bottom">
+                  <span className="cart-item-price">{product.price} ‚Ç¨</span>
+                  <button className="cart-item-remove" onClick={(e) => { e.stopPropagation(); toggleFav(pid); }}>
+                    <CloseIcon size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })
+      )}
+    </SidePanel>
+  );
+
+  // --- FOOTER ---
+  const Footer = () => (
+    <footer className="footer">
+      <div className="footer-top">
+        <div>
+          <div className="footer-brand"><StarIcon size={20} gradient /> Uneek</div>
+          <div className="footer-tagline">
+            La mode ind√©pendante, cr√©√©e pour ceux qui refusent de ressembler √† tout le monde. Dress different. Feel different.
+          </div>
+        </div>
+        <div>
+          <div className="footer-col-title">Navigation</div>
+          {[t.shop, t.brands, t.lookbooks, t.manifesto].map((l) => (
+            <span key={l} className="footer-link" onClick={() => navigate(l.toLowerCase() === "marques" ? "brands" : l.toLowerCase())}>{l}</span>
+          ))}
+        </div>
+        <div>
+          <div className="footer-col-title">{t.support}</div>
+          <span className="footer-link" onClick={() => navigate("manifesto")}>{t.faq}</span>
+          <span className="footer-link" onClick={() => navigate("cgv")}>{t.delivery}</span>
+          <span className="footer-link" onClick={() => navigate("partner")}>{t.partner}</span>
+          <span className="footer-link" onClick={() => { window.location.href = "mailto:support@uneek.store"; }}>{t.contact}</span>
+          <div style={{ marginTop: 16 }}>
+            <div className="footer-col-title" style={{ marginBottom: 10 }}>{t.language}</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <span onClick={() => setLang("fr")} style={{ fontSize: 12, cursor: "pointer", padding: "5px 14px", border: `1px solid ${lang === "fr" ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.15)"}`, color: lang === "fr" ? "#fff" : "rgba(255,255,255,0.35)", borderRadius: 20, transition: "all 0.2s", fontWeight: lang === "fr" ? 600 : 300 }}>FR</span>
+              <span onClick={() => setLang("en")} style={{ fontSize: 12, cursor: "pointer", padding: "5px 14px", border: `1px solid ${lang === "en" ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.15)"}`, color: lang === "en" ? "#fff" : "rgba(255,255,255,0.35)", borderRadius: 20, transition: "all 0.2s", fontWeight: lang === "en" ? 600 : 300 }}>EN</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div className="footer-col-title">{t.legal}</div>
+          <span className="footer-link" onClick={() => navigate("cgv")}>{t.cgv}</span>
+          <span className="footer-link" onClick={() => navigate("privacy")}>{t.privacy}</span>
+          <span className="footer-link" onClick={() => navigate("legal")}>{t.mentions}</span>
+        </div>
+      </div>
+      <div className="footer-bottom">
+        <span>{t.copyright}</span>
+        <span>{t.madeIn}</span>
+      </div>
+    </footer>
+  );
+
+  // =====================
+  // PAGES
+  // =====================
+
+  // --- HOME ---
+  const HomePage = () => (
+    <div className="page-wrapper">
+      {}
+      <section className="hero">
+        <div className="hero-bg" />
+        <div className="hero-overlay" />
+        <div className="hero-content">
+          <p className="hero-tag">{t.heroTag}</p>
+          <h1 className="hero-title">
+            {t.heroTitle1}<br />You wear what's <span className="gradient-text">{t.heroSpecial}</span>
+          </h1>
+          <p className="hero-subtitle">{t.heroSub}</p>
+          <div className="hero-cta">
+            <button className="btn btn-primary" onClick={() => navigate("shop")}>
+              {t.heroBtn} <ArrowIcon size={14} />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {}
+      <section className="section">
+        <div className="section-header">
+          <div>
+            <h2 className="section-title">{t.selectionTitle}</h2>
+            <p className="section-subtitle">{t.selectionSub}</p>
+          </div>
+          <span className="section-link" onClick={() => navigate("shop")}>
+            {t.seeAll} <ArrowIcon size={14} />
+          </span>
+        </div>
+        <div className="product-grid">
+          {[PRODUCTS[0], PRODUCTS[1], PRODUCTS[2], PRODUCTS[3]].map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      </section>
+
+      {}
+      <section className="section" style={{ paddingTop: 0 }}>
+        <div className="section-header">
+          <div>
+            <h2 className="section-title">Les marques</h2>
+            <p className="section-subtitle">Cr√©ateurs ind√©pendants, s√©lectionn√©s avec soin</p>
+          </div>
+          <span className="section-link" onClick={() => navigate("brands")}>
+            {t.seeAllBrands} <ArrowIcon size={14} />
+          </span>
+        </div>
+        <div className="brand-strip">
+          {BRANDS.map((b) => (
+            <div key={b.id} className="brand-chip" onClick={() => navigate("brand", b.id)}>
+              <span className="brand-chip-name">{b.name}</span>
+              <span className="brand-chip-city">{b.city} ‚Äî {b.year}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {}
+      <section className="manifesto-section">
+        <h2 className="manifesto-quote">
+          The future belongs<br />to those who <span className="gradient-text">create.</span>
+        </h2>
+        <p className="manifesto-text">
+          On ne vend pas des v√™tements. On donne une voix aux cr√©ateurs qui osent, et un style √† ceux qui refusent de se fondre dans la masse.
+        </p>
+        <button className="btn btn-gradient" onClick={() => navigate("manifesto")}>
+          Lire le Manifesto
+        </button>
+      </section>
+
+      {}
+      <section className="section">
+        <div className="section-header">
+          <div>
+            <h2 className="section-title">Lookbooks</h2>
+            <p className="section-subtitle">Des √©ditos pour s'inspirer</p>
+          </div>
+        </div>
+        <div className="lookbook-grid">
+          {LOOKBOOKS.map((lb) => (
+            <div key={lb.id} className="lookbook-card" onClick={() => navigate("lookbook", lb.id)}>
+              <img src={lb.image} alt={lb.title} loading="lazy" />
+              <div className="lookbook-card-content">
+                <div className="lookbook-card-sub">{lb.subtitle}</div>
+                <h3 className="lookbook-card-title">{lb.title}</h3>
+                <p className="lookbook-card-desc">{lb.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {}
+      <section className="section">
+        <div className="section-header">
+          <div>
+            <h2 className="section-title">Nouveaut√©s</h2>
+            <p className="section-subtitle">Les derni√®res pi√®ces ajout√©es</p>
+          </div>
+          <span className="section-link" onClick={() => navigate("shop")}>
+            Tout voir <ArrowIcon size={14} />
+          </span>
+        </div>
+        <div className="product-grid">
+          {[PRODUCTS[7], PRODUCTS[10], PRODUCTS[4], PRODUCTS[2]].map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      </section>
+
+      <Footer />
+    </div>
+  );
+
+  // --- SHOP / CATALOGUE ---
+  const ShopPage = () => {
+    const filtered = PRODUCTS.filter((p) => {
+      const matchCat = activeCategory === lang === "fr" ? "Tous" : "All" || p.category === activeCategory;
+      const matchBrand = !activeBrandFilter || p.brand === activeBrandFilter;
+      const matchSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.brand.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchCat && matchBrand && matchSearch;
+    });
+
+    return (
+      <div className="page-wrapper">
+        <section className="section" style={{ paddingTop: 96 }}>
+          <h1 className="section-title" style={{ marginBottom: 8 }}>Shop</h1>
+          <p className="section-subtitle" style={{ marginBottom: 32 }}>{filtered.length} pi√®ces disponibles</p>
+
+          <div className="catalogue-top">
+            <div className="filter-bar">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  className={`filter-chip ${activeCategory === cat ? "active" : ""}`}
+                  onClick={() => setActiveCategory(cat)}
+                >
+                  {cat}
+                </button>
+              ))}
+              <span style={{ width: 1, background: "var(--gray-200)", margin: "0 4px" }} />
+              {BRANDS.map((b) => (
+                <button
+                  key={b.id}
+                  className={`filter-chip ${activeBrandFilter === b.id ? "active" : ""}`}
+                  onClick={() => setActiveBrandFilter(activeBrandFilter === b.id ? null : b.id)}
+                >
+                  {b.name}
+                </button>
+              ))}
+            </div>
+            <div className="search-bar">
+              <SearchIcon />
+              <input
+                type="text"
+                placeholder="Rechercher..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="product-grid">
+            {filtered.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+
+          {filtered.length === 0 && (
+            <div className="empty-state" style={{ height: 400 }}>
+              <SearchIcon size={40} />
+              <div className="empty-state-text">Aucun produit trouv√©.<br />Essaie avec d'autres filtres.</div>
+            </div>
+          )}
+        </section>
+        <Footer />
+      </div>
+    );
+  };
+
+  // --- PRODUCT DETAIL ---
+  const ProductPage = () => {
+    const product = PRODUCTS.find((p) => p.id === pageData);
+    const [selectedSize, setSelectedSize] = useState(null);
+    const [selectedColorName, setSelectedColorName] = useState(null);
+    const [pdHeart, setPdHeart] = useState(false);
+    const pdLastTap = useRef(0);
+
+    if (!product) return null;
+
+    const brand = BRANDS.find((b) => b.id === product.brand);
+    const isFav = favorites.includes(product.id);
+    const activeColor = product.colors.find(c => c.name === selectedColorName) || product.colors[0];
+    const relatedProducts = PRODUCTS.filter((p) => p.brand === product.brand && p.id !== product.id);
+
+    const [currentImg, setCurrentImg] = useState(0);
+    const productImages = product.images || [product.image];
+
+    const handlePdDoubleTap = (e) => {
+      const now = Date.now();
+      if (now - pdLastTap.current < 400) {
+        if (!favorites.includes(product.id)) toggleFav(product.id);
+        setPdHeart(true);
+        setTimeout(() => setPdHeart(false), 1200);
+        pdLastTap.current = 0;
+      } else {
+        pdLastTap.current = now;
+      }
+    };
+
+    return (
+      <div className="page-wrapper">
+        <section className="section">
+          <div className="product-detail">
+            <div style={{ position: "relative" }}>
+              <div className="pd-image" onClick={handlePdDoubleTap} onMouseMove={(e) => {
+                const img = e.currentTarget.querySelector('img');
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width;
+                const y = (e.clientY - rect.top) / rect.height;
+                const rotateY = (x - 0.5) * 14;
+                const rotateX = (0.5 - y) * 14;
+                img.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+              }} onMouseLeave={(e) => {
+                const img = e.currentTarget.querySelector('img');
+                img.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)";
+              }}>
+                <img src={productImages[currentImg]} alt={product.name} />
+                {pdHeart && (
+                  <svg className="double-tap-heart" width="120" height="120" viewBox="0 0 24 24" fill="url(#dtHeart2)">
+                    <defs>
+                      <linearGradient id="dtHeart2" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#7B61FF" />
+                        <stop offset="50%" stopColor="#A855F7" />
+                        <stop offset="100%" stopColor="#FF61B6" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                  </svg>
+                )}
+                {productImages.length > 1 && (
+                  <>
+                    <div onClick={(e) => { e.stopPropagation(); setCurrentImg(i => i > 0 ? i - 1 : productImages.length - 1); }} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 36, height: 36, background: "rgba(255,255,255,0.85)", backdropFilter: "blur(8px)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, color: "#0A0A0A", zIndex: 5 }}>‚Äπ</div>
+                    <div onClick={(e) => { e.stopPropagation(); setCurrentImg(i => i < productImages.length - 1 ? i + 1 : 0); }} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 36, height: 36, background: "rgba(255,255,255,0.85)", backdropFilter: "blur(8px)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16, color: "#0A0A0A", zIndex: 5 }}>‚Ä∫</div>
+                  </>
+                )}
+              </div>
+              {productImages.length > 1 && (
+                <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 12 }}>
+                  {productImages.map((_, i) => (
+                    <div key={i} onClick={() => setCurrentImg(i)} style={{ width: i === currentImg ? 24 : 8, height: 8, borderRadius: 4, background: i === currentImg ? "var(--black)" : "var(--gray-300)", cursor: "pointer", transition: "all 0.3s" }} />
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="pd-info">
+              <div className="pd-brand" onClick={() => navigate("brand", brand?.id)}>
+                {brand?.name} <ArrowIcon size={12} />
+              </div>
+              <h1 className="pd-name">{product.name}</h1>
+              <div className="pd-price">{product.price} ‚Ç¨</div>
+
+              <div className="pd-color-name">Couleur : {activeColor.name}</div>
+              <div className="pd-colors">
+                {product.colors.map((c) => (
+                  <div
+                    key={c.name}
+                    className={`pd-color-swatch ${activeColor.name === c.name ? "selected" : ""}`}
+                    style={{ background: c.hex }}
+                    onClick={() => setSelectedColorName(c.name)}
+                    title={c.name}
+                  />
+                ))}
+              </div>
+
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--gray-400)", marginBottom: 12 }}>{t.size}</div>
+              <div className="pd-sizes">
+                {product.sizes.map((s) => (
+                  <button
+                    key={s}
+                    className={`pd-size ${selectedSize === s ? "selected" : ""}`}
+                    onClick={() => setSelectedSize(s)}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+
