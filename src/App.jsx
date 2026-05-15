@@ -49,7 +49,7 @@ const BRANDS = [
   },
 ];
 
-const CATEGORIES = ["Tous", "Tops", "Bottoms", "Outerwear", "Accessories"];
+const CATEGORIES = [lang === "fr" ? "Tous" : "All", "Tops", "Bottoms", "Outerwear", "Accessories"];
 
 const PRODUCTS = [
   { id: 0, name: "Hoodie Chromatique", brand: "brouillon", category: "Tops", price: 40, sizes: ["S", "M", "L", "XL"], image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==", story: "Inspiré des premiers croquis qu'on jette — sauf que celui-ci, on le porte.", color: "Blanc cassé", colors: [{name: "Blanc cassé", hex: "#F5F0E8"}, {name: "Noir", hex: "#1A1A1A"}, {name: "Gris", hex: "#8C8C8C"}] },
@@ -166,7 +166,6 @@ const TrashIcon = ({ size = 16 }) => (
 
 // --- STYLES ---
 
-
 // --- STYLES ---
 
 // --- STYLES ---
@@ -198,27 +197,30 @@ const styles = `
   }
 
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--white); color: var(--black); }
+  body { background: var(--white); color: var(--black); overflow-x: hidden; max-width: 100vw; }
   ::selection { background: rgba(90, 90, 90, 0.2); color: var(--black); }
   .uneek-app { font-family: var(--font-body); background: var(--white); min-height: 100vh; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
   .gradient-text { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
   .page-wrapper { min-height: 100vh; }
 
-  /* NAV */
+  
   .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 0 clamp(16px, 4vw, 48px); height: 64px; display: flex; align-items: center; justify-content: space-between; background: rgba(250, 250, 250, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-bottom: 1px solid rgba(0,0,0,0.04); transition: all 0.4s var(--ease); }
   .nav.scrolled { height: 56px; background: rgba(250, 250, 250, 0.95); }
   .nav-logo { font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: -0.5px; cursor: pointer; display: flex; align-items: center; gap: 1px; user-select: none; color: var(--black); }
   .nav-links { display: flex; align-items: center; gap: 32px; }
-  .nav-link { font-family: var(--font-body); font-size: 13px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; position: relative; padding: 4px 0; color: var(--gray-600); transition: color 0.3s; }
+  .nav-link { font-family: var(--font-body); font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; position: relative; padding: 4px 0; color: var(--gray-600); transition: color 0.3s; }
   .nav-link:hover, .nav-link.active { color: var(--black); }
   .nav-link::after { content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 1.5px; background: var(--black); transition: width 0.3s var(--ease); }
   .nav-link:hover::after, .nav-link.active::after { width: 100%; }
   .nav-icons { display: flex; align-items: center; gap: 20px; }
   .nav-icon { cursor: pointer; color: var(--gray-600); transition: color 0.2s; display: flex; align-items: center; }
   .nav-icon:hover { color: var(--black); }
-  .mobile-menu-btn { display: flex; cursor: pointer; color: var(--black); }
+  .mobile-menu-btn { display: none; cursor: pointer; color: var(--black); }
+  a { color: inherit; text-decoration: none; }
+  a:visited { color: inherit; }
+  a:hover { color: inherit; }
 
-  /* HERO */
+  
   .hero { height: 100vh; display: flex; flex-direction: column; justify-content: flex-end; padding: clamp(24px, 5vw, 64px); padding-bottom: clamp(48px, 8vh, 96px); position: relative; overflow: hidden; background: var(--black); color: var(--white); }
   .hero-bg { position: absolute; inset: 0; background: var(--black); opacity: 1; }
   .hero:hover .hero-bg { transform: scale(1.03); }
@@ -229,7 +231,7 @@ const styles = `
   .hero-subtitle { font-size: clamp(15px, 2vw, 18px); font-weight: 300; color: rgba(255,255,255,0.6); max-width: 500px; line-height: 1.6; margin-bottom: 40px; animation: fadeUp 0.8s var(--ease) 0.6s both; }
   .hero-cta { display: flex; gap: 16px; animation: fadeUp 0.8s var(--ease) 0.8s both; flex-wrap: wrap; }
 
-  /* BUTTONS */
+  
   .btn { font-family: var(--font-body); font-size: 13px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; padding: 16px 36px; border: none; cursor: pointer; transition: all 0.3s var(--ease); display: inline-flex; align-items: center; gap: 10px; border-radius: var(--radius); }
   .btn-primary { background: var(--white); color: var(--black); }
   .btn-primary:hover { background: var(--gray-200); transform: translateY(-2px); }
@@ -239,7 +241,7 @@ const styles = `
   .btn-dark:hover { background: var(--gray-800); transform: translateY(-2px); }
   .btn-sm { padding: 10px 20px; font-size: 11px; }
 
-  /* SECTIONS */
+  
   .section { padding: clamp(48px, 8vw, 96px) clamp(16px, 4vw, 48px); }
   .section-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 48px; flex-wrap: wrap; gap: 16px; }
   .section-title { font-family: var(--font-display); font-size: clamp(28px, 4vw, 44px); font-weight: 700; letter-spacing: -1px; line-height: 1.1; }
@@ -247,7 +249,7 @@ const styles = `
   .section-link { font-size: 13px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--gray-500); transition: color 0.3s; }
   .section-link:hover { color: var(--black); }
 
-  /* PRODUCT GRID */
+  
   .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; }
   .product-card { cursor: pointer; position: relative; }
   .product-card-image { aspect-ratio: 3/4; overflow: hidden; background: var(--gray-100); position: relative; border-radius: var(--radius-lg); margin-bottom: 16px; perspective: 800px; }
@@ -260,7 +262,7 @@ const styles = `
   .product-card-name { font-family: var(--font-display); font-size: 15px; font-weight: 600; margin-bottom: 4px; }
   .product-card-price { font-size: 14px; color: var(--gray-500); font-weight: 400; }
 
-  /* BRAND STRIP */
+  
   .brand-strip { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 16px; scrollbar-width: none; }
   .brand-strip::-webkit-scrollbar { display: none; }
   .brand-chip { flex-shrink: 0; padding: 20px 32px; background: var(--gray-100); cursor: pointer; transition: all 0.3s var(--ease); display: flex; flex-direction: column; gap: 4px; min-width: 200px; border-radius: var(--radius); }
@@ -268,7 +270,7 @@ const styles = `
   .brand-chip-name { font-family: var(--font-display); font-size: 18px; font-weight: 700; }
   .brand-chip-city { font-size: 12px; opacity: 0.5; font-weight: 300; }
 
-  /* LOOKBOOK CARDS */
+  
   .lookbook-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; }
   .lookbook-card { position: relative; aspect-ratio: 4/5; overflow: hidden; cursor: pointer; background: var(--black); border-radius: var(--radius-lg); }
   .lookbook-card img { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; transition: all 0.6s var(--ease); filter: grayscale(20%); }
@@ -278,13 +280,13 @@ const styles = `
   .lookbook-card-title { font-family: var(--font-display); font-size: clamp(28px, 3vw, 40px); font-weight: 700; letter-spacing: -1px; margin-bottom: 16px; }
   .lookbook-card-desc { font-size: 14px; opacity: 0.6; line-height: 1.5; max-width: 350px; font-weight: 300; }
 
-  /* MANIFESTO */
+  
   .manifesto-section { background: var(--black); color: var(--white); padding: clamp(64px, 10vw, 128px) clamp(16px, 4vw, 48px); text-align: center; position: relative; overflow: hidden; }
   .manifesto-section::before { display: none; }
   .manifesto-quote { font-family: var(--font-display); font-size: clamp(32px, 5vw, 64px); font-weight: 700; letter-spacing: -1px; line-height: 1.15; max-width: 800px; margin: 0 auto 40px; position: relative; z-index: 1; }
   .manifesto-text { font-size: clamp(15px, 1.8vw, 18px); line-height: 1.8; max-width: 600px; margin: 0 auto 48px; opacity: 0.5; font-weight: 300; position: relative; z-index: 1; }
 
-  /* FILTERS */
+  
   .catalogue-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 40px; flex-wrap: wrap; }
   .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; }
   .filter-chip { padding: 8px 20px; font-size: 12px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; border: 1px solid var(--gray-200); background: transparent; cursor: pointer; transition: all 0.3s; font-family: var(--font-body); color: var(--gray-500); border-radius: 50px; }
@@ -294,7 +296,7 @@ const styles = `
   .search-bar:focus-within { border-color: var(--black); }
   .search-bar input { border: none; outline: none; font-size: 13px; font-family: var(--font-body); width: 100%; background: transparent; }
 
-  /* PRODUCT DETAIL */
+  
   .product-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
   .pd-image { aspect-ratio: 3/4; overflow: hidden; background: var(--gray-100); position: sticky; top: 96px; border-radius: var(--radius-lg); perspective: 1000px; }
   .pd-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease-out; transform-style: preserve-3d; will-change: transform; }
@@ -321,7 +323,7 @@ const styles = `
   .pd-story-title { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gray-400); margin-bottom: 12px; }
   .pd-story-text { font-size: 14px; line-height: 1.7; color: var(--gray-500); font-style: italic; font-weight: 300; }
 
-  /* BRAND PAGES */
+  
   .brand-hero { height: 70vh; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--black); }
   .brand-hero-bg { position: absolute; inset: 0; }
   .brand-hero-bg img { width: 100%; height: 100%; object-fit: cover; opacity: 0.4; }
@@ -332,7 +334,7 @@ const styles = `
   .brand-hero-meta { display: flex; gap: 24px; justify-content: center; margin-top: 20px; font-size: 12px; opacity: 0.4; letter-spacing: 1px; text-transform: uppercase; }
   .brand-story { font-size: 17px; line-height: 1.9; color: var(--gray-600); max-width: 700px; font-weight: 300; margin-bottom: 48px; }
 
-  /* LOOKBOOK DETAIL */
+  
   .lookbook-hero { height: 85vh; position: relative; overflow: hidden; display: flex; align-items: flex-end; }
   .lookbook-hero-bg { position: absolute; inset: 0; }
   .lookbook-hero-bg img { width: 100%; height: 100%; object-fit: cover; }
@@ -341,7 +343,7 @@ const styles = `
   .lookbook-hero-title { font-family: var(--font-display); font-size: clamp(56px, 10vw, 120px); font-weight: 800; letter-spacing: -3px; line-height: 0.9; }
   .lookbook-hero-desc { font-size: 16px; opacity: 0.6; max-width: 450px; line-height: 1.6; margin-top: 24px; font-weight: 300; }
 
-  /* SIDE PANELS */
+  
   .side-panel { position: fixed; top: 0; right: 0; width: min(440px, 100vw); height: 100vh; background: var(--white); z-index: 200; transform: translateX(100%); transition: transform 0.4s var(--ease); display: flex; flex-direction: column; border-left: 1px solid var(--gray-200); border-radius: var(--radius-lg) 0 0 var(--radius-lg); }
   .side-panel.open { transform: translateX(0); }
   .panel-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 199; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
@@ -369,7 +371,7 @@ const styles = `
   .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 64px 0; text-align: center; }
   .empty-state-text { font-size: 14px; color: var(--gray-400); line-height: 1.6; font-weight: 300; }
 
-  /* FOOTER */
+  
   .footer { background: var(--black); color: var(--white); padding: clamp(48px, 6vw, 80px) clamp(16px, 4vw, 48px) 32px; }
   .footer-top { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px; }
   .footer-brand { font-family: var(--font-display); font-size: 20px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 1px; }
@@ -379,7 +381,7 @@ const styles = `
   .footer-link:hover { color: var(--white); }
   .footer-bottom { display: flex; justify-content: space-between; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: rgba(255,255,255,0.25); font-weight: 300; }
 
-  /* MOBILE NAV */
+  
   .mobile-nav { position: fixed; inset: 0; background: var(--white); z-index: 150; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 28px; transform: translateY(-100%); transition: transform 0.6s var(--ease); }
   .mobile-nav.open { transform: translateY(0); }
   .mobile-nav.open .mobile-nav-link { opacity: 0; animation: mobileNavIn 0.5s var(--ease) forwards; }
@@ -394,7 +396,7 @@ const styles = `
   .mobile-nav-link { font-family: var(--font-display); font-size: 32px; font-weight: 700; cursor: pointer; transition: opacity 0.3s, transform 0.3s var(--ease); letter-spacing: -0.5px; color: rgba(10,10,10,0.45); }
   .mobile-nav-link:hover { color: var(--black); transform: translateX(8px); }
 
-  /* FAQ */
+  
   .faq-item { border-bottom: 1px solid rgba(255,255,255,0.08); padding: 24px 0; cursor: pointer; }
   .faq-question { display: flex; justify-content: space-between; align-items: center; font-family: var(--font-display); font-size: 16px; font-weight: 600; color: var(--white); transition: opacity 0.3s; }
   .faq-question:hover { opacity: 0.7; }
@@ -403,17 +405,17 @@ const styles = `
   .faq-toggle { font-size: 20px; color: rgba(255,255,255,0.3); transition: transform 0.3s var(--ease); }
   .faq-toggle.open { transform: rotate(45deg); }
 
-  /* PARTNER FORM */
+  
   .partner-form input, .partner-form textarea, .partner-form select { width: 100%; padding: 14px 16px; border: 1px solid var(--gray-200); font-size: 14px; font-family: var(--font-body); outline: none; transition: border-color 0.3s; background: var(--white); color: var(--black); border-radius: var(--radius-sm); }
   .partner-form input:focus, .partner-form textarea:focus, .partner-form select:focus { border-color: var(--black); }
   .partner-form textarea { resize: vertical; min-height: 120px; }
   .partner-form label { font-size: 12px; font-weight: 500; color: var(--gray-500); display: block; margin-bottom: 6px; }
 
-  /* TOAST */
+  
   .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--black); color: var(--white); padding: 14px 28px; font-size: 13px; font-weight: 500; z-index: 300; transition: transform 0.4s var(--ease); white-space: nowrap; display: flex; align-items: center; gap: 8px; border-radius: var(--radius); }
   .toast.show { transform: translateX(-50%) translateY(0); }
 
-  /* DOUBLE TAP HEART */
+  
   @keyframes doubleTapHeart {
     0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; }
     10% { transform: translate(-50%, -50%) scale(1.4) rotate(0deg); opacity: 1; }
@@ -425,18 +427,21 @@ const styles = `
   }
   .double-tap-heart { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); z-index: 10; pointer-events: none; animation: doubleTapHeart 1.1s ease forwards; filter: drop-shadow(0 4px 20px rgba(123, 97, 255, 0.5)); }
 
-  /* ANIMATIONS */
+  
   @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-  /* SCROLLBAR */
+  
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
 
-  /* RESPONSIVE */
-  @media (max-width: 600px) {
+  
+  @media (max-width: 768px) {
     .nav-links { display: none; }
+    .mobile-menu-btn { display: flex; }
+  }
+  @media (max-width: 600px) {
     .product-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
     .product-card-name { font-size: 13px; }
     .product-card-price { font-size: 12px; }
@@ -448,10 +453,16 @@ const styles = `
     .btn { width: 100%; justify-content: center; }
     .pd-actions { flex-direction: column; }
     .pd-add-to-cart { width: 100%; }
+    .section { padding-left: 16px; padding-right: 16px; }
+    .hero { padding: 16px; padding-bottom: 48px; }
+    .side-panel { width: 100vw; }
+    .checkout-grid { grid-template-columns: 1fr; gap: 32px; }
+    .brands-grid { grid-template-columns: 1fr; }
+    .lookbooks-grid { grid-template-columns: 1fr; }
+    * { box-sizing: border-box; max-width: 100vw; }
+    img, video { max-width: 100%; height: auto; }
   }
 `;
-
-
 
 // --- MAIN APP ---
 export default function UneekApp() {
@@ -465,14 +476,14 @@ export default function UneekApp() {
   const [scrolled, setScrolled] = useState(false);
   const [toast, setToast] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState("Tous");
+  const [activeCategory, setActiveCategory] = useState(lang === "fr" ? "Tous" : "All");
   const [activeBrandFilter, setActiveBrandFilter] = useState(null);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
   const [lang, setLang] = useState("fr");
 
   const t = {
     fr: {
-      shop: "Shop", brands: "Marques", lookbooks: "Lookbooks", manifesto: "Manifesto",
+      home: "Home", shop: "Shop", brands: "Marques", manifesto: "Manifesto",
       heroTag: "Created by Independent Fashion",
       heroTitle1: "They wear what's told.",
       heroTitle2: "You wear what's",
@@ -482,6 +493,7 @@ export default function UneekApp() {
       selectionTitle: "Sélection du moment",
       selectionSub: "Les pièces qui font parler",
       seeAll: "Voir tout",
+      seeAllBrands: "Toutes les marques",
       brandsTitle: "Nos marques",
       brandsSub: "Des créateurs sélectionnés à la main",
       addToCart: "Ajouter au panier",
@@ -491,6 +503,34 @@ export default function UneekApp() {
       emptyFav: "Aucun favori pour l'instant.",
       emptyCart: "Votre panier est vide.",
       total: "Total", checkout: "Commander",
+      backHome: t.backHome,
+      backShop: t.backShop,
+      sizeLabel: "Taille",
+      sizeItem: "Taille : ",
+      filterAll: lang === "fr" ? "Tous" : "All",
+      inStock: "En stock",
+      outOfStock: "Rupture de stock",
+      becomePartner: "Devenir Partenaire",
+      partnerTitle: "Rejoins UNEEK",
+      partnerSub: "Tu crées des pièces uniques ? On veut les montrer au monde.",
+      partnerBtn: "Postuler",
+      partnerSuccess: "Candidature envoyée !",
+      manifestoQuote: "Ils portent ce qu'on leur dit de porter. Toi, tu portes ce qui te ressemble.",
+      manifestoText: "UNEEK est une marketplace dédiée aux marques de mode indépendantes. On sélectionne à la main les créateurs les plus originaux pour offrir une alternative au mass market.",
+      manifestoBtn: "Explorer le Shop",
+      faqTitle: "Questions fréquentes",
+      faq1q: "Comment devenir partenaire UNEEK ?",
+      faq1a: "Si tu es un créateur indépendant, tu peux postuler via notre formulaire 'Devenir Partenaire' accessible depuis le menu. On étudie chaque candidature avec attention.",
+      faq2q: "Quels sont les délais de livraison ?",
+      faq2a: "Les délais varient selon le créateur, généralement entre 3 et 7 jours ouvrés en Belgique et en France. Chaque commande est préparée directement par la marque.",
+      faq3q: "Comment suivre ma commande ?",
+      faq3a: "Une fois ta commande expédiée, tu reçois un email avec un lien de suivi. Le créateur dispose de 3 jours ouvrés pour expédier après la confirmation.",
+      faq4q: "Puis-je retourner un article ?",
+      faq4a: "Les retours sont acceptés sous 14 jours si l'article est non porté et dans son état d'origine. Contacte-nous à support@uneek.store pour initier un retour.",
+      lookbooksTitle: "Lookbooks",
+      lookbooksSub: "Des univers créés par nos marques",
+      shopTitle: "Le Shop",
+      shopSub: "Toutes nos pièces",
       footerTagline: "La marketplace qui réunit les marques de mode indépendantes les plus créatives.",
       support: "Support", legal: "Légal",
       faq: "FAQ", delivery: "Livraison & Retours",
@@ -501,7 +541,7 @@ export default function UneekApp() {
       madeIn: "Made with ★ in Belgium",
     },
     en: {
-      shop: "Shop", brands: "Brands", lookbooks: "Lookbooks", manifesto: "Manifesto",
+      home: "Home", shop: "Shop", brands: "Brands", manifesto: "Manifesto",
       heroTag: "Created by Independent Fashion",
       heroTitle1: "They wear what's told.",
       heroTitle2: "You wear what's",
@@ -511,6 +551,7 @@ export default function UneekApp() {
       selectionTitle: "Featured right now",
       selectionSub: "Pieces worth talking about",
       seeAll: "See all",
+      seeAllBrands: "All brands",
       brandsTitle: "Our brands",
       brandsSub: "Handpicked creators",
       addToCart: "Add to cart",
@@ -518,6 +559,44 @@ export default function UneekApp() {
       size: "Size", color: "Color",
       favorites: "Favorites", cart: "Cart",
       emptyFav: "No favorites yet.",
+      emptyCart: "Your cart is empty.",
+      total: "Total", checkout: "Checkout",
+      backHome: "Back to home",
+      backShop: "← Back to shop",
+      sizeLabel: "Size",
+      sizeItem: "Size: ",
+      filterAll: "All",
+      inStock: "In stock",
+      outOfStock: "Out of stock",
+      becomePartner: "Become a Partner",
+      partnerTitle: "Join UNEEK",
+      partnerSub: "You create unique pieces? We want to show them to the world.",
+      partnerBtn: "Apply",
+      partnerSuccess: "Application sent!",
+      manifestoQuote: "They wear what they're told. You wear what feels like you.",
+      manifestoText: "UNEEK is a marketplace dedicated to independent fashion brands. We handpick the most original creators to offer an alternative to mass market.",
+      manifestoBtn: "Explore the Shop",
+      faqTitle: "FAQ",
+      faq1q: "How do I become a UNEEK partner?",
+      faq1a: "If you're an independent creator, you can apply through our 'Become a Partner' form accessible from the menu. We review every application carefully.",
+      faq2q: "What are the delivery times?",
+      faq2a: "Delivery times vary by creator, generally 3 to 7 business days in Belgium and France. Each order is prepared directly by the brand.",
+      faq3q: "How do I track my order?",
+      faq3a: "Once your order is shipped, you'll receive an email with a tracking link. The creator has 3 business days to ship after confirmation.",
+      faq4q: "Can I return an item?",
+      faq4a: "Returns are accepted within 14 days if the item is unworn and in its original condition. Contact us at support@uneek.store to initiate a return.",
+      lookbooksTitle: "Lookbooks",
+      lookbooksSub: "Worlds created by our brands",
+      shopTitle: "The Shop",
+      shopSub: "All our pieces",
+      footerTagline: "The marketplace bringing together the most creative independent fashion brands.",
+      support: "Support", legal: "Legal",
+      faq: "FAQ", delivery: "Shipping & Returns",
+      partner: "Become a Partner", contact: "Contact",
+      cgv: "Terms & Conditions", privacy: "Privacy Policy", mentions: "Legal Notice",
+      language: "Language",
+      copyright: "© 2026 UNEEK. The future belongs to those who create.",
+      madeIn: "Made with ★ in Belgium",
       emptyCart: "Your cart is empty.",
       total: "Total", checkout: "Checkout",
       footerTagline: "The marketplace bringing together the most creative independent fashion brands.",
@@ -559,12 +638,12 @@ export default function UneekApp() {
       prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId]
     );
     const isFav = favorites.includes(productId);
-    showToast(isFav ? "Retiré des favoris" : "Ajouté aux favoris ♥");
+    showToast(isFav ? (lang === "fr" ? "Retiré des favoris" : "Removed from favorites") : (lang === "fr" ? "Ajouté aux favoris ♥" : "Added to favorites ♥"));
   };
 
   const addToCart = (product, size) => {
     setCart((prev) => [...prev, { ...product, selectedSize: size, cartId: Date.now() }]);
-    showToast("Ajouté au panier");
+    showToast(lang === "fr" ? "Ajouté au panier" : "Added to cart");
   };
 
   const removeFromCart = (cartId) => {
@@ -575,17 +654,13 @@ export default function UneekApp() {
 
   // --- NAVIGATION BAR ---
   const Nav = () => (
-    <nav className={`nav ${scrolled ? "scrolled" : ""}`}>
-      <div className="nav-logo" onClick={() => navigate("home")}>
-        <StarIcon size={22} filled />
-        Uneek
-      </div>
-
-      <div className="nav-links">
+    <nav className={`nav ${scrolled ? "scrolled" : ""}`} style={{ display: "flex", alignItems: "center", position: "fixed", top: 0, left: 0, right: 0, zIndex: 100 }}>
+      {}
+      <div className="nav-links" style={{ flex: 1 }}>
         {[
+          [t.home, "home"],
           [t.shop, "shop"],
           [t.brands, "brands"],
-          [t.lookbooks, "lookbooks"],
           [t.manifesto, "manifesto"],
         ].map(([label, p]) => (
           <span key={p} className={`nav-link ${page === p ? "active" : ""}`} onClick={() => navigate(p)}>
@@ -594,7 +669,13 @@ export default function UneekApp() {
         ))}
       </div>
 
-      <div className="nav-icons">
+      {}
+      <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", cursor: "pointer" }} onClick={() => navigate("home")}>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="163 276 484 460" width="36" height="36"><path d="M 405 276 L 461.9 451.7 L 646.1 451.7 L 497.1 560.3 L 554 735.8 L 405 627.3 L 256 735.8 L 312.9 560.3 L 163.9 451.7 L 348.1 451.7 Z" fill="#0A0A0A"/></svg>
+      </div>
+
+      {}
+      <div className="nav-icons" style={{ flex: 1, justifyContent: "flex-end" }}>
         <span className="nav-icon" onClick={() => { setFavOpen(true); setCartOpen(false); }}>
           <HeartIcon size={19} gradient={favorites.length > 0} />
         </span>
@@ -620,7 +701,7 @@ export default function UneekApp() {
         [t.favorites, () => { setFavOpen(true); setMobileMenuOpen(false); }],
         [t.cart, () => { setCartOpen(true); setMobileMenuOpen(false); }],
         ["Mon Profil", "profile"],
-        ["Devenir Partenaire", "partner"],
+        [t.becomePartner, "partner"],
       ].map(([label, action]) => (
         <span
           key={label}
@@ -746,7 +827,7 @@ export default function UneekApp() {
           <BagIcon size={40} count={0} />
           <div className="empty-state-text">Ton panier est vide.<br />Explore le shop pour trouver ta pièce.</div>
           <button className="btn btn-dark btn-sm" onClick={() => { setCartOpen(false); navigate("shop"); }}>
-            Explorer le Shop
+            {t.heroBtn}
           </button>
         </div>
       ) : (
@@ -859,7 +940,7 @@ export default function UneekApp() {
   // --- HOME ---
   const HomePage = () => (
     <div className="page-wrapper">
-      {/* Hero */}
+      {}
       <section className="hero">
         <div className="hero-bg" />
         <div className="hero-overlay" />
@@ -877,7 +958,7 @@ export default function UneekApp() {
         </div>
       </section>
 
-      {/* Featured Products */}
+      {}
       <section className="section">
         <div className="section-header">
           <div>
@@ -895,7 +976,7 @@ export default function UneekApp() {
         </div>
       </section>
 
-      {/* Brand Strip */}
+      {}
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="section-header">
           <div>
@@ -903,7 +984,7 @@ export default function UneekApp() {
             <p className="section-subtitle">Créateurs indépendants, sélectionnés avec soin</p>
           </div>
           <span className="section-link" onClick={() => navigate("brands")}>
-            Toutes les marques <ArrowIcon size={14} />
+            {t.seeAllBrands} <ArrowIcon size={14} />
           </span>
         </div>
         <div className="brand-strip">
@@ -916,7 +997,7 @@ export default function UneekApp() {
         </div>
       </section>
 
-      {/* Manifesto Quote */}
+      {}
       <section className="manifesto-section">
         <h2 className="manifesto-quote">
           The future belongs<br />to those who <span className="gradient-text">create.</span>
@@ -929,7 +1010,7 @@ export default function UneekApp() {
         </button>
       </section>
 
-      {/* Lookbooks */}
+      {}
       <section className="section">
         <div className="section-header">
           <div>
@@ -951,7 +1032,7 @@ export default function UneekApp() {
         </div>
       </section>
 
-      {/* New Arrivals */}
+      {}
       <section className="section">
         <div className="section-header">
           <div>
@@ -976,7 +1057,7 @@ export default function UneekApp() {
   // --- SHOP / CATALOGUE ---
   const ShopPage = () => {
     const filtered = PRODUCTS.filter((p) => {
-      const matchCat = activeCategory === "Tous" || p.category === activeCategory;
+      const matchCat = activeCategory === lang === "fr" ? "Tous" : "All" || p.category === activeCategory;
       const matchBrand = !activeBrandFilter || p.brand === activeBrandFilter;
       const matchSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.brand.toLowerCase().includes(searchQuery.toLowerCase());
       return matchCat && matchBrand && matchSearch;
@@ -1134,7 +1215,7 @@ export default function UneekApp() {
                 ))}
               </div>
 
-              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--gray-400)", marginBottom: 12 }}>Taille</div>
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--gray-400)", marginBottom: 12 }}>{t.size}</div>
               <div className="pd-sizes">
                 {product.sizes.map((s) => (
                   <button
@@ -1380,7 +1461,7 @@ export default function UneekApp() {
         </p>
         <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
           <button className="btn btn-dark" onClick={() => navigate("shop")}>
-            Explorer le Shop <ArrowIcon size={14} />
+            {t.manifestoBtn} <ArrowIcon size={14} />
           </button>
           <button className="btn btn-outline" style={{ color: "var(--black)", borderColor: "var(--gray-300)" }} onClick={() => navigate("brands")}>
             Voir les Marques
@@ -1390,7 +1471,7 @@ export default function UneekApp() {
 
       <section style={{ background: "var(--black)", color: "var(--white)", padding: "clamp(64px, 8vw, 96px) clamp(16px, 4vw, 48px)" }}>
         <div style={{ maxWidth: 700, margin: "0 auto" }}>
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(24px, 3vw, 36px)", fontWeight: 700, letterSpacing: -1, marginBottom: 48 }}>Questions fréquentes</h2>
+          <h2 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(24px, 3vw, 36px)", fontWeight: 700, letterSpacing: -1, marginBottom: 48 }}>{t.faqTitle}</h2>
           <FaqSection />
         </div>
       </section>
@@ -1405,7 +1486,7 @@ export default function UneekApp() {
 
     const handleSubmit = () => {
       if (!form.prenom || !form.nom || !form.email || !form.adresse || !form.ville || !form.code) {
-        showToast("Remplis tous les champs");
+        showToast(lang === "fr" ? "Remplis tous les champs" : "Please fill all fields");
         return;
       }
       setStep("success");
@@ -1430,7 +1511,7 @@ export default function UneekApp() {
                 Continuer le shopping <ArrowIcon size={14} />
               </button>
               <button className="btn" style={{ border: "1px solid var(--gray-300)", color: "var(--black)" }} onClick={() => { setCart([]); navigate("home"); }}>
-                Retour à l'accueil
+                {t.backHome}
               </button>
             </div>
           </section>
@@ -1443,7 +1524,7 @@ export default function UneekApp() {
       <div className="page-wrapper">
         <section className="section" style={{ paddingTop: 112 }}>
           <h1 className="section-title" style={{ marginBottom: 48 }}>Checkout</h1>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 64, alignItems: "start" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "clamp(1fr, 100%, 1fr) clamp(0px, 380px, 380px)", gap: 64, alignItems: "start" }} className="checkout-grid">
             <div>
               <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--gray-400)", marginBottom: 24 }}>Informations de livraison</div>
 
@@ -1507,7 +1588,7 @@ export default function UneekApp() {
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 10, letterSpacing: "1.5px", textTransform: "uppercase", color: "var(--gray-400)" }}>{BRANDS.find(b => b.id === item.brand)?.name}</div>
                     <div style={{ fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 600 }}>{item.name}</div>
-                    <div style={{ fontSize: 12, color: "var(--gray-500)", marginTop: 2 }}>Taille : {item.selectedSize}</div>
+                    <div style={{ fontSize: 12, color: "var(--gray-500)", marginTop: 2 }}>{t.sizeItem}{item.selectedSize}</div>
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 500, flexShrink: 0 }}>{item.price} €</div>
                 </div>
@@ -1530,7 +1611,7 @@ export default function UneekApp() {
 
               <div style={{ marginTop: 16, textAlign: "center" }}>
                 <span className="section-link" style={{ fontSize: 12, justifyContent: "center" }} onClick={() => navigate("shop")}>
-                  ← Retour au shop
+                  {t.backShop}
                 </span>
               </div>
             </div>
@@ -1601,7 +1682,7 @@ export default function UneekApp() {
             <div style={{ fontSize: 11, letterSpacing: 3, textTransform: "uppercase", opacity: 0.4, marginBottom: 24 }}>Pour les créateurs</div>
             <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(36px, 5vw, 56px)", fontWeight: 800, letterSpacing: -2, marginBottom: 24 }}>Devenir Partenaire <span className="gradient-text">UNEEK</span></h1>
             <p style={{ fontSize: "clamp(15px, 1.8vw, 18px)", opacity: 0.5, fontWeight: 300, maxWidth: 500, margin: "0 auto", lineHeight: 1.7 }}>
-              Tu crées des pièces uniques ? Tu mérites une vitrine à la hauteur. Rejoins la communauté UNEEK.
+              {lang === "fr" ? "Tu crées des pièces uniques ? Tu mérites une vitrine à la hauteur. Rejoins la communauté UNEEK." : "You create unique pieces? You deserve a worthy showcase. Join the UNEEK community."}
             </p>
           </div>
         </section>
