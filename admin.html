@@ -140,7 +140,7 @@
     <label>Email</label>
     <input type="email" id="loginEmail" placeholder="admin@uneek.store" />
     <label>Mot de passe</label>
-    <input type="password" id="loginPassword" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢" />
+    <input type="password" id="loginPassword" placeholder="••••••••" />
     <button class="login-btn" onclick="doLogin()">Se connecter</button>
     <div class="login-error" id="loginError">Email ou mot de passe incorrect</div>
   </div>
@@ -168,15 +168,15 @@
       <div class="page-sub">Bienvenue sur le panneau admin UNEEK</div>
       <div class="stats">
         <div class="stat-card"><div class="stat-label">Commandes ce mois</div><div class="stat-value" id="stat-orders">0</div></div>
-        <div class="stat-card"><div class="stat-label">Revenus UNEEK</div><div class="stat-value" id="stat-revenue">â¬0</div></div>
+        <div class="stat-card"><div class="stat-label">Revenus UNEEK</div><div class="stat-value" id="stat-revenue">€0</div></div>
         <div class="stat-card"><div class="stat-label">En attente</div><div class="stat-value" id="stat-pending">0</div></div>
         <div class="stat-card"><div class="stat-label">Marques actives</div><div class="stat-value" id="stat-brands">0</div></div>
       </div>
       <div class="card">
-        <div class="card-header">DerniÃ¨res commandes</div>
+        <div class="card-header">Dernières commandes</div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Commande</th><th>Client</th><th>Produit</th><th>QtÃ©</th><th>Total</th><th>ExpÃ©dition</th></tr></thead>
+            <thead><tr><th>Commande</th><th>Client</th><th>Produit</th><th>Qté</th><th>Total</th><th>Expédition</th></tr></thead>
             <tbody id="overview-orders"></tbody>
           </table>
         </div>
@@ -186,18 +186,18 @@
     <!-- EN ATTENTE -->
     <div id="sec-pending" class="section">
       <div class="page-title">En attente</div>
-      <div class="page-sub">CrÃ©ateurs ont soumis un produit ou une modification â clique sur la photo pour la voir en grand</div>
+      <div class="page-sub">Créateurs ont soumis un produit ou une modification — clique sur la photo pour la voir en grand</div>
       <div class="card" id="pending-list"></div>
     </div>
 
     <!-- COMMANDES -->
     <div id="sec-orders" class="section">
       <div class="page-title">Commandes</div>
-      <div class="page-sub">Le client paie Ã  la commande â tu suis l'expÃ©dition et les retours</div>
+      <div class="page-sub">Le client paie à la commande — tu suis l'expédition et les retours</div>
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Commande</th><th>Client</th><th>Produit</th><th>QtÃ©</th><th>Marque</th><th>Total</th><th>Commission</th><th>Statut</th></tr></thead>
+            <thead><tr><th>Commande</th><th>Client</th><th>Produit</th><th>Qté</th><th>Marque</th><th>Total</th><th>Commission</th><th>Statut</th></tr></thead>
             <tbody id="orders-table"></tbody>
           </table>
         </div>
@@ -207,7 +207,7 @@
     <!-- PRODUITS -->
     <div id="sec-products" class="section">
       <div class="page-title">Produits</div>
-      <div class="page-sub">Tous les produits publiÃ©s</div>
+      <div class="page-sub">Tous les produits publiés</div>
       <div class="card">
         <div class="table-wrap">
           <table>
@@ -221,7 +221,7 @@
     <!-- MARQUES -->
     <div id="sec-brands" class="section">
       <div class="page-title">Marques</div>
-      <div class="page-sub">CrÃ©ateurs partenaires</div>
+      <div class="page-sub">Créateurs partenaires</div>
       <div class="card">
         <div class="table-wrap">
           <table>
@@ -237,15 +237,15 @@
       <div class="page-title">Finances</div>
       <div class="page-sub">Commission variable par produit</div>
       <div class="stats stats-3">
-        <div class="stat-card"><div class="stat-label">Revenus UNEEK</div><div class="stat-value" id="fin-revenue">â¬0</div></div>
-        <div class="stat-card"><div class="stat-label">ReversÃ© aux crÃ©ateurs</div><div class="stat-value" id="fin-payout">â¬0</div></div>
-        <div class="stat-card"><div class="stat-label">Volume total</div><div class="stat-value" id="fin-volume">â¬0</div></div>
+        <div class="stat-card"><div class="stat-label">Revenus UNEEK</div><div class="stat-value" id="fin-revenue">€0</div></div>
+        <div class="stat-card"><div class="stat-label">Reversé aux créateurs</div><div class="stat-value" id="fin-payout">€0</div></div>
+        <div class="stat-card"><div class="stat-label">Volume total</div><div class="stat-value" id="fin-volume">€0</div></div>
       </div>
       <div class="card">
         <div class="card-header">Par marque</div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Marque</th><th>Ventes</th><th>Commission</th><th>ReversÃ©</th></tr></thead>
+            <thead><tr><th>Marque</th><th>Ventes</th><th>Commission</th><th>Reversé</th></tr></thead>
             <tbody id="finances-table"></tbody>
           </table>
         </div>
@@ -264,7 +264,7 @@
 
 <!-- LIGHTBOX -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <span class="lightbox-close">â</span>
+  <span class="lightbox-close">✕</span>
   <img id="lightbox-img" src="" alt="Photo produit en grand" />
 </div>
 
@@ -290,7 +290,7 @@
       });
       const data = await res.json();
       if (!res.ok || !data.user?.is_admin) {
-        errorEl.textContent = data.user && !data.user.is_admin ? 'AccÃ¨s admin requis' : (data.error || 'Erreur de connexion');
+        errorEl.textContent = data.user && !data.user.is_admin ? 'Accès admin requis' : (data.error || 'Erreur de connexion');
         errorEl.style.display = 'block';
         return;
       }
@@ -323,7 +323,7 @@
       const data = await res.json();
       const orders = data.orders || [];
 
-      // Sort: Ã  expÃ©dier first, then expÃ©diÃ©/en retour
+      // Sort: à expédier first, then expédié/en retour
       const priority = { 'pending': 0, 'processing': 0, 'shipped': 1, 'delivered': 1, 'returned': 1 };
       orders.sort((a, b) => (priority[a.shipping_status] || 0) - (priority[b.shipping_status] || 0));
 
@@ -340,10 +340,10 @@
         const statusBadge = getShippingBadge(order.shipping_status);
         const faded = ['shipped', 'delivered', 'returned'].includes(order.shipping_status) ? ' class="faded"' : '';
 
-        overviewHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + order.customer_name + '</td><td class="sec">' + productStr + '</td><td>' + totalQty + '</td><td>â¬' + order.total_amount + '</td><td>' + statusBadge + '</td></tr>';
+        overviewHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + order.customer_name + '</td><td class="sec">' + productStr + '</td><td>' + totalQty + '</td><td>€' + order.total_amount + '</td><td>' + statusBadge + '</td></tr>';
 
         const commission = items.reduce((s, i) => s + (i.commission_amount || 0), 0);
-        ordersHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + order.customer_name + '</td><td class="sec">' + productStr + '</td><td>' + totalQty + '</td><td class="sec">' + brandStr + '</td><td>â¬' + order.total_amount + '</td><td>â¬' + commission.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
+        ordersHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + order.customer_name + '</td><td class="sec">' + productStr + '</td><td>' + totalQty + '</td><td class="sec">' + brandStr + '</td><td>€' + order.total_amount + '</td><td>€' + commission.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
 
         totalRevenue += parseFloat(order.total_amount || 0);
         totalCommission += commission;
@@ -352,10 +352,10 @@
       document.getElementById('overview-orders').innerHTML = overviewHtml || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
       document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
       document.getElementById('stat-orders').textContent = orders.length;
-      document.getElementById('stat-revenue').textContent = 'â¬' + totalCommission.toFixed(0);
-      document.getElementById('fin-revenue').textContent = 'â¬' + totalCommission.toFixed(0);
-      document.getElementById('fin-payout').textContent = 'â¬' + (totalRevenue - totalCommission).toFixed(0);
-      document.getElementById('fin-volume').textContent = 'â¬' + totalRevenue.toFixed(0);
+      document.getElementById('stat-revenue').textContent = '€' + totalCommission.toFixed(0);
+      document.getElementById('fin-revenue').textContent = '€' + totalCommission.toFixed(0);
+      document.getElementById('fin-payout').textContent = '€' + (totalRevenue - totalCommission).toFixed(0);
+      document.getElementById('fin-volume').textContent = '€' + totalRevenue.toFixed(0);
     } catch (err) {
       console.error('Error loading orders:', err);
     }
@@ -368,7 +368,7 @@
       const products = data.products || data || [];
       let html = '';
       products.forEach(p => {
-        html += '<tr><td class="bold">' + p.name + '</td><td class="sec">' + (p.brand_name || p.brands?.name || '') + '</td><td>â¬' + p.price + '</td><td>' + (p.commission_percent || 12) + '%</td><td>' + (p.stock_quantity || 0) + '</td><td><span class="badge badge-green">PubliÃ©</span></td></tr>';
+        html += '<tr><td class="bold">' + p.name + '</td><td class="sec">' + (p.brand_name || p.brands?.name || '') + '</td><td>€' + p.price + '</td><td>' + (p.commission_percent || 12) + '%</td><td>' + (p.stock_quantity || 0) + '</td><td><span class="badge badge-green">Publié</span></td></tr>';
       });
       document.getElementById('products-table').innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucun produit</td></tr>';
     } catch (err) {
@@ -402,15 +402,15 @@
         const isNew = p.edit_type === 'new';
         const badge = isNew ? '<span class="badge badge-blue">Nouveau produit</span>' : '<span class="badge badge-orange">Modification</span>';
         const imgUrl = p.image_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%234A5568' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%23fff' font-size='12' font-family='sans-serif'%3EPhoto%3C/text%3E%3C/svg%3E";
-        const detail = p.brand_name + ' Â· par ' + (p.creator_name || 'CrÃ©ateur') + (p.category ? ' Â· ' + p.category : '') + (p.sizes ? '<br>Tailles: ' + p.sizes : '');
+        const detail = p.brand_name + ' · par ' + (p.creator_name || 'Créateur') + (p.category ? ' · ' + p.category : '') + (p.sizes ? '<br>Tailles: ' + p.sizes : '');
 
         html += '<div class="pending-card" id="pending-' + p.id + '">' +
           '<img class="pending-img" src="' + imgUrl + '" onclick="openLightbox(this.src)" alt="Photo produit" />' +
           '<div class="pending-info">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span class="pending-name">' + p.proposed_name + ' â â¬' + p.proposed_price + '</span>' + badge + '</div>' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span class="pending-name">' + p.proposed_name + ' — €' + p.proposed_price + '</span>' + badge + '</div>' +
             '<div class="pending-detail">' + detail + '</div>' +
             '<div class="pending-bottom"><span class="pending-date">' + formatDate(p.created_at) + '</span>' +
-              '<div class="action-btns"><button class="btn-approve" onclick="handlePending(' + p.id + ', \'approve\')">Approuver</button><button class="btn-reject" onclick="handlePending(' + p.id + ', \'reject\')">Refuser</button></div>' +
+              '<div class="action-btns"><button class="btn-approve" onclick="handlePending(\'' + p.id + '\', \'approve\')">Approuver</button><button class="btn-reject" onclick="handlePending(\'' + p.id + '\', \'reject\')">Refuser</button></div>' +
             '</div>' +
           '</div></div>';
       });
@@ -432,9 +432,9 @@
         const statusBadge = a.status === 'new' ? '<span class="badge badge-blue">Nouveau</span>' : '<span class="badge badge-orange">En review</span>';
         html += '<div class="cand-card">' +
           '<div class="cand-top"><span class="cand-name">' + a.brand_name + '</span>' + statusBadge + '</div>' +
-          '<div class="cand-meta">' + a.contact_name + ' Â· ' + a.email + (a.instagram ? ' Â· ' + a.instagram : '') + (a.website ? ' Â· ' + a.website : '') + '</div>' +
+          '<div class="cand-meta">' + a.contact_name + ' · ' + a.email + (a.instagram ? ' · ' + a.instagram : '') + (a.website ? ' · ' + a.website : '') + '</div>' +
           (a.message ? '<div class="cand-message">"' + a.message + '"</div>' : '') +
-          '<div class="action-btns"><button class="btn-approve" onclick="handleApplication(' + a.id + ', \'accept\')">Accepter</button><button class="btn-reject" onclick="handleApplication(' + a.id + ', \'reject\')">Refuser</button></div>' +
+          '<div class="action-btns"><button class="btn-approve" onclick="handleApplication(\'' + a.id + '\', \'accept\')">Accepter</button><button class="btn-reject" onclick="handleApplication(\'' + a.id + '\', \'reject\')">Refuser</button></div>' +
         '</div>';
       });
       document.getElementById('applications-list').innerHTML = html || '<div style="text-align:center;padding:32px;color:var(--gray-400)">Aucune candidature</div>';
@@ -454,7 +454,7 @@
       const data = await res.json();
       const card = document.getElementById('pending-' + id);
       if (card) { card.style.opacity = '0.3'; card.style.pointerEvents = 'none'; }
-      showToast(action === 'approve' ? 'â ApprouvÃ© â email envoyÃ© au crÃ©ateur' : 'â RefusÃ© â email envoyÃ© au crÃ©ateur', action === 'approve' ? 'green' : 'red');
+      showToast(action === 'approve' ? '✓ Approuvé — email envoyé au créateur' : '✕ Refusé — email envoyé au créateur', action === 'approve' ? 'green' : 'red');
       setTimeout(() => loadPending(), 1500);
     } catch (err) {
       showToast('Erreur: ' + err.message, 'red');
@@ -477,17 +477,17 @@
   }
 
   // --- HELPERS ---
-  function shortOrder(num) { return num ? 'â¦' + num.slice(-4) : ''; }
+  function shortOrder(num) { return num ? '…' + num.slice(-4) : ''; }
 
   function getShippingBadge(status) {
     const map = {
-      'pending': '<span class="badge badge-orange">Ã expÃ©dier</span>',
-      'processing': '<span class="badge badge-orange">Ã expÃ©dier</span>',
-      'shipped': '<span class="badge badge-green">ExpÃ©diÃ©</span>',
-      'delivered': '<span class="badge badge-green">ExpÃ©diÃ©</span>',
+      'pending': '<span class="badge badge-orange">À expédier</span>',
+      'processing': '<span class="badge badge-orange">À expédier</span>',
+      'shipped': '<span class="badge badge-green">Expédié</span>',
+      'delivered': '<span class="badge badge-green">Expédié</span>',
       'returned': '<span class="badge badge-red">En retour</span>'
     };
-    return map[status] || '<span class="badge badge-orange">Ã expÃ©dier</span>';
+    return map[status] || '<span class="badge badge-orange">À expédier</span>';
   }
 
   function formatDate(d) {
