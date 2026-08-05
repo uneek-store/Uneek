@@ -758,17 +758,22 @@ function submitPartner(){
   const brand=document.getElementById('pf-brand')?.value;
   const name=document.getElementById('pf-name')?.value;
   const email=document.getElementById('pf-email')?.value;
+  const instagram=document.getElementById('pf-ig')?.value;
+  const message=document.getElementById('pf-desc')?.value;
   if(!brand||!name||!email){showToast('Remplis au moins le nom, l\'email et la marque');return;}
-  document.getElementById('partner-form').innerHTML=`<div style="text-align:center;padding:80px 0">
-    <div style="width:80px;height:80px;border-radius:50%;background:var(--gradient);display:flex;align-items:center;justify-content:center;margin:0 auto 32px">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-    </div>
-    <h2 style="font-family:var(--font-display);font-size:32px;font-weight:700;margin-bottom:16px">Candidature envoyée !</h2>
-    <p style="font-size:16px;color:var(--gray-500);font-weight:300;max-width:480px;margin:0 auto 40px;line-height:1.7">Merci <strong>${name}</strong> ! Notre équipe étudie ta candidature pour <strong>${brand}</strong> et te recontacte sous 48h.</p>
-    <button class="btn btn-dark" onclick="navigate('brands')">Voir les Marques →</button>
-  </div>`;
+  fetch('/api/partner-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({brand_name:brand,contact_name:name,email:email,instagram:instagram,message:message})}).then(r=>r.json()).then(data=>{
+    if(data.success){
+      document.getElementById('partner-form').innerHTML=`<div style="text-align:center;padding:80px 0">
+        <div style="width:80px;height:80px;border-radius:50%;background:var(--gradient);display:flex;align-items:center;justify-content:center;margin:0 auto 32px">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <h2 style="font-family:var(--font-display);font-size:32px;font-weight:700;margin-bottom:16px">Candidature envoyée !</h2>
+        <p style="font-size:16px;color:var(--gray-500);font-weight:300;max-width:480px;margin:0 auto 40px;line-height:1.7">Merci <strong>${name}</strong> ! Notre équipe étudie ta candidature pour <strong>${brand}</strong> et te recontacte sous 48h.</p>
+        <button class="btn btn-dark" onclick="navigate('brands')">Voir les Marques →</button>
+      </div>`;
+    }else{showToast('Erreur: '+data.error);}
+  }).catch(()=>showToast('Erreur réseau, réessaie.'));
 }
-
 function checkoutPage(){
   const total=cart.reduce((s,i)=>s+i.price,0);
   return `<div>
