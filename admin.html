@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UNEEK Admin</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+    :root {
+      --black: #0A0A0A;
+      --white: #FAFAFA;
+      --gray-50: #F9F9F9;
+      --gray-100: #F5F5F5;
+      --gray-200: #E5E5E5;
+      --gray-300: #D4D4D4;
+      --gray-400: #A3A3A3;
+      --gray-500: #737373;
+      --gray-600: #525252;
+      --gray-800: #262626;
+      --green: #22C55E;
+      --green-bg: #F0FDF4;
+      --red: #EF4444;
+      --red-bg: #FEF2F2;
+      --orange: #F59E0B;
+      --orange-bg: #FFFBEB;
+      --blue: #3B82F6;
+      --blue-bg: #EFF6FF;
+      --font-display: 'Urbanist', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-body); background: var(--gray-50); color: var(--black); min-height: 100vh; }
+
+    /* LOGIN */
+    .login-wrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--black); }
+    .login-box { background: var(--white); padding: 40px; border-radius: 16px; width: 380px; }
+    .login-box h1 { font-family: var(--font-display); font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+    .login-box p { color: var(--gray-500); font-size: 13px; margin-bottom: 24px; }
+    .login-box label { display: block; font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; margin-top: 14px; }
+    .login-box input { width: 100%; padding: 10px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 14px; font-family: var(--font-body); }
+    .login-box input:focus { outline: none; border-color: var(--black); }
+    .login-btn { width: 100%; padding: 12px; background: var(--black); color: var(--white); border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 20px; font-family: var(--font-body); }
+    .login-btn:hover { background: var(--gray-800); }
+    .login-error { color: var(--red); font-size: 12px; margin-top: 8px; display: none; }
+
+    /* LAYOUT */
+    .app { display: none; min-height: 100vh; }
+    .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 200px; background: var(--black); color: var(--white); padding: 24px 0; z-index: 10; }
+    .sidebar-logo { padding: 0 20px 2px; font-family: var(--font-display); font-weight: 700; font-size: 20px; }
+    .sidebar-tag { padding: 0 20px 24px; font-size: 11px; color: var(--gray-500); letter-spacing: 1px; text-transform: uppercase; }
+    .sidebar a { display: flex; align-items: center; gap: 10px; padding: 10px 20px; font-size: 13px; color: var(--gray-400); cursor: pointer; text-decoration: none; transition: all 0.15s; border: none; background: none; width: 100%; font-family: var(--font-body); }
+    .sidebar a:hover { color: var(--white); background: rgba(255,255,255,0.05); }
+    .sidebar a.active { color: var(--white); background: rgba(255,255,255,0.08); border-right: 2px solid var(--white); }
+    .sidebar .badge-count { background: var(--red); color: var(--white); font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-left: auto; }
+    .main { margin-left: 200px; padding: 28px; }
+    .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--black); }
+    .page-sub { font-size: 13px; color: var(--gray-500); margin-bottom: 20px; }
+
+    /* STATS */
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .stat-card { background: var(--white); padding: 16px; border-radius: 12px; border: 1px solid var(--gray-200); }
+    .stat-label { font-size: 10px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .stat-value { font-size: 24px; font-weight: 600; font-family: var(--font-display); color: var(--black); }
+
+    /* CARDS & TABLES */
+    .card { background: var(--white); border: 1px solid var(--gray-200); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+    .card-header { padding: 14px 18px; border-bottom: 1px solid var(--gray-200); font-size: 14px; font-weight: 500; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 8px 16px; font-size: 10px; font-weight: 500; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; background: var(--gray-50); border-bottom: 1px solid var(--gray-200); white-space: nowrap; }
+    td { padding: 10px 16px; border-top: 1px solid var(--gray-100); font-size: 13px; vertical-align: middle; }
+    td.sec { color: var(--gray-500); }
+    .bold { font-weight: 500; }
+
+    /* BADGES */
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 50px; font-size: 11px; white-space: nowrap; font-weight: 500; }
+    .badge-green { background: var(--green-bg); color: var(--green); }
+    .badge-orange { background: var(--orange-bg); color: var(--orange); }
+    .badge-blue { background: var(--blue-bg); color: var(--blue); }
+    .badge-red { background: var(--red-bg); color: var(--red); }
+
+    /* BUTTONS */
+    .btn-approve { padding: 5px 14px; background: var(--green); color: var(--white); border: none; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: var(--font-body); }
+    .btn-approve:hover { background: #16A34A; }
+    .btn-reject { padding: 5px 14px; background: transparent; color: var(--red); border: 1px solid var(--red); border-radius: 6px; font-size: 12px; cursor: pointer; font-family: var(--font-body); }
+    .btn-reject:hover { background: var(--red-bg); }
+    .action-btns { display: flex; gap: 6px; }
+
+    /* SECTIONS */
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* PENDING CARDS */
+    .pending-card { padding: 16px 18px; border-top: 1px solid var(--gray-200); display: flex; gap: 16px; align-items: flex-start; }
+    .pending-card:first-child { border-top: none; }
+    .pending-img { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; cursor: pointer; border: 1px solid var(--gray-200); transition: transform 0.2s; }
+    .pending-img:hover { transform: scale(1.08); }
+    .pending-info { flex: 1; }
+    .pending-name { font-weight: 500; font-size: 14px; margin-bottom: 4px; }
+    .pending-detail { font-size: 12px; color: var(--gray-500); margin-bottom: 8px; line-height: 1.5; }
+    .pending-bottom { display: flex; justify-content: space-between; align-items: center; }
+    .pending-date { font-size: 11px; color: var(--gray-400); }
+
+    /* CANDIDATURE CARDS */
+    .cand-card { padding: 16px 18px; border-top: 1px solid var(--gray-200); }
+    .cand-card:first-child { border-top: none; }
+    .cand-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .cand-name { font-family: var(--font-display); font-weight: 600; font-size: 16px; }
+    .cand-meta { font-size: 12px; color: var(--gray-500); margin-bottom: 8px; }
+    .cand-message { font-size: 13px; color: var(--gray-800); background: var(--gray-50); padding: 12px 14px; border-radius: 10px; margin-bottom: 12px; line-height: 1.6; font-style: italic; border-left: 3px solid var(--gray-300); }
+
+    /* LIGHTBOX */
+    .lightbox { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 200; align-items: center; justify-content: center; cursor: pointer; }
+    .lightbox.show { display: flex; }
+    .lightbox img { max-width: 80%; max-height: 80%; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+    .lightbox-close { position: fixed; top: 20px; right: 24px; color: var(--white); font-size: 28px; cursor: pointer; z-index: 201; }
+
+    /* TOAST */
+    .toast { display: none; position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 10px; font-size: 13px; z-index: 300; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+    .toast.show { display: block; animation: slideUp 0.3s ease; }
+    .toast-green { background: var(--green); color: var(--white); }
+    .toast-red { background: var(--red); color: var(--white); }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .faded { opacity: 0.5; }
+
+    /* FINANCES */
+    .stats-3 { grid-template-columns: repeat(3, 1fr); }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-wrap" id="loginScreen">
+  <div class="login-box">
+    <h1>UNEEK</h1>
+    <p>Panneau d'administration</p>
+    <label>Email</label>
+    <input type="email" id="loginEmail" placeholder="admin@uneek.store" />
+    <label>Mot de passe</label>
+    <input type="password" id="loginPassword" placeholder="••••••••" />
+    <button class="login-btn" onclick="doLogin()">Se connecter</button>
+    <div class="login-error" id="loginError">Email ou mot de passe incorrect</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">UNEEK</div>
+    <div class="sidebar-tag">Admin</div>
+    <a class="active" onclick="showSection('overview', this)">Vue d'ensemble</a>
+    <a onclick="showSection('pending', this)">En attente <span class="badge-count" id="pendingCount">0</span></a>
+    <a onclick="showSection('orders', this)">Commandes</a>
+    <a onclick="showSection('products', this)">Produits</a>
+    <a onclick="showSection('brands', this)">Marques</a>
+    <a onclick="showSection('finances', this)">Finances</a>
+    <a onclick="showSection('applications', this)">Candidatures</a>
+  </div>
+
+  <div class="main">
+
+    <!-- VUE D'ENSEMBLE -->
+    <div id="sec-overview" class="section active">
+      <div class="page-title">Vue d'ensemble</div>
+      <div class="page-sub">Bienvenue sur le panneau admin UNEEK</div>
+      <div class="stats">
+        <div class="stat-card"><div class="stat-label">Commandes ce mois</div><div class="stat-value" id="stat-orders">0</div></div>
+        <div class="stat-card"><div class="stat-label">Revenus UNEEK</div><div class="stat-value" id="stat-revenue">€0</div></div>
+        <div class="stat-card"><div class="stat-label">En attente</div><div class="stat-value" id="stat-pending">0</div></div>
+        <div class="stat-card"><div class="stat-label">Marques actives</div><div class="stat-value" id="stat-brands">0</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">Dernières commandes</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Commande</th><th>Client</th><th>Produit</th><th>Qté</th><th>Total</th><th>Expédition</th></tr></thead>
+            <tbody id="overview-orders"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- EN ATTENTE -->
+    <div id="sec-pending" class="section">
+      <div class="page-title">En attente</div>
+      <div class="page-sub">Créateurs ont soumis un produit ou une modification — clique sur la photo pour la voir en grand</div>
+      <div class="card" id="pending-list"></div>
+    </div>
+
+    <!-- COMMANDES -->
+    <div id="sec-orders" class="section">
+      <div class="page-title">Commandes</div>
+      <div class="page-sub">Le client paie à la commande — tu suis l'expédition et les retours</div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Commande</th><th>Client</th><th>Produit</th><th>Qté</th><th>Marque</th><th>Total</th><th>Commission</th><th>Statut</th></tr></thead>
+            <tbody id="orders-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRODUITS -->
+    <div id="sec-products" class="section">
+      <div class="page-title">Produits</div>
+      <div class="page-sub">Tous les produits publiés</div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Produit</th><th>Marque</th><th>Prix</th><th>Commission</th><th>Stock</th><th>Statut</th></tr></thead>
+            <tbody id="products-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MARQUES -->
+    <div id="sec-brands" class="section">
+      <div class="page-title">Marques</div>
+      <div class="page-sub">Créateurs partenaires</div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Marque</th><th>Ville</th><th>Email</th><th>Produits</th><th>Statut</th></tr></thead>
+            <tbody id="brands-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- FINANCES -->
+    <div id="sec-finances" class="section">
+      <div class="page-title">Finances</div>
+      <div class="page-sub">Commission variable par produit</div>
+      <div class="stats stats-3">
+        <div class="stat-card"><div class="stat-label">Revenus UNEEK</div><div class="stat-value" id="fin-revenue">€0</div></div>
+        <div class="stat-card"><div class="stat-label">Reversé aux créateurs</div><div class="stat-value" id="fin-payout">€0</div></div>
+        <div class="stat-card"><div class="stat-label">Volume total</div><div class="stat-value" id="fin-volume">€0</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">Par marque</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Marque</th><th>Ventes</th><th>Commission</th><th>Reversé</th></tr></thead>
+            <tbody id="finances-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- CANDIDATURES -->
+    <div id="sec-applications" class="section">
+      <div class="page-title">Candidatures</div>
+      <div class="page-sub">Demandes "Devenir Partenaire" depuis le site</div>
+      <div class="card" id="applications-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <span class="lightbox-close">✕</span>
+  <img id="lightbox-img" src="" alt="Photo produit en grand" />
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  const API_BASE = '/api';
+  let authToken = null;
+
+  // --- LOGIN ---
+  async function doLogin() {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    const errorEl = document.getElementById('loginError');
+    errorEl.style.display = 'none';
+
+    try {
+      const res = await fetch(API_BASE + '/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'login', email, password })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.user?.is_admin) {
+        errorEl.textContent = data.user && !data.user.is_admin ? 'Accès admin requis' : (data.error || 'Erreur de connexion');
+        errorEl.style.display = 'block';
+        return;
+      }
+      authToken = data.token;
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      loadDashboard();
+    } catch (err) {
+      errorEl.textContent = 'Erreur de connexion au serveur';
+      errorEl.style.display = 'block';
+    }
+  }
+
+  // --- NAVIGATION ---
+  function showSection(id, el) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+    document.getElementById('sec-' + id).classList.add('active');
+    if (el) el.classList.add('active');
+  }
+
+  // --- LOAD DATA ---
+  async function loadDashboard() {
+    await Promise.all([loadOrders(), loadProducts(), loadBrands(), loadPending(), loadApplications()]);
+  }
+
+  async function loadOrders() {
+    try {
+      const res = await fetch(API_BASE + '/orders', { headers: { 'Authorization': 'Bearer ' + authToken } });
+      const data = await res.json();
+      const orders = data.orders || [];
+
+      // Sort: à expédier first, then expédié/en retour
+      const priority = { 'pending': 0, 'processing': 0, 'shipped': 1, 'delivered': 1, 'returned': 1 };
+      orders.sort((a, b) => (priority[a.shipping_status] || 0) - (priority[b.shipping_status] || 0));
+
+      let overviewHtml = '';
+      let ordersHtml = '';
+      let totalRevenue = 0;
+      let totalCommission = 0;
+
+      orders.forEach(order => {
+        const items = order.items || [];
+        const productStr = items.map(i => i.product_name + ' (' + i.size + ')').join(', ');
+        const totalQty = items.reduce((s, i) => s + i.quantity, 0);
+        const brandStr = items.map(i => i.brand_name).filter((v, i, a) => a.indexOf(v) === i).join(', ');
+        const statusBadge = getShippingBadge(order.shipping_status);
+        const faded = ['shipped', 'delivered', 'returned'].includes(order.shipping_status) ? ' class="faded"' : '';
+
+        overviewHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + order.customer_name + '</td><td class="sec">' + productStr + '</td><td>' + totalQty + '</td><td>€' + order.total_amount + '</td><td>' + statusBadge + '</td></tr>';
+
+        const commission = items.reduce((s, i) => s + (i.commission_amount || 0), 0);
+        ordersHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + order.customer_name + '</td><td class="sec">' + productStr + '</td><td>' + totalQty + '</td><td class="sec">' + brandStr + '</td><td>€' + order.total_amount + '</td><td>€' + commission.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
+
+        totalRevenue += parseFloat(order.total_amount || 0);
+        totalCommission += commission;
+      });
+
+      document.getElementById('overview-orders').innerHTML = overviewHtml || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
+      document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
+      document.getElementById('stat-orders').textContent = orders.length;
+      document.getElementById('stat-revenue').textContent = '€' + totalCommission.toFixed(0);
+      document.getElementById('fin-revenue').textContent = '€' + totalCommission.toFixed(0);
+      document.getElementById('fin-payout').textContent = '€' + (totalRevenue - totalCommission).toFixed(0);
+      document.getElementById('fin-volume').textContent = '€' + totalRevenue.toFixed(0);
+    } catch (err) {
+      console.error('Error loading orders:', err);
+    }
+  }
+
+  async function loadProducts() {
+    try {
+      const res = await fetch(API_BASE + '/products');
+      const data = await res.json();
+      const products = data.products || data || [];
+      let html = '';
+      products.forEach(p => {
+        html += '<tr><td class="bold">' + p.name + '</td><td class="sec">' + (p.brand_name || p.brands?.name || '') + '</td><td>€' + p.price + '</td><td>' + (p.commission_percent || 12) + '%</td><td>' + (p.stock_quantity || 0) + '</td><td><span class="badge badge-green">Publié</span></td></tr>';
+      });
+      document.getElementById('products-table').innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucun produit</td></tr>';
+    } catch (err) {
+      console.error('Error loading products:', err);
+    }
+  }
+
+  async function loadBrands() {
+    try {
+      const res = await fetch(API_BASE + '/brands');
+      const data = await res.json();
+      const brands = data.brands || data || [];
+      let html = '';
+      brands.forEach(b => {
+        html += '<tr><td class="bold">' + b.name + '</td><td class="sec">' + (b.city || '') + '</td><td class="sec">' + (b.email || '') + '</td><td>' + (b.product_count || 0) + '</td><td><span class="badge badge-green">Active</span></td></tr>';
+      });
+      document.getElementById('brands-table').innerHTML = html || '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune marque</td></tr>';
+      document.getElementById('stat-brands').textContent = brands.length;
+    } catch (err) {
+      console.error('Error loading brands:', err);
+    }
+  }
+
+  async function loadPending() {
+    try {
+      const res = await fetch(API_BASE + '/admin/pending', { headers: { 'Authorization': 'Bearer ' + authToken } });
+      const data = await res.json();
+      const pending = data.pending || data || [];
+      let html = '';
+      pending.forEach(p => {
+        const isNew = p.edit_type === 'new';
+        const badge = isNew ? '<span class="badge badge-blue">Nouveau produit</span>' : '<span class="badge badge-orange">Modification</span>';
+        const imgUrl = p.image_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%234A5568' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%23fff' font-size='12' font-family='sans-serif'%3EPhoto%3C/text%3E%3C/svg%3E";
+        const detail = p.brand_name + ' · par ' + (p.creator_name || 'Créateur') + (p.category ? ' · ' + p.category : '') + (p.sizes ? '<br>Tailles: ' + p.sizes : '');
+
+        html += '<div class="pending-card" id="pending-' + p.id + '">' +
+          '<img class="pending-img" src="' + imgUrl + '" onclick="openLightbox(this.src)" alt="Photo produit" />' +
+          '<div class="pending-info">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span class="pending-name">' + p.proposed_name + ' — €' + p.proposed_price + '</span>' + badge + '</div>' +
+            '<div class="pending-detail">' + detail + '</div>' +
+            '<div class="pending-bottom"><span class="pending-date">' + formatDate(p.created_at) + '</span>' +
+              '<div class="action-btns"><button class="btn-approve" onclick="handlePending(' + p.id + ', \'approve\')">Approuver</button><button class="btn-reject" onclick="handlePending(' + p.id + ', \'reject\')">Refuser</button></div>' +
+            '</div>' +
+          '</div></div>';
+      });
+      document.getElementById('pending-list').innerHTML = html || '<div style="text-align:center;padding:32px;color:var(--gray-400)">Rien en attente</div>';
+      document.getElementById('pendingCount').textContent = pending.length;
+      document.getElementById('stat-pending').textContent = pending.length;
+    } catch (err) {
+      console.error('Error loading pending:', err);
+    }
+  }
+
+  async function loadApplications() {
+    try {
+      const res = await fetch(API_BASE + '/admin/applications', { headers: { 'Authorization': 'Bearer ' + authToken } });
+      const data = await res.json();
+      const apps = data.applications || data || [];
+      let html = '';
+      apps.forEach(a => {
+        const statusBadge = a.status === 'new' ? '<span class="badge badge-blue">Nouveau</span>' : '<span class="badge badge-orange">En review</span>';
+        html += '<div class="cand-card">' +
+          '<div class="cand-top"><span class="cand-name">' + a.brand_name + '</span>' + statusBadge + '</div>' +
+          '<div class="cand-meta">' + a.contact_name + ' · ' + a.email + (a.instagram ? ' · ' + a.instagram : '') + (a.website ? ' · ' + a.website : '') + '</div>' +
+          (a.message ? '<div class="cand-message">"' + a.message + '"</div>' : '') +
+          '<div class="action-btns"><button class="btn-approve" onclick="handleApplication(' + a.id + ', \'accept\')">Accepter</button><button class="btn-reject" onclick="handleApplication(' + a.id + ', \'reject\')">Refuser</button></div>' +
+        '</div>';
+      });
+      document.getElementById('applications-list').innerHTML = html || '<div style="text-align:center;padding:32px;color:var(--gray-400)">Aucune candidature</div>';
+    } catch (err) {
+      console.error('Error loading applications:', err);
+    }
+  }
+
+  // --- ACTIONS ---
+  async function handlePending(id, action) {
+    try {
+      const res = await fetch(API_BASE + '/admin/pending', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify({ edit_id: id, action })
+      });
+      const data = await res.json();
+      const card = document.getElementById('pending-' + id);
+      if (card) { card.style.opacity = '0.3'; card.style.pointerEvents = 'none'; }
+      showToast(action === 'approve' ? '✓ Approuvé — email envoyé au créateur' : '✕ Refusé — email envoyé au créateur', action === 'approve' ? 'green' : 'red');
+      setTimeout(() => loadPending(), 1500);
+    } catch (err) {
+      showToast('Erreur: ' + err.message, 'red');
+    }
+  }
+
+  async function handleApplication(id, action) {
+    showToast(action === 'accept' ? '✓ Candidature acceptée' : '✕ Candidature refusée', action === 'accept' ? 'green' : 'red');
+  }
+
+  // --- HELPERS ---
+  function shortOrder(num) { return num ? '…' + num.slice(-4) : ''; }
+
+  function getShippingBadge(status) {
+    const map = {
+      'pending': '<span class="badge badge-orange">À expédier</span>',
+      'processing': '<span class="badge badge-orange">À expédier</span>',
+      'shipped': '<span class="badge badge-green">Expédié</span>',
+      'delivered': '<span class="badge badge-green">Expédié</span>',
+      'returned': '<span class="badge badge-red">En retour</span>'
+    };
+    return map[status] || '<span class="badge badge-orange">À expédier</span>';
+  }
+
+  function formatDate(d) {
+    if (!d) return '';
+    const date = new Date(d);
+    return date.toLocaleDateString('fr-BE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  function openLightbox(src) {
+    document.getElementById('lightbox-img').src = src;
+    document.getElementById('lightbox').classList.add('show');
+  }
+  function closeLightbox() { document.getElementById('lightbox').classList.remove('show'); }
+
+  function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show toast-' + type;
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // Allow Enter key on login
+  document.getElementById('loginPassword').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
+</script>
+</body>
+</html>
