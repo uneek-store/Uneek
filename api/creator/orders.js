@@ -1,6 +1,6 @@
 // API : /api/creator/orders
-// GET → liste les commandes à expédier pour le créateur connecté
-// POST → marquer une commande comme expédiée
+// GET  → liste les commandes d'une marque (pour le panneau créateur)
+// POST → marquer un item comme expédié
 
 import { supabaseAdmin } from "../lib/supabase.js";
 
@@ -12,17 +12,18 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
 
   try {
-    const brand_id = req.method === "GET" ? req.query.brand_id : req.body.brand_id;
-
-    if (!brand_id) {
-      return res.status(400).json({ error: "brand_id requis" });
-    }
-
-    // --- LISTE DES COMMANDES DU CRÉATEUR ---
+    // --- GET : commandes de la marque ---
     if (req.method === "GET") {
+      const { brand_id } = req.query;
+
+      if (!brand_id) {
+        return res.status(400).json({ error: "brand_id requis" });
+      }
+
+      // Récupérer les order_items de cette marque avec les infos de commande
       const { data, error } = await supabaseAdmin
         .from("order_items")
-        .select("*, orders(order_number, customer_name, shipping_address, status, created_at)")
+        .select("*, orders(order_number, customer_name, customer_email, shipping_address, status), products(name)")
         .eq("brand_id", brand_id)
         .order("created_at", { ascending: false });
 
@@ -31,32 +32,52 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Erreur serveur" });
       }
 
-      return res.status(200).json(data || []);
+      // Reformater pour le frontend
+      const orders = (data || []).map(item => ({
+        id: item.id,
+        order_number: item.orders?.order_number,
+        customer_name: item.orders?.customer_name,
+        customer_email: item.orders?.customer_email,
+        shipping_address: item.orders?.shipping_address,
+        product_name: item.products?.name || item.product_name,
+        quantity: item.quantity,
+        size: item.size,
+        price: item.product_price,
+        shipping_status: item.fulfillment_status || "pending",
+        total_amount: item.product_price * item.quantity,
+        creator_payout: item.creator_payout,
+        items: [{
+          product_name: item.products?.name || item.product_name,
+          quantity: item.quantity,
+          size: item.size,
+          price: item.product_price,
+        }],
+      }));
+
+      return res.status(200).json({ orders });
     }
 
-    // --- MARQUER COMME EXPÉDIÉ ---
+    // --- POST : marquer comme expédié ---
     if (req.method === "POST") {
-      const { order_item_id, tracking_number } = req.body;
+      const { order_item_id, action } = req.body;
 
       if (!order_item_id) {
         return res.status(400).json({ error: "order_item_id requis" });
       }
 
+      const newStatus = action === "ship" ? "shipped" : "shipped";
+
       const { error } = await supabaseAdmin
         .from("order_items")
-        .update({ fulfillment_status: "shipped" })
-        .eq("id", order_item_id)
-        .eq("brand_id", brand_id);
+        .update({ fulfillment_status: newStatus })
+        .eq("id", order_item_id);
 
       if (error) {
         console.error("Error updating fulfillment:", error);
         return res.status(500).json({ error: "Erreur mise à jour" });
       }
 
-      return res.status(200).json({
-        success: true,
-        message: "Commande marquée comme expédiée",
-      });
+      return res.status(200).json({ success: true, message: "Marqué comme expédié" });
     }
 
     return res.status(405).json({ error: "Method not allowed" });
