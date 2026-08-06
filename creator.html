@@ -303,8 +303,8 @@
         return;
       }
       authToken = data.token;
-      currentBrand = data.brand;
-      creatorName = data.user.contact_name || 'Créateur';
+      currentBrand = data.user.brand;
+      creatorName = data.user.name || 'Créateur';
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('app').style.display = 'block';
       document.getElementById('sidebarBrand').textContent = currentBrand?.name || '—';
