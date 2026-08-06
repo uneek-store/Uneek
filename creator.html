@@ -158,6 +158,7 @@
     <div class="sidebar-tag">Créateur</div>
     <a class="active" onclick="showSection('overview', this)">Vue d'ensemble</a>
     <a onclick="showSection('products', this)">Mes produits</a>
+    <a onclick="showSection('edits', this)">Mes demandes</a>
     <a onclick="showSection('orders', this)">Commandes</a>
   </div>
 
@@ -197,6 +198,20 @@
           <table>
             <thead><tr><th>Produit</th><th>Prix</th><th>Catégorie</th><th>Stock restant</th><th>Statut</th><th></th></tr></thead>
             <tbody id="products-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MES DEMANDES -->
+    <div id="sec-edits" class="section">
+      <div class="page-title">Mes demandes</div>
+      <div class="page-sub">Suivi de tes soumissions — nouveau produit ou modification</div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Produit</th><th>Type</th><th>Date</th><th>Statut</th><th>Note UNEEK</th></tr></thead>
+            <tbody id="edits-table"></tbody>
           </table>
         </div>
       </div>
@@ -328,7 +343,7 @@
   // --- LOAD DATA ---
   async function loadDashboard() {
     if (!currentBrand) return;
-    await Promise.all([loadProducts(), loadOrders()]);
+    await Promise.all([loadProducts(), loadOrders(), loadEdits()]);
   }
 
   async function loadProducts() {
@@ -416,6 +431,36 @@
       document.getElementById('stat-toship').textContent = toShip;
     } catch (err) {
       console.error('Error loading orders:', err);
+    }
+  }
+
+  // --- MES DEMANDES ---
+  async function loadEdits() {
+    try {
+      const res = await fetch(API_BASE + '/creator/edits?brand_id=' + currentBrand.id, {
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+      const data = await res.json();
+      const edits = data.edits || data || [];
+      let html = '';
+      edits.forEach(e => {
+        const c = e.changes || {};
+        const name = c.name || e.products?.name || 'Sans nom';
+        const type = e.is_new_product ? 'Nouveau produit' : 'Modification';
+        const typeBadge = e.is_new_product ? '<span class="badge badge-blue">Nouveau</span>' : '<span class="badge badge-orange">Modif</span>';
+        const statusMap = {
+          'pending': '<span class="badge badge-orange">En attente</span>',
+          'approved': '<span class="badge badge-green">Approuvé</span>',
+          'rejected': '<span class="badge badge-red">Refusé</span>'
+        };
+        const statusBadge = statusMap[e.status] || '<span class="badge badge-orange">' + e.status + '</span>';
+        const date = e.created_at ? new Date(e.created_at).toLocaleDateString('fr-BE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+        const note = e.admin_note || '—';
+        html += '<tr><td class="bold">' + name + '</td><td>' + typeBadge + '</td><td class="sec">' + date + '</td><td>' + statusBadge + '</td><td class="sec">' + note + '</td></tr>';
+      });
+      document.getElementById('edits-table').innerHTML = html || '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune demande</td></tr>';
+    } catch (err) {
+      console.error('Error loading edits:', err);
     }
   }
 
