@@ -104,7 +104,91 @@ export default async function handler(req, res) {
       return res.status(201).json({ success: true, account_id: account.id });
     }
 
-    return res.status(400).json({ error: "Action invalide. Utilisez 'login' ou 'register'" });
+    // --- REGISTER CREATOR (avec code d'invitation) ---
+    if (action === "register_creator") {
+      const { invite_code } = req.body;
+      if (!email || !password || !invite_code) {
+        return res.status(400).json({ error: "Email, mot de passe et code d'invitation requis" });
+      }
+
+      // Vérifier le code d'invitation
+      const { data: app, error: appError } = await supabaseAdmin
+        .from("partner_applications")
+        .select("*")
+        .eq("invite_code", invite_code.toUpperCase())
+        .eq("status", "accepted")
+        .single();
+
+      if (appError || !app) {
+        return res.status(400).json({ error: "Code d'invitation invalide ou déjà utilisé" });
+      }
+
+      if (app.invite_used) {
+        return res.status(400).json({ error: "Ce code a déjà été utilisé pour créer un compte" });
+      }
+
+      // Vérifier que l'email n'existe pas déjà
+      const { data: existing } = await supabaseAdmin
+        .from("creator_accounts")
+        .select("id")
+        .eq("email", email.toLowerCase())
+        .single();
+
+      if (existing) {
+        return res.status(409).json({ error: "Un compte avec cet email existe déjà" });
+      }
+
+      // Créer la marque
+      const brandSlug = app.brand_name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
+      const { data: brand, error: brandError } = await supabaseAdmin
+        .from("brands")
+        .insert({
+          name: app.brand_name,
+          slug: brandSlug,
+          email: email.toLowerCase(),
+          instagram: app.instagram || null,
+          city: null,
+          description: app.message || null,
+        })
+        .select()
+        .single();
+
+      if (brandError) {
+        console.error("Error creating brand:", brandError);
+        return res.status(500).json({ error: "Erreur création de la marque" });
+      }
+
+      // Créer le compte créateur
+      const { data: account, error: accountError } = await supabaseAdmin
+        .from("creator_accounts")
+        .insert({
+          email: email.toLowerCase(),
+          password_hash: hashPassword(password),
+          full_name: app.contact_name,
+          is_admin: false,
+          brand_id: brand.id,
+        })
+        .select()
+        .single();
+
+      if (accountError) {
+        console.error("Error creating creator account:", accountError);
+        return res.status(500).json({ error: "Erreur création du compte" });
+      }
+
+      // Marquer le code comme utilisé
+      await supabaseAdmin
+        .from("partner_applications")
+        .update({ invite_used: true })
+        .eq("id", app.id);
+
+      return res.status(201).json({
+        success: true,
+        message: "Compte créé ! Tu peux maintenant te connecter.",
+      });
+    }
+
+    return res.status(400).json({ error: "Action invalide. Utilisez 'login', 'register' ou 'register_creator'" });
   } catch (err) {
     console.error("Auth API error:", err);
     return res.status(500).json({ error: "Erreur serveur" });
