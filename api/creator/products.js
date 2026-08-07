@@ -1,6 +1,6 @@
 // API : /api/creator/products
-// GET  → liste les produits d'une marque (pour le panneau créateur)
-// POST → soumettre un nouveau produit ou une modification (va dans product_edits)
+// GET  → liste les produits du créateur connecté
+// POST → soumettre un nouveau produit ou une modification (en attente de validation)
 
 import { supabaseAdmin } from "../lib/supabase.js";
 
@@ -11,15 +11,18 @@ export default async function handler(req, res) {
 
   if (req.method === "OPTIONS") return res.status(200).end();
 
+  // TODO: Vérifier le token du créateur et récupérer son brand_id
+
   try {
-    // --- GET : liste des produits de la marque ---
+    // Pour l'instant, on utilise brand_id depuis le body/query
+    const brand_id = req.method === "GET" ? req.query.brand_id : req.body.brand_id;
+
+    if (!brand_id) {
+      return res.status(400).json({ error: "brand_id requis" });
+    }
+
+    // --- LISTE DES PRODUITS DU CRÉATEUR ---
     if (req.method === "GET") {
-      const { brand_id } = req.query;
-
-      if (!brand_id) {
-        return res.status(400).json({ error: "brand_id requis" });
-      }
-
       const { data, error } = await supabaseAdmin
         .from("products")
         .select("*")
@@ -31,35 +34,34 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Erreur serveur" });
       }
 
-      return res.status(200).json({ products: data || [] });
+      return res.status(200).json(data || []);
     }
 
-    // --- POST : soumettre un nouveau produit ou une modification ---
+    // --- SOUMETTRE UN NOUVEAU PRODUIT OU UNE MODIFICATION ---
     if (req.method === "POST") {
-      const { brand_id, product_id, edit_type, name, price, category, description, image_url, sizes_stock } = req.body;
+      const { product_id, name, price, category, description, image_url, sizes_stock, edit_type, creator_id, commission_percent } = req.body;
 
-      if (!brand_id || !name || !price) {
-        return res.status(400).json({ error: "brand_id, name et price requis" });
-      }
-
-      const isNew = edit_type === "new" || !product_id;
+      const isNew = edit_type === 'new' || !product_id;
 
       // Construire l'objet changes
-      const changes = { name, price, category, description };
+      const changes = {};
+      if (name) changes.name = name;
+      if (price !== undefined) changes.price = price;
+      if (category) changes.category = category;
+      if (description) changes.description = description;
       if (image_url) changes.image_url = image_url;
-      if (sizes_stock) {
-        changes.sizes_stock = sizes_stock;
-        // Calculer le stock total
-        changes.stock_quantity = Object.values(sizes_stock).reduce((sum, qty) => sum + (parseInt(qty) || 0), 0);
-      }
+      if (sizes_stock) changes.sizes_stock = sizes_stock;
+      if (commission_percent !== undefined) changes.commission_percent = commission_percent;
 
-      const { data, error } = await supabaseAdmin
+      // Créer une entrée dans product_edits (en attente de validation)
+      const { data: edit, error } = await supabaseAdmin
         .from("product_edits")
         .insert({
+          product_id: product_id || null,
           brand_id,
-          product_id: isNew ? null : product_id,
           is_new_product: isNew,
           changes,
+          submitted_by: creator_id || null,
           status: "pending",
         })
         .select()
@@ -67,13 +69,15 @@ export default async function handler(req, res) {
 
       if (error) {
         console.error("Error creating product edit:", error);
-        return res.status(500).json({ error: "Erreur soumission produit" });
+        return res.status(500).json({ error: "Erreur soumission" });
       }
 
       return res.status(201).json({
         success: true,
-        message: isNew ? "Nouveau produit soumis pour validation" : "Modification soumise pour validation",
-        edit_id: data.id,
+        message: isNew
+          ? "Nouveau produit soumis — en attente de validation par UNEEK"
+          : "Modification soumise — en attente de validation par UNEEK",
+        edit_id: edit.id,
       });
     }
 
