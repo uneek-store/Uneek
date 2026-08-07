@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UNEEK â Independent Fashion</title>
+<title>UNEEK — Independent Fashion</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
 <style>
@@ -229,12 +229,12 @@ a{text-decoration:none;}
   <div class="panel-body" id="cart-body">
     <div class="empty-state">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>
-      <div class="empty-state-text">Ton panier est vide.<br>Explore le shop pour trouver ta piÃ¨ce.</div>
+      <div class="empty-state-text">Ton panier est vide.<br>Explore le shop pour trouver ta pièce.</div>
     </div>
   </div>
   <div class="panel-footer" id="cart-footer" style="display:none">
-    <div class="cart-total"><span class="cart-total-label">Total</span><span class="cart-total-amount" id="cart-total-amount">0 â¬</span></div>
-    <button class="btn btn-dark" style="width:100%;justify-content:center" onclick="navigate('checkout');closeCart()">Checkout â</button>
+    <div class="cart-total"><span class="cart-total-label">Total</span><span class="cart-total-amount" id="cart-total-amount">0 €</span></div>
+    <button class="btn btn-dark" style="width:100%;justify-content:center" onclick="navigate('checkout');closeCart()">Checkout →</button>
   </div>
 </div>
 
@@ -248,13 +248,13 @@ a{text-decoration:none;}
   <div class="panel-body" id="fav-body">
     <div class="empty-state">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-      <div class="empty-state-text">Aucun favori pour l'instant.<br>Like les piÃ¨ces qui te parlent.</div>
+      <div class="empty-state-text">Aucun favori pour l'instant.<br>Like les pièces qui te parlent.</div>
     </div>
   </div>
 </div>
 
 <!-- TOAST -->
-<div class="toast" id="toast">â <span id="toast-msg"></span></div>
+<div class="toast" id="toast">★ <span id="toast-msg"></span></div>
 
 <!-- PAGES -->
 <div id="app"></div>
@@ -262,24 +262,24 @@ a{text-decoration:none;}
 <script>
 // DATA
 const BRANDS=[
-  {id:"brouillon",name:"Brouillon",tagline:"L'imperfection comme signature",story:"NÃ©e dans un atelier parisien, Brouillon transforme les erreurs en art. Chaque piÃ¨ce est un brouillon devenu chef-d'Åuvre â des coupes dÃ©construites, des finitions brutes, une mode qui refuse la perfection.",city:"Paris",year:2021,image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",products:[0,1,2]},
-  {id:"tern",name:"Tern",tagline:"Between earth and motion",story:"InspirÃ©e par les migrations et la nature, Tern crÃ©e des piÃ¨ces fluides et intemporelles. Des matiÃ¨res organiques, des teintes terreuses, un vestiaire pour ceux qui bougent sans jamais se perdre.",city:"Antwerp",year:2020,image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",products:[3,4,5]},
-  {id:"noclout",name:"NoClout",tagline:"Anti-hype. Pro-style.",story:"NoClout est nÃ© d'un rejet : celui de la mode qui crie pour Ãªtre vue. Ici, pas de logos gÃ©ants ni de trends Ã©phÃ©mÃ¨res. Juste des piÃ¨ces pensÃ©es pour durer, portÃ©es par ceux qui n'ont rien Ã  prouver.",city:"Brussels",year:2022,image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",products:[6,7,8]},
-  {id:"muet",name:"MUET",tagline:"Le silence a du style",story:"MUET parle Ã  travers les coupes. Minimalisme radical, noir et blanc exclusivement, des silhouettes qui disent tout sans un mot.",city:"Lyon",year:2023,image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",products:[9,10,11]}
+  {id:"brouillon",name:"Brouillon",tagline:"L'imperfection comme signature",story:"Née dans un atelier parisien, Brouillon transforme les erreurs en art. Chaque pièce est un brouillon devenu chef-d'œuvre — des coupes déconstruites, des finitions brutes, une mode qui refuse la perfection.",city:"Paris",year:2021,image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",products:[0,1,2]},
+  {id:"tern",name:"Tern",tagline:"Between earth and motion",story:"Inspirée par les migrations et la nature, Tern crée des pièces fluides et intemporelles. Des matières organiques, des teintes terreuses, un vestiaire pour ceux qui bougent sans jamais se perdre.",city:"Antwerp",year:2020,image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",products:[3,4,5]},
+  {id:"noclout",name:"NoClout",tagline:"Anti-hype. Pro-style.",story:"NoClout est né d'un rejet : celui de la mode qui crie pour être vue. Ici, pas de logos géants ni de trends éphémères. Juste des pièces pensées pour durer, portées par ceux qui n'ont rien à prouver.",city:"Brussels",year:2022,image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",products:[6,7,8]},
+  {id:"muet",name:"MUET",tagline:"Le silence a du style",story:"MUET parle à travers les coupes. Minimalisme radical, noir et blanc exclusivement, des silhouettes qui disent tout sans un mot.",city:"Lyon",year:2023,image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",products:[9,10,11]}
 ];
 const PRODUCTS=[
-  {id:0,name:"Hoodie Chromatique",brand:"brouillon",category:"Tops",price:40,sizes:["S","M","L","XL"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"InspirÃ© des premiers croquis qu'on jette â sauf que celui-ci, on le porte.",colors:[{name:"Blanc cassÃ©",hex:"#F5F0E8"},{name:"Noir",hex:"#1A1A1A"}]},
-  {id:1,name:"Sweat Chromatique",brand:"brouillon",category:"Tops",price:105,sizes:["S","M","L"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Les coutures visibles racontent le processus.",colors:[{name:"Gris bÃ©ton",hex:"#8C8C8C"},{name:"Noir",hex:"#1A1A1A"}]},
-  {id:2,name:"Raw Edge Cargo",brand:"brouillon",category:"Bottoms",price:95,sizes:["28","30","32","34"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Cargo repensÃ© avec des bords bruts et une coupe large.",colors:[{name:"Kaki dÃ©lavÃ©",hex:"#8B7D5B"},{name:"Noir",hex:"#1A1A1A"}]},
-  {id:3,name:"Migration Overshirt",brand:"tern",category:"Tops",price:40,sizes:["S","M","L","XL"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"LÃ©gÃ¨re comme un dÃ©part, chaude comme un retour.",colors:[{name:"Terre brÃ»lÃ©e",hex:"#8B4513"},{name:"Olive",hex:"#556B2F"}]},
-  {id:4,name:"Flow Pants",brand:"tern",category:"Bottoms",price:78,sizes:["S","M","L"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"PensÃ© pour le mouvement. Coupe fluide, libertÃ© totale.",colors:[{name:"Sable",hex:"#C8B898"},{name:"Noir",hex:"#1A1A1A"}]},
-  {id:5,name:"Nest Beanie",brand:"tern",category:"Accessories",price:32,sizes:["ONE"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"TricotÃ© Ã  partir de laine recyclÃ©e.",colors:[{name:"Forest",hex:"#2D5A27"},{name:"Noir",hex:"#1A1A1A"}]},
+  {id:0,name:"Hoodie Chromatique",brand:"brouillon",category:"Tops",price:40,sizes:["S","M","L","XL"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Inspiré des premiers croquis qu'on jette — sauf que celui-ci, on le porte.",colors:[{name:"Blanc cassé",hex:"#F5F0E8"},{name:"Noir",hex:"#1A1A1A"}]},
+  {id:1,name:"Sweat Chromatique",brand:"brouillon",category:"Tops",price:105,sizes:["S","M","L"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Les coutures visibles racontent le processus.",colors:[{name:"Gris béton",hex:"#8C8C8C"},{name:"Noir",hex:"#1A1A1A"}]},
+  {id:2,name:"Raw Edge Cargo",brand:"brouillon",category:"Bottoms",price:95,sizes:["28","30","32","34"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Cargo repensé avec des bords bruts et une coupe large.",colors:[{name:"Kaki délavé",hex:"#8B7D5B"},{name:"Noir",hex:"#1A1A1A"}]},
+  {id:3,name:"Migration Overshirt",brand:"tern",category:"Tops",price:40,sizes:["S","M","L","XL"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Légère comme un départ, chaude comme un retour.",colors:[{name:"Terre brûlée",hex:"#8B4513"},{name:"Olive",hex:"#556B2F"}]},
+  {id:4,name:"Flow Pants",brand:"tern",category:"Bottoms",price:78,sizes:["S","M","L"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Pensé pour le mouvement. Coupe fluide, liberté totale.",colors:[{name:"Sable",hex:"#C8B898"},{name:"Noir",hex:"#1A1A1A"}]},
+  {id:5,name:"Nest Beanie",brand:"tern",category:"Accessories",price:32,sizes:["ONE"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Tricoté à partir de laine recyclée.",colors:[{name:"Forest",hex:"#2D5A27"},{name:"Noir",hex:"#1A1A1A"}]},
   {id:6,name:"Silent Statement Tee",brand:"noclout",category:"Tops",price:42,sizes:["S","M","L","XL"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Pas de logo. Juste une coupe parfaite.",colors:[{name:"Noir",hex:"#1A1A1A"},{name:"Blanc",hex:"#FAFAFA"}]},
-  {id:7,name:"Zero Hype Jacket",brand:"noclout",category:"Outerwear",price:145,sizes:["S","M","L"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"La veste qui ne cherche pas Ã  impressionner.",colors:[{name:"Navy",hex:"#1B2A4A"},{name:"Noir",hex:"#1A1A1A"}]},
-  {id:8,name:"Lowkey Cap",brand:"noclout",category:"Accessories",price:28,sizes:["ONE"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Une casquette non-brandÃ©e.",colors:[{name:"Noir",hex:"#1A1A1A"},{name:"Navy",hex:"#1B2A4A"}]},
-  {id:9,name:"Mono Turtleneck",brand:"muet",category:"Tops",price:65,sizes:["S","M","L"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Col roulÃ© en noir absolu. Le silence Ã©lÃ©gant.",colors:[{name:"Noir",hex:"#1A1A1A"},{name:"Blanc",hex:"#FAFAFA"}]},
-  {id:10,name:"Shadow Trousers",brand:"muet",category:"Bottoms",price:88,sizes:["28","30","32","34"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Pantalon droit, noir profond, tombÃ© impeccable.",colors:[{name:"Noir",hex:"#1A1A1A"},{name:"Gris foncÃ©",hex:"#333333"}]},
-  {id:11,name:"Whisper Scarf",brand:"muet",category:"Accessories",price:38,sizes:["ONE"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Ãcharpe oversize en cachemire mÃ©langÃ©.",colors:[{name:"Blanc/Noir",hex:"#FAFAFA"},{name:"Noir",hex:"#1A1A1A"}]}
+  {id:7,name:"Zero Hype Jacket",brand:"noclout",category:"Outerwear",price:145,sizes:["S","M","L"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"La veste qui ne cherche pas à impressionner.",colors:[{name:"Navy",hex:"#1B2A4A"},{name:"Noir",hex:"#1A1A1A"}]},
+  {id:8,name:"Lowkey Cap",brand:"noclout",category:"Accessories",price:28,sizes:["ONE"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Une casquette non-brandée.",colors:[{name:"Noir",hex:"#1A1A1A"},{name:"Navy",hex:"#1B2A4A"}]},
+  {id:9,name:"Mono Turtleneck",brand:"muet",category:"Tops",price:65,sizes:["S","M","L"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Col roulé en noir absolu. Le silence élégant.",colors:[{name:"Noir",hex:"#1A1A1A"},{name:"Blanc",hex:"#FAFAFA"}]},
+  {id:10,name:"Shadow Trousers",brand:"muet",category:"Bottoms",price:88,sizes:["28","30","32","34"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Pantalon droit, noir profond, tombé impeccable.",colors:[{name:"Noir",hex:"#1A1A1A"},{name:"Gris foncé",hex:"#333333"}]},
+  {id:11,name:"Whisper Scarf",brand:"muet",category:"Accessories",price:38,sizes:["ONE"],image:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN88P/BfwAJhAPk5jP/XwAAAABJRU5ErkJggg==",story:"Écharpe oversize en cachemire mélangé.",colors:[{name:"Blanc/Noir",hex:"#FAFAFA"},{name:"Noir",hex:"#1A1A1A"}]}
 ];
 
 // STATE
@@ -323,9 +323,9 @@ function renderCart(){
     const total=cart.reduce((s,i)=>s+i.price,0);
     body.innerHTML=cart.map(item=>{
       const b=BRANDS.find(x=>x.id===item.brand);
-      return `<div class="cart-item"><div class="cart-item-img"><img src="${item.image}" alt="${item.name}"></div><div class="cart-item-info"><div><div class="cart-item-brand">${b?.name||''}</div><div class="cart-item-name">${item.name}</div><div class="cart-item-meta">Taille: ${item.selectedSize}</div></div><div class="cart-item-bottom"><span class="cart-item-price">${item.price} â¬</span><button class="cart-item-remove" onclick="removeFromCart(${item.cartId})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Retirer</button></div></div></div>`;
+      return `<div class="cart-item"><div class="cart-item-img"><img src="${item.image}" alt="${item.name}"></div><div class="cart-item-info"><div><div class="cart-item-brand">${b?.name||''}</div><div class="cart-item-name">${item.name}</div><div class="cart-item-meta">Taille: ${item.selectedSize}</div></div><div class="cart-item-bottom"><span class="cart-item-price">${item.price} €</span><button class="cart-item-remove" onclick="removeFromCart(${item.cartId})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Retirer</button></div></div></div>`;
     }).join('');
-    document.getElementById('cart-total-amount').textContent=total+' â¬';
+    document.getElementById('cart-total-amount').textContent=total+' €';
     footer.style.display='block';
   }
 }
@@ -333,7 +333,7 @@ function renderCart(){
 function removeFromCart(cartId){
   cart=cart.filter(i=>i.cartId!==cartId);
   renderCart();
-  showToast('RetirÃ© du panier');
+  showToast('Retiré du panier');
 }
 
 // FAV RENDER
@@ -342,12 +342,12 @@ function renderFav(){
   document.getElementById('fav-title').textContent=`Favoris (${favorites.length})`;
   updateFavIcon();
   if(favorites.length===0){
-    body.innerHTML=`<div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div class="empty-state-text">Aucun favori pour l'instant.<br>Like les piÃ¨ces qui te parlent.</div></div>`;
+    body.innerHTML=`<div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><div class="empty-state-text">Aucun favori pour l'instant.<br>Like les pièces qui te parlent.</div></div>`;
   } else {
     body.innerHTML=favorites.map(pid=>{
       const p=PRODUCTS.find(x=>x.id===pid);
       const b=BRANDS.find(x=>x.id===p.brand);
-      return `<div class="cart-item" style="cursor:pointer" onclick="navigate('product',${pid});closeFav()"><div class="cart-item-img"><img src="${p.image}" alt="${p.name}"></div><div class="cart-item-info"><div><div class="cart-item-brand">${b?.name||''}</div><div class="cart-item-name">${p.name}</div></div><div class="cart-item-bottom"><span class="cart-item-price">${p.price} â¬</span><button class="cart-item-remove" onclick="event.stopPropagation();toggleFav(${pid})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div></div></div>`;
+      return `<div class="cart-item" style="cursor:pointer" onclick="navigate('product',${pid});closeFav()"><div class="cart-item-img"><img src="${p.image}" alt="${p.name}"></div><div class="cart-item-info"><div><div class="cart-item-brand">${b?.name||''}</div><div class="cart-item-name">${p.name}</div></div><div class="cart-item-bottom"><span class="cart-item-price">${p.price} €</span><button class="cart-item-remove" onclick="event.stopPropagation();toggleFav(${pid})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div></div></div>`;
     }).join('');
   }
 }
@@ -372,7 +372,7 @@ function toggleFav(id){
   const isFav=favorites.includes(id);
   if(isFav) favorites=favorites.filter(x=>x!==id);
   else favorites.push(id);
-  showToast(isFav?'RetirÃ© des favoris':'AjoutÃ© aux favoris â¥');
+  showToast(isFav?'Retiré des favoris':'Ajouté aux favoris ♥');
   document.querySelectorAll('[data-fav="'+id+'"]').forEach(el=>{
     el.classList.toggle('is-fav',!isFav);
     el.innerHTML=!isFav?'<svg width="20" height="20" viewBox="0 0 24 24" fill="url(#heartGrad)" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
@@ -383,7 +383,7 @@ function toggleFav(id){
 function addToCart(productId,size){
   const p=PRODUCTS.find(x=>x.id===productId);
   cart.push({...p,selectedSize:size,cartId:Date.now()});
-  showToast('AjoutÃ© au panier');
+  showToast('Ajouté au panier');
   renderCart();
 }
 
@@ -400,7 +400,7 @@ function productCardHTML(p){
     </div>
     <div class="product-card-brand">${b?.name||''}</div>
     <div class="product-card-name">${p.name}</div>
-    <div class="product-card-price">${p.price} â¬</div>
+    <div class="product-card-price">${p.price} €</div>
   </div>`;
 }
 
@@ -422,7 +422,7 @@ function footerHTML(){
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="163 276 484 460" width="20" height="20"><path d="M 405 276 L 461.9 451.7 L 646.1 451.7 L 497.1 560.3 L 554 735.8 L 405 627.3 L 256 735.8 L 312.9 560.3 L 163.9 451.7 L 348.1 451.7 Z" fill="#fff"/></svg>
           Uneek
         </div>
-        <div class="footer-tagline">La mode indÃ©pendante, crÃ©Ã©e pour ceux qui refusent de ressembler Ã  tout le monde. Dress different. Feel different.</div>
+        <div class="footer-tagline">La mode indépendante, créée pour ceux qui refusent de ressembler à tout le monde. Dress different. Feel different.</div>
       </div>
       <div>
         <div class="footer-col-title">Navigation</div>
@@ -438,15 +438,15 @@ function footerHTML(){
         <span class="footer-link" onclick="window.location.href='mailto:contact@uneek.store'">Contact</span>
       </div>
       <div>
-        <div class="footer-col-title">LÃ©gal</div>
+        <div class="footer-col-title">Légal</div>
         <span class="footer-link" onclick="navigate('cgv')">CGV</span>
-        <span class="footer-link" onclick="navigate('privacy')">Politique de confidentialitÃ©</span>
-        <span class="footer-link" onclick="navigate('legal')">Mentions lÃ©gales</span>
+        <span class="footer-link" onclick="navigate('privacy')">Politique de confidentialité</span>
+        <span class="footer-link" onclick="navigate('legal')">Mentions légales</span>
       </div>
     </div>
     <div class="footer-bottom">
-      <span>Â© 2026 UNEEK. The future belongs to those who create.</span>
-      <span>Made with â in Belgium</span>
+      <span>© 2026 UNEEK. The future belongs to those who create.</span>
+      <span>Made with ★ in Belgium</span>
     </div>
   </footer>`;
 }
@@ -471,7 +471,7 @@ function homePage(){
       <div class="hero-content">
         <p class="hero-tag">Created by Independent Fashion</p>
         <h1 class="hero-title">They wear what's told.<br>You wear what's <span class="gradient-text">special.</span></h1>
-        <p class="hero-subtitle">UNEEK regroupe les marques indÃ©pendantes les plus crÃ©atives. Des piÃ¨ces uniques, sÃ©lectionnÃ©es pour ceux qui refusent l'ordinaire.</p>
+        <p class="hero-subtitle">UNEEK regroupe les marques indépendantes les plus créatives. Des pièces uniques, sélectionnées pour ceux qui refusent l'ordinaire.</p>
         <div class="hero-cta">
           <button class="btn btn-primary" onclick="navigate('shop')">Explorer le Shop <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
         </div>
@@ -480,7 +480,7 @@ function homePage(){
 
     <section class="section">
       <div class="section-header">
-        <div><h2 class="section-title">SÃ©lection du moment</h2><p class="section-subtitle">Les piÃ¨ces qui font parler</p></div>
+        <div><h2 class="section-title">Sélection du moment</h2><p class="section-subtitle">Les pièces qui font parler</p></div>
         <button class="section-link" onclick="navigate('shop')">Voir tout <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
       </div>
       <div class="product-grid">${[0,1,2,3].map(i=>productCardHTML(PRODUCTS[i])).join('')}</div>
@@ -488,23 +488,23 @@ function homePage(){
 
     <section class="section" style="padding-top:0">
       <div class="section-header">
-        <div><h2 class="section-title">Les marques</h2><p class="section-subtitle">CrÃ©ateurs indÃ©pendants, sÃ©lectionnÃ©s avec soin</p></div>
+        <div><h2 class="section-title">Les marques</h2><p class="section-subtitle">Créateurs indépendants, sélectionnés avec soin</p></div>
         <button class="section-link" onclick="navigate('brands')">Toutes les marques <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
       </div>
       <div class="brand-strip">
-        ${BRANDS.map(b=>`<div class="brand-chip" onclick="navigate('brand',${JSON.stringify(b.id)})"><span class="brand-chip-name">${b.name}</span><span class="brand-chip-city">${b.city} â ${b.year}</span></div>`).join('')}
+        ${BRANDS.map(b=>`<div class="brand-chip" onclick="navigate('brand',${JSON.stringify(b.id)})"><span class="brand-chip-name">${b.name}</span><span class="brand-chip-city">${b.city} — ${b.year}</span></div>`).join('')}
       </div>
     </section>
 
     <section class="manifesto-section">
       <h2 class="manifesto-quote">The future belongs<br>to those who <span class="gradient-text">create.</span></h2>
-      <p class="manifesto-text">On ne vend pas des vÃªtements. On donne une voix aux crÃ©ateurs qui osent, et un style Ã  ceux qui refusent de se fondre dans la masse.</p>
+      <p class="manifesto-text">On ne vend pas des vêtements. On donne une voix aux créateurs qui osent, et un style à ceux qui refusent de se fondre dans la masse.</p>
       <button class="btn btn-primary" onclick="navigate('manifesto')">Lire le Manifesto</button>
     </section>
 
     <section class="section">
       <div class="section-header">
-        <div><h2 class="section-title">NouveautÃ©s</h2><p class="section-subtitle">Les derniÃ¨res piÃ¨ces ajoutÃ©es</p></div>
+        <div><h2 class="section-title">Nouveautés</h2><p class="section-subtitle">Les dernières pièces ajoutées</p></div>
         <button class="section-link" onclick="navigate('shop')">Tout voir <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
       </div>
       <div class="product-grid">${[7,10,4,2].map(i=>productCardHTML(PRODUCTS[i])).join('')}</div>
@@ -518,7 +518,7 @@ function shopPage(){
   return `<div style="padding-top:96px">
     <section class="section">
       <h1 class="section-title" style="margin-bottom:8px">Shop</h1>
-      <p style="font-size:14px;color:var(--gray-500);margin-bottom:32px;font-weight:300">${PRODUCTS.length} piÃ¨ces disponibles</p>
+      <p style="font-size:14px;color:var(--gray-500);margin-bottom:32px;font-weight:300">${PRODUCTS.length} pièces disponibles</p>
       <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:40px;flex-wrap:wrap">
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           ${['Tous','Tops','Bottoms','Outerwear','Accessories'].map(c=>`<button class="filter-chip ${c==='Tous'?'active':''}" onclick="filterShop('${c}',this)">${c}</button>`).join('')}
@@ -558,7 +558,7 @@ function renderShopGrid(){
     const searchOk=!searchQuery||p.name.toLowerCase().includes(searchQuery.toLowerCase())||p.brand.toLowerCase().includes(searchQuery.toLowerCase());
     return catOk&&brandOk&&searchOk;
   });
-  grid.innerHTML=filtered.length>0?filtered.map(p=>productCardHTML(p)).join(''):'<div style="grid-column:1/-1;text-align:center;padding:80px 0;color:var(--gray-400);font-size:14px">Aucun produit trouvÃ©.</div>';
+  grid.innerHTML=filtered.length>0?filtered.map(p=>productCardHTML(p)).join(''):'<div style="grid-column:1/-1;text-align:center;padding:80px 0;color:var(--gray-400);font-size:14px">Aucun produit trouvé.</div>';
 }
 
 function productPage(){
@@ -575,9 +575,9 @@ function productPage(){
           <img src="${p.image}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease-out">
         </div>
         <div style="padding-top:32px">
-          <div style="font-size:12px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px;cursor:pointer" onclick="navigate('brand','${b?.id}')">${b?.name||''} â</div>
+          <div style="font-size:12px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px;cursor:pointer" onclick="navigate('brand','${b?.id}')">${b?.name||''} →</div>
           <h1 style="font-family:var(--font-display);font-size:clamp(28px,3vw,40px);font-weight:700;letter-spacing:-1px;margin-bottom:8px">${p.name}</h1>
-          <div style="font-size:20px;color:var(--gray-600);margin-bottom:32px;font-weight:300">${p.price} â¬</div>
+          <div style="font-size:20px;color:var(--gray-600);margin-bottom:32px;font-weight:300">${p.price} €</div>
 
           <div style="font-size:13px;color:var(--gray-500);margin-bottom:12px" id="color-label">Couleur : ${p.colors[0].name}</div>
           <div style="display:flex;gap:10px;margin-bottom:28px">
@@ -590,7 +590,7 @@ function productPage(){
           </div>
 
           <div style="display:flex;gap:12px;margin-bottom:32px">
-            <button id="add-btn" class="btn btn-dark" style="flex:1;justify-content:center;opacity:0.4" onclick="doAddToCart(${p.id})" disabled>SÃ©lectionne une taille</button>
+            <button id="add-btn" class="btn btn-dark" style="flex:1;justify-content:center;opacity:0.4" onclick="doAddToCart(${p.id})" disabled>Sélectionne une taille</button>
             <button class="pd-fav-btn ${isFav?'is-fav':''}" data-fav="${p.id}" onclick="toggleFav(${p.id})" style="width:52px;height:52px;border:1px solid var(--gray-200);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:var(--radius)">
               ${isFav?'<svg width="20" height="20" viewBox="0 0 24 24" fill="url(#heartGrad)" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'}
             </button>
@@ -603,7 +603,7 @@ function productPage(){
         </div>
       </div>
     </section>
-    ${related.length>0?`<section class="section" style="padding-top:0"><div class="section-header"><h2 class="section-title">Du mÃªme crÃ©ateur</h2></div><div class="product-grid">${related.map(x=>productCardHTML(x)).join('')}</div></section>`:''}
+    ${related.length>0?`<section class="section" style="padding-top:0"><div class="section-header"><h2 class="section-title">Du même créateur</h2></div><div class="product-grid">${related.map(x=>productCardHTML(x)).join('')}</div></section>`:''}
     ${footerHTML()}
   </div>`;
 }
@@ -630,7 +630,7 @@ function brandsPage(){
   return `<div>
     <section class="section" style="padding-top:96px">
       <h1 class="section-title" style="margin-bottom:8px">Les Marques</h1>
-      <p style="font-size:14px;color:var(--gray-500);margin-bottom:48px;font-weight:300">Chaque marque est sÃ©lectionnÃ©e Ã  la main. Pas de mass market, pas de compromis.</p>
+      <p style="font-size:14px;color:var(--gray-500);margin-bottom:48px;font-weight:300">Chaque marque est sélectionnée à la main. Pas de mass market, pas de compromis.</p>
       <div class="brands-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px">
         ${BRANDS.map(b=>`
           <div style="position:relative;aspect-ratio:4/5;overflow:hidden;cursor:pointer;background:var(--black);border-radius:var(--radius-lg)" onclick="navigate('brand','${b.id}')"
@@ -638,7 +638,7 @@ function brandsPage(){
                onmouseout="this.querySelector('img').style.opacity=0.5;this.querySelector('img').style.transform='scale(1)'">
             <img src="${b.image}" alt="${b.name}" style="width:100%;height:100%;object-fit:cover;opacity:0.5;transition:all 0.6s">
             <div style="position:absolute;bottom:0;left:0;right:0;padding:32px;color:var(--white)">
-              <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;opacity:0.5;margin-bottom:8px">${b.city} â Est. ${b.year}</div>
+              <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;opacity:0.5;margin-bottom:8px">${b.city} — Est. ${b.year}</div>
               <div style="font-family:var(--font-display);font-size:clamp(28px,3vw,40px);font-weight:700;letter-spacing:-1px;margin-bottom:8px">${b.name}</div>
               <div style="font-size:14px;opacity:0.6;font-style:italic;font-weight:300">${b.tagline}</div>
             </div>
@@ -661,13 +661,13 @@ function brandPage(){
         <h1 style="font-family:var(--font-display);font-size:clamp(48px,7vw,80px);font-weight:800;letter-spacing:-2px">${b.name}</h1>
         <div style="font-size:16px;opacity:0.5;font-style:italic;margin-top:8px;font-weight:300">${b.tagline}</div>
         <div style="display:flex;gap:24px;justify-content:center;margin-top:20px;font-size:12px;opacity:0.4;letter-spacing:1px;text-transform:uppercase">
-          <span>${b.city}</span><span>Est. ${b.year}</span><span>${bp.length} piÃ¨ces</span>
+          <span>${b.city}</span><span>Est. ${b.year}</span><span>${bp.length} pièces</span>
         </div>
       </div>
     </div>
     <section class="section">
       <p style="font-size:17px;line-height:1.9;color:var(--gray-600);max-width:700px;font-weight:300;margin-bottom:48px">${b.story}</p>
-      <div class="section-header"><h2 class="section-title">Les piÃ¨ces</h2></div>
+      <div class="section-header"><h2 class="section-title">Les pièces</h2></div>
       <div class="product-grid">${bp.map(p=>productCardHTML(p)).join('')}</div>
     </section>
     ${footerHTML()}
@@ -676,10 +676,10 @@ function brandPage(){
 
 function manifestoPage(){
   const faqs=[
-    ["C'est quoi UNEEK exactement ?","UNEEK est une marketplace qui regroupe des marques de mode indÃ©pendantes soigneusement sÃ©lectionnÃ©es. On donne une vitrine aux crÃ©ateurs qui mÃ©ritent d'Ãªtre vus."],
-    ["Comment sont sÃ©lectionnÃ©es les marques ?","Chaque marque est Ã©valuÃ©e sur la qualitÃ© de ses crÃ©ations, son originalitÃ© et son histoire. On refuse volontairement le mass market."],
-    ["Quels sont les dÃ©lais de livraison ?","Entre 3 et 7 jours ouvrÃ©s en Belgique et en France. Chaque commande est prÃ©parÃ©e directement par la marque."],
-    ["Comment devenir partenaire UNEEK ?","Si tu es un crÃ©ateur indÃ©pendant, tu peux postuler via notre formulaire 'Devenir Partenaire' accessible depuis le menu."],
+    ["C'est quoi UNEEK exactement ?","UNEEK est une marketplace qui regroupe des marques de mode indépendantes soigneusement sélectionnées. On donne une vitrine aux créateurs qui méritent d'être vus."],
+    ["Comment sont sélectionnées les marques ?","Chaque marque est évaluée sur la qualité de ses créations, son originalité et son histoire. On refuse volontairement le mass market."],
+    ["Quels sont les délais de livraison ?","Entre 3 et 7 jours ouvrés en Belgique et en France. Chaque commande est préparée directement par la marque."],
+    ["Comment devenir partenaire UNEEK ?","Si tu es un créateur indépendant, tu peux postuler via notre formulaire 'Devenir Partenaire' accessible depuis le menu."],
   ];
   return `<div>
     <section style="background:var(--black);color:var(--white);padding:clamp(64px,10vw,128px) clamp(16px,4vw,48px);min-height:100vh;display:flex;flex-direction:column;justify-content:center">
@@ -687,24 +687,24 @@ function manifestoPage(){
         <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;opacity:0.4;margin-bottom:40px">Le Manifesto UNEEK</div>
         <h1 style="font-family:var(--font-display);font-size:clamp(36px,5vw,56px);font-weight:700;letter-spacing:-1px;line-height:1.15;margin-bottom:48px">The future belongs to those who <span class="gradient-text">create.</span></h1>
         <div style="font-size:clamp(16px,1.8vw,19px);line-height:1.9;opacity:0.55;font-weight:300">
-          <p style="margin-bottom:24px">La mode ne devrait pas Ãªtre un uniforme. Pas un algorithme qui te dit quoi porter. Pas une tendance TikTok qui s'oublie en deux semaines.</p>
-          <p style="margin-bottom:24px">La mode, c'est une expression. Un choix. Un acte crÃ©atif. Et les vrais crÃ©ateurs â ceux qui dessinent dans leur chambre, qui cousent dans leur garage â mÃ©ritent d'Ãªtre vus.</p>
-          <p style="margin-bottom:24px">UNEEK existe pour Ã§a. Pour donner une vitrine aux marques indÃ©pendantes. Pour offrir Ã  chacun la possibilitÃ© de porter quelque chose qui a une histoire, un nom, une Ã¢me.</p>
-          <p>Parce que s'habiller, c'est se raconter. Et ton histoire mÃ©rite mieux qu'un copier-coller.</p>
+          <p style="margin-bottom:24px">La mode ne devrait pas être un uniforme. Pas un algorithme qui te dit quoi porter. Pas une tendance TikTok qui s'oublie en deux semaines.</p>
+          <p style="margin-bottom:24px">La mode, c'est une expression. Un choix. Un acte créatif. Et les vrais créateurs — ceux qui dessinent dans leur chambre, qui cousent dans leur garage — méritent d'être vus.</p>
+          <p style="margin-bottom:24px">UNEEK existe pour ça. Pour donner une vitrine aux marques indépendantes. Pour offrir à chacun la possibilité de porter quelque chose qui a une histoire, un nom, une âme.</p>
+          <p>Parce que s'habiller, c'est se raconter. Et ton histoire mérite mieux qu'un copier-coller.</p>
         </div>
         <div style="margin-top:48px;padding-top:32px;border-top:1px solid rgba(255,255,255,0.08);font-style:italic;opacity:0.4;font-size:15px;font-weight:300">"Dress different. Feel different."</div>
       </div>
     </section>
     <section class="section" style="text-align:center">
-      <h2 class="section-title" style="margin-bottom:24px">PrÃªt Ã  dÃ©couvrir ?</h2>
+      <h2 class="section-title" style="margin-bottom:24px">Prêt à découvrir ?</h2>
       <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
-        <button class="btn btn-dark" onclick="navigate('shop')">Explorer le Shop â</button>
+        <button class="btn btn-dark" onclick="navigate('shop')">Explorer le Shop →</button>
         <button class="btn btn-outline" onclick="navigate('brands')">Voir les Marques</button>
       </div>
     </section>
     <section style="background:var(--black);color:var(--white);padding:clamp(64px,8vw,96px) clamp(16px,4vw,48px)">
       <div style="max-width:700px;margin:0 auto">
-        <h2 style="font-family:var(--font-display);font-size:clamp(24px,3vw,36px);font-weight:700;letter-spacing:-1px;margin-bottom:48px">Questions frÃ©quentes</h2>
+        <h2 style="font-family:var(--font-display);font-size:clamp(24px,3vw,36px);font-weight:700;letter-spacing:-1px;margin-bottom:48px">Questions fréquentes</h2>
         ${faqs.map((faq,i)=>`
           <div style="border-bottom:1px solid rgba(255,255,255,0.08);padding:24px 0;cursor:pointer" onclick="toggleFaq(${i})">
             <div style="display:flex;justify-content:space-between;align-items:center;font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--white)">
@@ -731,23 +731,23 @@ function toggleFaq(i){
 function partnerPage(){
   return `<div>
     <section style="background:var(--black);color:var(--white);padding:clamp(120px,15vw,180px) clamp(16px,4vw,48px) clamp(64px,8vw,96px);text-align:center">
-      <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;opacity:0.4;margin-bottom:24px">Pour les crÃ©ateurs</div>
+      <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;opacity:0.4;margin-bottom:24px">Pour les créateurs</div>
       <h1 style="font-family:var(--font-display);font-size:clamp(36px,5vw,56px);font-weight:800;letter-spacing:-2px;margin-bottom:24px">Devenir Partenaire <span class="gradient-text">UNEEK</span></h1>
-      <p style="font-size:clamp(15px,1.8vw,18px);opacity:0.5;font-weight:300;max-width:500px;margin:0 auto;line-height:1.7">Tu crÃ©es des piÃ¨ces uniques ? Tu mÃ©rites une vitrine Ã  la hauteur. Rejoins la communautÃ© UNEEK.</p>
+      <p style="font-size:clamp(15px,1.8vw,18px);opacity:0.5;font-weight:300;max-width:500px;margin:0 auto;line-height:1.7">Tu crées des pièces uniques ? Tu mérites une vitrine à la hauteur. Rejoins la communauté UNEEK.</p>
     </section>
     <section class="section" style="max-width:640px;margin:0 auto">
       <div id="partner-form">
         <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:24px">Ta marque</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
           <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Nom de ta marque</label><input id="pf-brand" type="text" placeholder="Ex: Brouillon" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
-          <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Ton nom</label><input id="pf-name" type="text" placeholder="PrÃ©nom Nom" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
+          <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Ton nom</label><input id="pf-name" type="text" placeholder="Prénom Nom" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
           <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Email</label><input id="pf-email" type="email" placeholder="hello@tamarque.com" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
           <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Instagram</label><input id="pf-ig" type="text" placeholder="@tamarque" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
         </div>
         <div style="margin-bottom:32px"><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Parle-nous de ta marque</label><textarea id="pf-desc" placeholder="Ton histoire, ton style, ce qui te rend unique..." style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm);resize:vertical;min-height:120px"></textarea></div>
-        <button class="btn btn-dark" style="width:100%;justify-content:center" onclick="submitPartner()">Envoyer ma candidature â</button>
+        <button class="btn btn-dark" style="width:100%;justify-content:center" onclick="submitPartner()">Envoyer ma candidature →</button>
       </div>
     </section>
     ${footerHTML()}
@@ -760,19 +760,19 @@ function submitPartner(){
   const email=document.getElementById('pf-email')?.value;
   const instagram=document.getElementById('pf-ig')?.value;
   const message=document.getElementById('pf-desc')?.value;
-  if(!brand||!name||!email){showToast('Remplis au moins le nom, l\'email et la marque');return;}  const emailRe=/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;if(!emailRe.test(email)){showToast('Adresse email invalide â vÃ©rifie ton email.');return;}
+  if(!brand||!name||!email){showToast('Remplis au moins le nom, l\'email et la marque');return;}  const emailRe=/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;if(!emailRe.test(email)){showToast('Adresse email invalide — vérifie ton email.');return;}
   fetch('/api/partner-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({brand_name:brand,contact_name:name,email:email,instagram:instagram,message:message})}).then(r=>r.json()).then(data=>{
     if(data.success){
       document.getElementById('partner-form').innerHTML=`<div style="text-align:center;padding:80px 0">
         <div style="width:80px;height:80px;border-radius:50%;background:var(--gradient);display:flex;align-items:center;justify-content:center;margin:0 auto 32px">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
         </div>
-        <h2 style="font-family:var(--font-display);font-size:32px;font-weight:700;margin-bottom:16px">Candidature envoyÃ©e !</h2>
-        <p style="font-size:16px;color:var(--gray-500);font-weight:300;max-width:480px;margin:0 auto 40px;line-height:1.7">Merci <strong>${name}</strong> ! Notre Ã©quipe Ã©tudie ta candidature pour <strong>${brand}</strong> et te recontacte sous 48h.</p>
-        <button class="btn btn-dark" onclick="navigate('brands')">Voir les Marques â</button>
+        <h2 style="font-family:var(--font-display);font-size:32px;font-weight:700;margin-bottom:16px">Candidature envoyée !</h2>
+        <p style="font-size:16px;color:var(--gray-500);font-weight:300;max-width:480px;margin:0 auto 40px;line-height:1.7">Merci <strong>${name}</strong> ! Notre équipe étudie ta candidature pour <strong>${brand}</strong> et te recontacte sous 48h.</p>
+        <button class="btn btn-dark" onclick="navigate('brands')">Voir les Marques →</button>
       </div>`;
     }else{showToast('Erreur: '+data.error);}
-  }).catch(()=>showToast('Erreur rÃ©seau, rÃ©essaie.'));
+  }).catch(()=>showToast('Erreur réseau, réessaie.'));
 }
 function checkoutPage(){
   const total=cart.reduce((s,i)=>s+i.price,0);
@@ -783,7 +783,7 @@ function checkoutPage(){
         <div>
           <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:24px">Informations de livraison</div>
           <div class="co-form-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-            <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">PrÃ©nom</label><input id="co-prenom" type="text" placeholder="John" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
+            <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Prénom</label><input id="co-prenom" type="text" placeholder="John" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
             <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Nom</label><input id="co-nom" type="text" placeholder="Doe" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
           </div>
           <div style="margin-bottom:16px"><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Email</label><input id="co-email" type="email" placeholder="john@exemple.com" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
@@ -799,25 +799,25 @@ function checkoutPage(){
           </div>
           <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:24px">Paiement</div>
           <div style="padding:32px;border:1px solid var(--gray-200);text-align:center;border-radius:var(--radius);margin-bottom:24px">
-            <div style="font-size:14px;color:var(--gray-400);font-weight:300">ð³ Paiement sÃ©curisÃ© par Mollie</div>
-            <div style="font-size:12px;color:var(--gray-300);margin-top:8px">(Simulation â aucun paiement rÃ©el)</div>
+            <div style="font-size:14px;color:var(--gray-400);font-weight:300">💳 Paiement sécurisé par Mollie</div>
+            <div style="font-size:12px;color:var(--gray-300);margin-top:8px">(Simulation — aucun paiement réel)</div>
           </div>
         </div>
         <div class="co-summary" style="background:var(--gray-100);padding:36px;border-radius:var(--radius-lg);position:sticky;top:96px">
-          <div style="font-family:var(--font-display);font-size:18px;font-weight:700;margin-bottom:28px">RÃ©capitulatif</div>
+          <div style="font-family:var(--font-display);font-size:18px;font-weight:700;margin-bottom:28px">Récapitulatif</div>
           ${cart.map(item=>{
             const b=BRANDS.find(x=>x.id===item.brand);
             return `<div style="display:flex;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--gray-200)">
               <div style="width:56px;height:72px;overflow:hidden;background:var(--gray-200);border-radius:8px"><img src="${item.image}" style="width:100%;height:100%;object-fit:cover"></div>
               <div style="flex:1"><div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400)">${b?.name||''}</div><div style="font-family:var(--font-display);font-size:13px;font-weight:600">${item.name}</div><div style="font-size:12px;color:var(--gray-500)">Taille : ${item.selectedSize}</div></div>
-              <div style="font-size:14px;font-weight:500">${item.price} â¬</div>
+              <div style="font-size:14px;font-weight:500">${item.price} €</div>
             </div>`;
           }).join('')}
           ${cart.length===0?'<p style="color:var(--gray-400);font-size:14px;text-align:center;padding:24px 0">Panier vide</p>':''}
-          <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:12px;color:var(--gray-600);font-weight:300"><span>Sous-total</span><span>${total} â¬</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:12px;color:var(--gray-600);font-weight:300"><span>Sous-total</span><span>${total} €</span></div>
           <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:12px;color:var(--gray-600);font-weight:300"><span>Livraison</span><span>Gratuite</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:600;padding-top:20px;border-top:1px solid var(--gray-300);margin-top:20px;margin-bottom:28px"><span>Total</span><span>${total} â¬</span></div>
-          <button class="btn btn-dark" style="width:100%;justify-content:center" onclick="confirmOrder()">Confirmer la commande â</button>
+          <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:600;padding-top:20px;border-top:1px solid var(--gray-300);margin-top:20px;margin-bottom:28px"><span>Total</span><span>${total} €</span></div>
+          <button class="btn btn-dark" style="width:100%;justify-content:center" onclick="confirmOrder()">Confirmer la commande →</button>
         </div>
       </div>
     </section>
@@ -834,14 +834,14 @@ function confirmOrder(){
   const c=document.getElementById('co-code')?.value;
   if(!p||!n||!e||!a||!v||!c){showToast('Remplis tous les champs');return;}
   cart=[];renderCart();navigate('home');
-  showToast('Commande confirmÃ©e ! Merci '+p+' â¥');
+  showToast('Commande confirmée ! Merci '+p+' ♥');
 }
 
 function legalPage(type){
   const pages={
-    cgv:{title:"Conditions GÃ©nÃ©rales de Vente",items:[["Article 1 â PrÃ©ambule","UNEEK est une marketplace de mode indÃ©pendante mettant en relation crÃ©ateurs et acheteurs. UNEEK agit en qualitÃ© d'intermÃ©diaire. Les produits sont vendus directement par les crÃ©ateurs."],["Article 2 â Produits et prix","Les produits sont des vÃªtements et accessoires de marques indÃ©pendantes sÃ©lectionnÃ©es. Les prix sont en euros TTC, fixÃ©s librement par chaque crÃ©ateur."],["Article 3 â Commande et paiement","La validation du paiement constitue l'acceptation de la commande. Le paiement est sÃ©curisÃ© par Mollie. UNEEK ne stocke aucune donnÃ©e bancaire."],["Article 4 â Livraison","ExpÃ©dition par le crÃ©ateur sous 3 jours ouvrÃ©s. DÃ©lais : 3â7 jours BE/FR, 5â10 jours reste de l'Europe."],["Article 5 â Droit de rÃ©tractation","14 jours Ã  compter de la rÃ©ception. Produit non portÃ©, Ã©tiquettes intactes. Frais de retour Ã  charge du client sauf produit dÃ©fectueux."],["Article 6 â Garantie lÃ©gale","Garantie lÃ©gale de conformitÃ© de 2 ans conformÃ©ment au Code civil belge."],["Article 7 â Droit applicable","Droit belge applicable. RÃ¨glement en ligne : ec.europa.eu/consumers/odr"]]},
-    privacy:{title:"Politique de confidentialitÃ©",items:[["DonnÃ©es collectÃ©es","Nom, prÃ©nom, email, adresse de livraison et historique de commandes."],["Utilisation","Traitement des commandes, service client, amÃ©lioration de la plateforme."],["Partage","DonnÃ©es de livraison transmises au crÃ©ateur uniquement. UNEEK ne vend aucune donnÃ©e."],["Vos droits (RGPD)","Droit d'accÃ¨s, rectification, suppression et portabilitÃ©. Contact : support@uneek.store"],["SÃ©curitÃ©","Paiements sÃ©curisÃ©s par Mollie (PCI-DSS). UNEEK ne stocke aucune donnÃ©e bancaire."]]},
-    legal:{title:"Mentions lÃ©gales",items:[["Ãditeur","UNEEK â Marketplace de mode indÃ©pendante\nBCE : [Ã  complÃ©ter] â TVA : BE [Ã  complÃ©ter]\nEmail : contact@uneek.store"],["HÃ©bergement","Vercel Inc., 340 S Lemon Ave #4133, Walnut CA 91789, USA"],["Paiements","Mollie B.V., Keizersgracht 126, Amsterdam. CertifiÃ© PCI-DSS."],["PropriÃ©tÃ© intellectuelle","Tout le contenu du site est protÃ©gÃ©. Reproduction interdite sans autorisation."]]}
+    cgv:{title:"Conditions Générales de Vente",items:[["Article 1 — Préambule","UNEEK est une marketplace de mode indépendante mettant en relation créateurs et acheteurs. UNEEK agit en qualité d'intermédiaire. Les produits sont vendus directement par les créateurs."],["Article 2 — Produits et prix","Les produits sont des vêtements et accessoires de marques indépendantes sélectionnées. Les prix sont en euros TTC, fixés librement par chaque créateur."],["Article 3 — Commande et paiement","La validation du paiement constitue l'acceptation de la commande. Le paiement est sécurisé par Mollie. UNEEK ne stocke aucune donnée bancaire."],["Article 4 — Livraison","Expédition par le créateur sous 3 jours ouvrés. Délais : 3–7 jours BE/FR, 5–10 jours reste de l'Europe."],["Article 5 — Droit de rétractation","14 jours à compter de la réception. Produit non porté, étiquettes intactes. Frais de retour à charge du client sauf produit défectueux."],["Article 6 — Garantie légale","Garantie légale de conformité de 2 ans conformément au Code civil belge."],["Article 7 — Droit applicable","Droit belge applicable. Règlement en ligne : ec.europa.eu/consumers/odr"]]},
+    privacy:{title:"Politique de confidentialité",items:[["Données collectées","Nom, prénom, email, adresse de livraison et historique de commandes."],["Utilisation","Traitement des commandes, service client, amélioration de la plateforme."],["Partage","Données de livraison transmises au créateur uniquement. UNEEK ne vend aucune donnée."],["Vos droits (RGPD)","Droit d'accès, rectification, suppression et portabilité. Contact : support@uneek.store"],["Sécurité","Paiements sécurisés par Mollie (PCI-DSS). UNEEK ne stocke aucune donnée bancaire."]]},
+    legal:{title:"Mentions légales",items:[["Éditeur","UNEEK — Marketplace de mode indépendante\nBCE : [à compléter] — TVA : BE [à compléter]\nEmail : contact@uneek.store"],["Hébergement","Vercel Inc., 340 S Lemon Ave #4133, Walnut CA 91789, USA"],["Paiements","Mollie B.V., Keizersgracht 126, Amsterdam. Certifié PCI-DSS."],["Propriété intellectuelle","Tout le contenu du site est protégé. Reproduction interdite sans autorisation."]]}
   };
   const pg=pages[type];
   return `<div>
@@ -860,11 +860,11 @@ function profilePage(){
       <p style="font-size:14px;color:var(--gray-400);font-weight:300;margin-bottom:40px">Tes informations personnelles</p>
       <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:24px">Informations personnelles</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-        <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">PrÃ©nom</label><input type="text" placeholder="Ton prÃ©nom" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
+        <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Prénom</label><input type="text" placeholder="Ton prénom" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
         <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Nom</label><input type="text" placeholder="Ton nom" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
       </div>
       <div style="margin-bottom:32px"><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Email</label><input type="email" placeholder="ton@email.com" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
-      <button class="btn btn-dark" style="width:100%;justify-content:center" onclick="showToast('Profil sauvegardÃ© â')">Sauvegarder</button>
+      <button class="btn btn-dark" style="width:100%;justify-content:center" onclick="showToast('Profil sauvegardé ✓')">Sauvegarder</button>
       <div style="margin-top:40px;padding-top:24px;border-top:1px solid var(--gray-200)">
         <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:16px">Mes stats</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
