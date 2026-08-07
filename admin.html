@@ -477,7 +477,8 @@ async function loadPending() {
       const creatorName = p.creator_accounts?.full_name || p.creator_name || 'Créateur';
       const category = c.category || p.category || '';
       const sizesStr = c.sizes_stock ? Object.keys(c.sizes_stock).join(', ') : (p.sizes || '');
-      const detail = brandName + ' · par ' + creatorName + (category ? ' · ' + category : '') + (sizesStr ? '<br>Tailles: ' + sizesStr : '');
+      const commissionStr = c.commission_percent ? '<br><span style="color:var(--blue);font-weight:500">Commission: ' + c.commission_percent + '%</span>' : '';
+      const detail = brandName + ' · par ' + creatorName + (category ? ' · ' + category : '') + (sizesStr ? '<br>Tailles: ' + sizesStr : '') + commissionStr;
       const prodName = c.name || p.proposed_name || 'Sans nom';
       const prodPrice = c.price || p.proposed_price || '?';
 
@@ -553,14 +554,12 @@ async function loadApplications() {
 function askHandlePending(id, action, name) {
   const title = action === 'approve' ? 'Approuver ce produit ?' : 'Refuser ce produit ?';
   const msg = action === 'approve'
-    ? 'Tu vas approuver "' + name + '". Définis la commission UNEEK avant de confirmer.'
+    ? 'Tu vas approuver "' + name + '". La commission définie par le créateur sera appliquée.'
     : 'Tu vas refuser "' + name + '". Le créateur sera notifié.';
   const color = action === 'approve' ? 'green' : 'red';
-  const showCommission = action === 'approve';
   showConfirm(title, msg, color, () => {
-    const commission = showCommission ? parseFloat(document.getElementById('confirmCommission').value) || 12 : null;
-    handlePending(id, action, commission);
-  }, showCommission);
+    handlePending(id, action, null);
+  });
 }
 
 function askHandleApplication(id, action, brandName) {
