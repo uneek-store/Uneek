@@ -1,130 +1,117 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>UNEEK Admin</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>UNEEK Admin</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
 
-    :root {
-      --black: #0A0A0A;
-      --white: #FAFAFA;
-      --gray-50: #F9F9F9;
-      --gray-100: #F5F5F5;
-      --gray-200: #E5E5E5;
-      --gray-300: #D4D4D4;
-      --gray-400: #A3A3A3;
-      --gray-500: #737373;
-      --gray-600: #525252;
-      --gray-800: #262626;
-      --green: #22C55E;
-      --green-bg: #F0FDF4;
-      --red: #EF4444;
-      --red-bg: #FEF2F2;
-      --orange: #F59E0B;
-      --orange-bg: #FFFBEB;
-      --blue: #3B82F6;
-      --blue-bg: #EFF6FF;
-      --font-display: 'Urbanist', sans-serif;
-      --font-body: 'DM Sans', sans-serif;
-    }
+:root {
+  --black: #0A0A0A;
+  --white: #FAFAFA;
+  --gray-50: #F9F9F9;
+  --gray-100: #F5F5F5;
+  --gray-200: #E5E5E5;
+  --gray-300: #D4D4D4;
+  --gray-400: #A3A3A3;
+  --gray-500: #737373;
+  --gray-600: #525252;
+  --gray-800: #262626;
+  --green: #22C55E;
+  --green-bg: #F0FDF4;
+  --red: #EF4444;
+  --red-bg: #FEF2F2;
+  --orange: #F59E0B;
+  --orange-bg: #FFFBEB;
+  --blue: #3B82F6;
+  --blue-bg: #EFF6FF;
+  --font-display: 'Urbanist', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+}
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: var(--font-body); background: var(--gray-50); color: var(--black); min-height: 100vh; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-body); background: var(--gray-50); color: var(--black); min-height: 100vh; }
 
-    /* LOGIN */
-    .login-wrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--black); }
-    .login-box { background: var(--white); padding: 40px; border-radius: 16px; width: 380px; }
-    .login-box h1 { font-family: var(--font-display); font-size: 24px; font-weight: 700; margin-bottom: 4px; }
-    .login-box p { color: var(--gray-500); font-size: 13px; margin-bottom: 24px; }
-    .login-box label { display: block; font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; margin-top: 14px; }
-    .login-box input { width: 100%; padding: 10px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 14px; font-family: var(--font-body); }
-    .login-box input:focus { outline: none; border-color: var(--black); }
-    .login-btn { width: 100%; padding: 12px; background: var(--black); color: var(--white); border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 20px; font-family: var(--font-body); }
-    .login-btn:hover { background: var(--gray-800); }
-    .login-error { color: var(--red); font-size: 12px; margin-top: 8px; display: none; }
+/* LOGIN */
+.login-wrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--black); }
+.login-box { background: var(--white); padding: 40px; border-radius: 16px; width: 380px; }
+.login-box h1 { font-family: var(--font-display); font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+.login-box p { color: var(--gray-500); font-size: 13px; margin-bottom: 24px; }
+.login-box label { display: block; font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; margin-top: 14px; }
+.login-box input { width: 100%; padding: 10px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 14px; font-family: var(--font-body); }
+.login-box input:focus { outline: none; border-color: var(--black); }
+.login-btn { width: 100%; padding: 12px; background: var(--black); color: var(--white); border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 20px; font-family: var(--font-body); }
+.login-btn:hover { background: var(--gray-800); }
+.login-error { color: var(--red); font-size: 12px; margin-top: 8px; display: none; }
 
-    /* LAYOUT */
-    .app { display: none; min-height: 100vh; }
-    .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 200px; background: var(--black); color: var(--white); padding: 24px 0; z-index: 10; }
-    .sidebar-logo { padding: 0 20px 2px; font-family: var(--font-display); font-weight: 700; font-size: 20px; }
-    .sidebar-tag { padding: 0 20px 24px; font-size: 11px; color: var(--gray-500); letter-spacing: 1px; text-transform: uppercase; }
-    .sidebar a { display: flex; align-items: center; gap: 10px; padding: 10px 20px; font-size: 13px; color: var(--gray-400); cursor: pointer; text-decoration: none; transition: all 0.15s; border: none; background: none; width: 100%; font-family: var(--font-body); }
-    .sidebar a:hover { color: var(--white); background: rgba(255,255,255,0.05); }
-    .sidebar a.active { color: var(--white); background: rgba(255,255,255,0.08); border-right: 2px solid var(--white); }
-    .sidebar .badge-count { background: var(--red); color: var(--white); font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-left: auto; }
-    .main { margin-left: 200px; padding: 28px; }
-    .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--black); }
-    .page-sub { font-size: 13px; color: var(--gray-500); margin-bottom: 20px; }
+/* LAYOUT */
+.app { display: none; min-height: 100vh; }
+.sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 200px; background: var(--black); color: var(--white); padding: 24px 0; z-index: 10; }
+.sidebar-logo { padding: 0 20px 2px; font-family: var(--font-display); font-weight: 700; font-size: 20px; }
+.sidebar-tag { padding: 0 20px 24px; font-size: 11px; color: var(--gray-500); letter-spacing: 1px; text-transform: uppercase; }
+.sidebar a { display: flex; align-items: center; gap: 10px; padding: 10px 20px; font-size: 13px; color: var(--gray-400); cursor: pointer; text-decoration: none; transition: all 0.15s; border: none; background: none; width: 100%; font-family: var(--font-body); }
+.sidebar a:hover { color: var(--white); background: rgba(255,255,255,0.05); }
+.sidebar a.active { color: var(--white); background: rgba(255,255,255,0.08); border-right: 2px solid var(--white); }
+.sidebar .badge-count { background: var(--red); color: var(--white); font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-left: auto; }
+.main { margin-left: 200px; padding: 28px; }
+.page-title { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--black); }
+.page-sub { font-size: 13px; color: var(--gray-500); margin-bottom: 20px; }
 
-    /* STATS */
-    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
-    .stat-card { background: var(--white); padding: 16px; border-radius: 12px; border: 1px solid var(--gray-200); }
-    .stat-label { font-size: 10px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-    .stat-value { font-size: 24px; font-weight: 600; font-family: var(--font-display); color: var(--black); }
+/* STATS */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.stat-card { background: var(--white); padding: 16px; border-radius: 12px; border: 1px solid var(--gray-200); }
+.stat-label { font-size: 10px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.stat-value { font-size: 24px; font-weight: 600; font-family: var(--font-display); color: var(--black); }
 
-    /* CARDS & TABLES */
-    .card { background: var(--white); border: 1px solid var(--gray-200); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
-    .card-header { padding: 14px 18px; border-bottom: 1px solid var(--gray-200); font-size: 14px; font-weight: 500; }
-    .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; }
-    th { text-align: left; padding: 8px 16px; font-size: 10px; font-weight: 500; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; background: var(--gray-50); border-bottom: 1px solid var(--gray-200); white-space: nowrap; }
-    td { padding: 10px 16px; border-top: 1px solid var(--gray-100); font-size: 13px; vertical-align: middle; }
-    td.sec { color: var(--gray-500); }
-    .bold { font-weight: 500; }
+/* CARDS & TABLES */
+.card { background: var(--white); border: 1px solid var(--gray-200); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+.card-header { padding: 14px 18px; border-bottom: 1px solid var(--gray-200); font-size: 14px; font-weight: 500; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; padding: 8px 16px; font-size: 10px; font-weight: 500; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; background: var(--gray-50); border-bottom: 1px solid var(--gray-200); white-space: nowrap; }
+td { padding: 10px 16px; border-top: 1px solid var(--gray-100); font-size: 13px; vertical-align: middle; }
+td.sec { color: var(--gray-500); }
+.bold { font-weight: 500; }
 
-    /* BADGES */
-    .badge { display: inline-block; padding: 3px 10px; border-radius: 50px; font-size: 11px; white-space: nowrap; font-weight: 500; }
-    .badge-green { background: var(--green-bg); color: var(--green); }
-    .badge-orange { background: var(--orange-bg); color: var(--orange); }
-    .badge-blue { background: var(--blue-bg); color: var(--blue); }
-    .badge-red { background: var(--red-bg); color: var(--red); }
+/* BADGES */
+.badge { display: inline-block; padding: 3px 10px; border-radius: 50px; font-size: 11px; white-space: nowrap; font-weight: 500; }
+.badge-green { background: var(--green-bg); color: var(--green); }
+.badge-orange { background: var(--orange-bg); color: var(--orange); }
+.badge-blue { background: var(--blue-bg); color: var(--blue); }
+.badge-red { background: var(--red-bg); color: var(--red); }
 
-    /* BUTTONS */
-    .btn-approve { padding: 5px 14px; background: var(--green); color: var(--white); border: none; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: var(--font-body); }
-    .btn-approve:hover { background: #16A34A; }
-    .btn-reject { padding: 5px 14px; background: transparent; color: var(--red); border: 1px solid var(--red); border-radius: 6px; font-size: 12px; cursor: pointer; font-family: var(--font-body); }
-    .btn-reject:hover { background: var(--red-bg); }
-    .action-btns { display: flex; gap: 6px; }
+/* BUTTONS */
+.btn-approve { padding: 5px 14px; background: var(--green); color: var(--white); border: none; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: var(--font-body); }
+.btn-approve:hover { background: #16A34A; }
+.btn-reject { padding: 5px 14px; background: transparent; color: var(--red); border: 1px solid var(--red); border-radius: 6px; font-size: 12px; cursor: pointer; font-family: var(--font-body); }
+.btn-reject:hover { background: var(--red-bg); }
+.btn-delete { padding: 5px 14px; background: var(--red); color: var(--white); border: none; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: var(--font-body); }
+.btn-delete:hover { background: #DC2626; }
+.action-btns { display: flex; gap: 6px; }
 
-    /* SECTIONS */
-    .section { display: none; }
-    .section.active { display: block; }
+/* SECTIONS */
+.section { display: none; }
+.section.active { display: block; }
 
-    /* PENDING CARDS */
-    .pending-card { padding: 16px 18px; border-top: 1px solid var(--gray-200); display: flex; gap: 16px; align-items: flex-start; }
-    .pending-card:first-child { border-top: none; }
-    .pending-img { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; cursor: pointer; border: 1px solid var(--gray-200); transition: transform 0.2s; }
-    .pending-img:hover { transform: scale(1.08); }
-    .pending-info { flex: 1; }
-    .pending-name { font-weight: 500; font-size: 14px; margin-bottom: 4px; }
-    .pending-detail { font-size: 12px; color: var(--gray-500); margin-bottom: 8px; line-height: 1.5; }
-    .pending-bottom { display: flex; justify-content: space-between; align-items: center; }
-    .pending-date { font-size: 11px; color: var(--gray-400); }
+/* PENDING CARDS */
+.pending-card { padding: 16px 18px; border-top: 1px solid var(--gray-200); display: flex; gap: 16px; align-items: flex-start; }
+.pending-card:first-child { border-top: none; }
+.pending-img { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; cursor: pointer; border: 1px solid var(--gray-200); transition: transform 0.2s; }
+.pending-img:hover { transform: scale(1.08); }
+.pending-info { flex: 1; }
+.pending-name { font-weight: 500; font-size: 14px; margin-bottom: 4px; }
+.pending-detail { font-size: 12px; color: var(--gray-500); margin-bottom: 8px; line-height: 1.5; }
+.pending-bottom { display: flex; justify-content: space-between; align-items: center; }
+.pending-date { font-size: 11px; color: var(--gray-400); }
 
-    /* CANDIDATURE CARDS */
-    .cand-card { padding: 16px 18px; border-top: 1px solid var(--gray-200); }
-    .cand-card:first-child { border-top: none; }
-    .cand-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-    .cand-name { font-family: var(--font-display); font-weight: 600; font-size: 16px; }
-    .cand-meta { font-size: 12px; color: var(--gray-500); margin-bottom: 8px; }
-    .cand-message { font-size: 13px; color: var(--gray-800); background: var(--gray-50); padding: 12px 14px; border-radius: 10px; margin-bottom: 12px; line-height: 1.6; font-style: italic; border-left: 3px solid var(--gray-300); }
-
-    /* LIGHTBOX */
-    .lightbox { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 200; align-items: center; justify-content: center; cursor: pointer; }
-    .lightbox.show { display: flex; }
-    .lightbox img { max-width: 80%; max-height: 80%; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
-    .lightbox-close { position: fixed; top: 20px; right: 24px; color: var(--white); font-size: 28px; cursor: pointer; z-index: 201; }
-
-    /* TOAST */
-    .toast { display: none; position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 10px; font-size: 13px; z-index: 300; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
-    .toast.show { display: block; animation: slideUp 0.3s ease; }
-    .toast-green { background: var(--green); color: var(--white); }
-    .toast-red { background: var(--red); color: var(--white); }
-    @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-    .faded { opacity: 0.5; }
+/* CANDIDATURE CARDS */
+.cand-card { padding: 16px 18px; border-top: 1px solid var(--gray-200); }
+.cand-card:first-child { border-top: none; }
+.cand-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.cand-name { font-family: var(--font-display); font-weight: 600; font-size: 16px; }
+.cand-meta { font-size: 12px; color: var(--gray-500); margin-bottom: 8px; }
+.cand-message { font-size: 13px; color: var(--gray-800); background: var(--gray-50); padding: 12px 14px; border-radius: 10px; margin-bottom: 12px; line-height: 1.6; font-style: italic; border-left: 3px solid var(--gray-300); }
 
 /* CONFIRM MODAL */
 .confirm-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 250; align-items: center; justify-content: center; }
@@ -132,6 +119,11 @@
 .confirm-box { background: var(--white); border-radius: 16px; padding: 28px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
 .confirm-title { font-family: var(--font-display); font-size: 18px; font-weight: 600; margin-bottom: 8px; }
 .confirm-msg { font-size: 13px; color: var(--gray-500); margin-bottom: 20px; line-height: 1.5; }
+.confirm-input { display: none; margin-bottom: 16px; }
+.confirm-input label { display: block; font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.confirm-input input { width: 120px; padding: 8px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 16px; font-family: var(--font-body); text-align: center; font-weight: 600; }
+.confirm-input input:focus { outline: none; border-color: var(--black); }
+.confirm-input .input-hint { font-size: 11px; color: var(--gray-400); margin-top: 4px; }
 .confirm-btns { display: flex; gap: 10px; justify-content: center; }
 .confirm-btns button { padding: 10px 24px; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: var(--font-body); border: none; font-weight: 500; }
 .confirm-cancel { background: var(--gray-100); color: var(--gray-600); }
@@ -142,13 +134,24 @@
 .confirm-ok.red { background: var(--red); }
 .confirm-ok.red:hover { background: #DC2626; }
 
-.btn-delete { padding: 5px 14px; background: var(--red); color: var(--white); border: none; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: var(--font-body); }
-.btn-delete:hover { background: #DC2626; }
+/* LIGHTBOX */
+.lightbox { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 200; align-items: center; justify-content: center; cursor: pointer; }
+.lightbox.show { display: flex; }
+.lightbox img { max-width: 80%; max-height: 80%; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+.lightbox-close { position: fixed; top: 20px; right: 24px; color: var(--white); font-size: 28px; cursor: pointer; z-index: 201; }
 
+/* TOAST */
+.toast { display: none; position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 10px; font-size: 13px; z-index: 300; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+.toast.show { display: block; animation: slideUp 0.3s ease; }
+.toast-green { background: var(--green); color: var(--white); }
+.toast-red { background: var(--red); color: var(--white); }
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* FINANCES */
-    .stats-3 { grid-template-columns: repeat(3, 1fr); }
-  </style>
+.faded { opacity: 0.5; }
+
+/* FINANCES */
+.stats-3 { grid-template-columns: repeat(3, 1fr); }
+</style>
 </head>
 <body>
 
@@ -245,7 +248,7 @@
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Marque</th><th>Ville</th><th>Email</th><th>Produits</th><th>Statut</th></tr></thead>
+            <thead><tr><th>Marque</th><th>Ville</th><th>Email</th><th>Produits</th><th>Statut</th><th>Actions</th></tr></thead>
             <tbody id="brands-table"></tbody>
           </table>
         </div>
@@ -287,6 +290,11 @@
   <div class="confirm-box">
     <div class="confirm-title" id="confirmTitle">Es-tu sûr ?</div>
     <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-input" id="confirmInput">
+      <label>Commission UNEEK (%)</label>
+      <input type="number" id="confirmCommission" min="1" max="100" value="12" step="1" />
+      <div class="input-hint">Pourcentage prélevé par UNEEK sur ce produit</div>
+    </div>
     <div class="confirm-btns">
       <button class="confirm-cancel" onclick="closeConfirm()">Annuler</button>
       <button class="confirm-ok" id="confirmOk" onclick="doConfirm()">Confirmer</button>
@@ -304,338 +312,264 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  const API_BASE = '/api';
-  let authToken = null;
-
+const API_BASE = '/api';
+let authToken = null;
 let confirmCallback = null;
 
 // --- CONFIRM MODAL ---
-function showConfirm(title, msg, color, callback) {
+function showConfirm(title, msg, color, callback, showCommission) {
   document.getElementById('confirmTitle').textContent = title;
   document.getElementById('confirmMsg').textContent = msg;
   const btn = document.getElementById('confirmOk');
   btn.className = 'confirm-ok ' + color;
+  const inputWrap = document.getElementById('confirmInput');
+  if (showCommission) {
+    inputWrap.style.display = 'block';
+    document.getElementById('confirmCommission').value = '12';
+  } else {
+    inputWrap.style.display = 'none';
+  }
   confirmCallback = callback;
   document.getElementById('confirmModal').classList.add('show');
 }
+
 function closeConfirm() {
   document.getElementById('confirmModal').classList.remove('show');
+  document.getElementById('confirmInput').style.display = 'none';
   confirmCallback = null;
 }
+
 function doConfirm() {
   const cb = confirmCallback;
   closeConfirm();
   if (cb) cb();
 }
 
+// --- LOGIN ---
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  const errorEl = document.getElementById('loginError');
+  errorEl.style.display = 'none';
 
-  // --- LOGIN ---
-  async function doLogin() {
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-    const errorEl = document.getElementById('loginError');
-    errorEl.style.display = 'none';
-
-    try {
-      const res = await fetch(API_BASE + '/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'login', email, password })
-      });
-      const data = await res.json();
-      if (!res.ok || !data.user?.is_admin) {
-        errorEl.textContent = data.user && !data.user.is_admin ? 'Accès admin requis' : (data.error || 'Erreur de connexion');
-        errorEl.style.display = 'block';
-        return;
-      }
-      authToken = data.token;
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      loadDashboard();
-    } catch (err) {
-      errorEl.textContent = 'Erreur de connexion au serveur';
+  try {
+    const res = await fetch(API_BASE + '/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'login', email, password })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.user?.is_admin) {
+      errorEl.textContent = data.user && !data.user.is_admin ? 'Accès admin requis' : (data.error || 'Erreur de connexion');
       errorEl.style.display = 'block';
+      return;
     }
+    authToken = data.token;
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadDashboard();
+  } catch (err) {
+    errorEl.textContent = 'Erreur de connexion au serveur';
+    errorEl.style.display = 'block';
   }
+}
 
-  // --- NAVIGATION ---
-  function showSection(id, el) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
-    document.getElementById('sec-' + id).classList.add('active');
-    if (el) el.classList.add('active');
+// --- NAVIGATION ---
+function showSection(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+}
+
+// --- LOAD DATA ---
+async function loadDashboard() {
+  await Promise.all([loadOrders(), loadProducts(), loadBrands(), loadPending(), loadApplications()]);
+}
+
+async function loadOrders() {
+  try {
+    const res = await fetch(API_BASE + '/orders', { headers: { 'Authorization': 'Bearer ' + authToken } });
+    const data = await res.json();
+    const orders = data.orders || [];
+
+    const priority = { 'pending': 0, 'processing': 0, 'shipped': 1, 'delivered': 1, 'returned': 1 };
+    orders.sort((a, b) => (priority[a.shipping_status] || 0) - (priority[b.shipping_status] || 0));
+
+    let overviewHtml = '';
+    let ordersHtml = '';
+    let totalRevenue = 0;
+    let totalCommission = 0;
+
+    orders.forEach(order => {
+      const items = order.items || [];
+      const productStr = items.map(i => i.product_name + ' (' + i.size + ')').join(', ');
+      const totalQty = items.reduce((s, i) => s + i.quantity, 0);
+      const brandStr = items.map(i => i.brand_name).filter((v, i, a) => a.indexOf(v) === i).join(', ');
+      const statusBadge = getShippingBadge(order.shipping_status);
+      const faded = ['shipped', 'delivered', 'returned'].includes(order.shipping_status) ? ' class="faded"' : '';
+
+      overviewHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + order.customer_name + '</td><td class="sec">' + productStr + '</td><td>' + totalQty + '</td><td>€' + order.total_amount + '</td><td>' + statusBadge + '</td></tr>';
+
+      const commission = items.reduce((s, i) => s + (i.commission_amount || 0), 0);
+      ordersHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + order.customer_name + '</td><td class="sec">' + productStr + '</td><td>' + totalQty + '</td><td class="sec">' + brandStr + '</td><td>€' + order.total_amount + '</td><td>€' + commission.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
+
+      totalRevenue += parseFloat(order.total_amount || 0);
+      totalCommission += commission;
+    });
+
+    document.getElementById('overview-orders').innerHTML = overviewHtml || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
+    document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
+    document.getElementById('stat-orders').textContent = orders.length;
+    document.getElementById('stat-revenue').textContent = '€' + totalCommission.toFixed(0);
+    document.getElementById('fin-revenue').textContent = '€' + totalCommission.toFixed(0);
+    document.getElementById('fin-payout').textContent = '€' + (totalRevenue - totalCommission).toFixed(0);
+    document.getElementById('fin-volume').textContent = '€' + totalRevenue.toFixed(0);
+  } catch (err) {
+    console.error('Error loading orders:', err);
   }
+}
 
-  // --- LOAD DATA ---
-  async function loadDashboard() {
-    await Promise.all([loadOrders(), loadProducts(), loadBrands(), loadPending(), loadApplications()]);
+async function loadProducts() {
+  try {
+    const res = await fetch(API_BASE + '/products');
+    const data = await res.json();
+    const products = data.products || data || [];
+    let html = '';
+    products.forEach(p => {
+      html += '<tr><td class="bold">' + p.name + '</td><td class="sec">' + (p.brand_name || p.brands?.name || '') + '</td><td>€' + p.price + '</td><td>' + (p.commission_percent || 12) + '%</td><td>' + (p.stock_quantity || 0) + '</td><td><span class="badge badge-green">Publié</span></td></tr>';
+    });
+    document.getElementById('products-table').innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucun produit</td></tr>';
+  } catch (err) {
+    console.error('Error loading products:', err);
   }
+}
 
-  async function loadOrders() {
-    try {
-      const res = await fetch(API_BASE + '/orders', { headers: { 'Authorization': 'Bearer ' + authToken } });
-      const data = await res.json();
-      const orders = data.orders || [];
-
-      // Sort: à expédier first, then expédié/en retour
-      const priority = { 'pending': 0, 'processing': 0, 'shipped': 1, 'delivered': 1, 'returned': 1 };
-      orders.sort((a, b) => (priority[a.shipping_status] || 0) - (priority[b.shipping_status] || 0));
-
-      let overviewHtml = '';
-      let ordersHtml = '';
-      let totalRevenue = 0;
-      let totalCommission = 0;
-
-      orders.forEach(order => {
-        const items = order.items || [];
-        const productStr = items.map(i => i.product_name + ' (' + i.size + ')').join(', ');
-        const totalQty = items.reduce((s, i) => s + i.quantity, 0);
-        const brandStr = items.map(i => i.brand_name).filter((v, i, a) => a.indexOf(v) === i).join(', ');
-        const statusBadge = getShippingBadge(order.shipping_status);
-        const faded = ['shipped', 'delivered', 'returned'].includes(order.shipping_status) ? ' class="faded"' : '';
-
-        overviewHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + order.customer_name + '</td><td class="sec">' + productStr + '</td><td>' + totalQty + '</td><td>€' + order.total_amount + '</td><td>' + statusBadge + '</td></tr>';
-
-        const commission = items.reduce((s, i) => s + (i.commission_amount || 0), 0);
-        ordersHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + order.customer_name + '</td><td class="sec">' + productStr + '</td><td>' + totalQty + '</td><td class="sec">' + brandStr + '</td><td>€' + order.total_amount + '</td><td>€' + commission.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
-
-        totalRevenue += parseFloat(order.total_amount || 0);
-        totalCommission += commission;
-      });
-
-      document.getElementById('overview-orders').innerHTML = overviewHtml || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
-      document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
-      document.getElementById('stat-orders').textContent = orders.length;
-      document.getElementById('stat-revenue').textContent = '€' + totalCommission.toFixed(0);
-      document.getElementById('fin-revenue').textContent = '€' + totalCommission.toFixed(0);
-      document.getElementById('fin-payout').textContent = '€' + (totalRevenue - totalCommission).toFixed(0);
-      document.getElementById('fin-volume').textContent = '€' + totalRevenue.toFixed(0);
-    } catch (err) {
-      console.error('Error loading orders:', err);
-    }
+async function loadBrands() {
+  try {
+    const res = await fetch(API_BASE + '/brands');
+    const data = await res.json();
+    const brands = data.brands || data || [];
+    let html = '';
+    brands.forEach(b => {
+      html += '<tr><td class="bold">' + b.name + '</td><td class="sec">' + (b.city || '') + '</td><td class="sec">' + (b.email || '') + '</td><td>' + (b.product_count || 0) + '</td><td><span class="badge badge-green">Active</span></td><td><button class="btn-delete" onclick="askDeleteBrand(\'' + b.id + '\', \'' + b.name.replace(/'/g, "\\'") + '\')">Supprimer</button></td></tr>';
+    });
+    document.getElementById('brands-table').innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune marque</td></tr>';
+    document.getElementById('stat-brands').textContent = brands.length;
+  } catch (err) {
+    console.error('Error loading brands:', err);
   }
+}
 
-  async function loadProducts() {
-    try {
-      const res = await fetch(API_BASE + '/products');
-      const data = await res.json();
-      const products = data.products || data || [];
-      let html = '';
-      products.forEach(p => {
-        html += '<tr><td class="bold">' + p.name + '</td><td class="sec">' + (p.brand_name || p.brands?.name || '') + '</td><td>€' + p.price + '</td><td>' + (p.commission_percent || 12) + '%</td><td>' + (p.stock_quantity || 0) + '</td><td><span class="badge badge-green">Publié</span></td></tr>';
-      });
-      document.getElementById('products-table').innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucun produit</td></tr>';
-    } catch (err) {
-      console.error('Error loading products:', err);
-    }
+async function loadPending() {
+  try {
+    const res = await fetch(API_BASE + '/admin/pending', { headers: { 'Authorization': 'Bearer ' + authToken } });
+    const data = await res.json();
+    const items = data.pending || data || [];
+    let html = '';
+    let pendingCount = 0;
+    items.forEach(p => {
+      const c = p.changes || {};
+      const isNew = p.is_new_product;
+      const typeBadge = isNew ? '<span class="badge badge-blue">Nouveau produit</span>' : '<span class="badge badge-orange">Modification</span>';
+      const imgUrl = c.image_url || p.image_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%234A5568' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%23fff' font-size='12' font-family='sans-serif'%3EPhoto%3C/text%3E%3C/svg%3E";
+      const brandName = p.brands?.name || p.brand_name || '—';
+      const creatorName = p.creator_accounts?.full_name || p.creator_name || 'Créateur';
+      const category = c.category || p.category || '';
+      const sizesStr = c.sizes_stock ? Object.keys(c.sizes_stock).join(', ') : (p.sizes || '');
+      const detail = brandName + ' · par ' + creatorName + (category ? ' · ' + category : '') + (sizesStr ? '<br>Tailles: ' + sizesStr : '');
+      const prodName = c.name || p.proposed_name || 'Sans nom';
+      const prodPrice = c.price || p.proposed_price || '?';
+
+      let actionHtml = '';
+      if (p.status === 'approved') {
+        actionHtml = '<span class="badge badge-green">Approuvé</span>';
+      } else if (p.status === 'rejected') {
+        actionHtml = '<span class="badge badge-red">Refusé</span>';
+      } else {
+        pendingCount++;
+        actionHtml = '<div class="action-btns"><button class="btn-approve" onclick="askHandlePending(\'' + p.id + '\', \'approve\', \'' + prodName.replace(/'/g, "\\'") + '\')">Approuver</button><button class="btn-reject" onclick="askHandlePending(\'' + p.id + '\', \'reject\', \'' + prodName.replace(/'/g, "\\'") + '\')">Refuser</button></div>';
+      }
+
+      html += '<div class="pending-card" id="pending-' + p.id + '"' + (p.status !== 'pending' ? ' style="opacity:0.7"' : '') + '>' +
+        '<img class="pending-img" src="' + imgUrl + '" onclick="openLightbox(this.src)" alt="Photo produit" />' +
+        '<div class="pending-info">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span class="pending-name">' + prodName + ' — €' + prodPrice + '</span>' + typeBadge + '</div>' +
+        '<div class="pending-detail">' + detail + '</div>' +
+        '<div class="pending-bottom"><span class="pending-date">' + formatDate(p.created_at) + '</span>' +
+        actionHtml +
+        '</div>' +
+        '</div></div>';
+    });
+    document.getElementById('pending-list').innerHTML = html || '<div style="text-align:center;padding:32px;color:var(--gray-400)">Aucune demande</div>';
+    document.getElementById('pendingCount').textContent = pendingCount > 0 ? pendingCount : '';
+    document.getElementById('stat-pending').textContent = pendingCount;
+  } catch (err) {
+    console.error('Error loading pending:', err);
   }
+}
 
-  async function loadBrands() {
-    try {
-      const res = await fetch(API_BASE + '/brands');
-      const data = await res.json();
-      const brands = data.brands || data || [];
-      let html = '';
-      brands.forEach(b => {
-        html += '<tr><td class="bold">' + b.name + '</td><td class="sec">' + (b.city || '') + '</td><td class="sec">' + (b.email || '') + '</td><td>' + (b.product_count || 0) + '</td><td><span class="badge badge-green">Active</span></td><td><button class="btn-delete" onclick="askDeleteBrand(\'' + b.id + '\', \'' + b.name.replace(/'/g, "\\\'") + '\')">Supprimer</button></td></tr>';
-      });
-      document.getElementById('brands-table').innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune marque</td></tr>';
-      document.getElementById('stat-brands').textContent = brands.length;
-    } catch (err) {
-      console.error('Error loading brands:', err);
-    }
-  }
-
-  async function loadPending() {
-    try {
-      const res = await fetch(API_BASE + '/admin/pending', { headers: { 'Authorization': 'Bearer ' + authToken } });
-      const data = await res.json();
-      const items = data.pending || data || [];
-      let html = '';
-      let pendingCount = 0;
-      items.forEach(p => {
-        const c = p.changes || {};
-        const isNew = p.is_new_product;
-        const typeBadge = isNew ? '<span class="badge badge-blue">Nouveau produit</span>' : '<span class="badge badge-orange">Modification</span>';
-        const imgUrl = c.image_url || p.image_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%234A5568' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%23fff' font-size='12' font-family='sans-serif'%3EPhoto%3C/text%3E%3C/svg%3E";
-        const brandName = p.brands?.name || p.brand_name || '—';
-        const creatorName = p.creator_accounts?.full_name || p.creator_name || 'Créateur';
-        const category = c.category || p.category || '';
-        const sizesStr = c.sizes_stock ? Object.keys(c.sizes_stock).join(', ') : (p.sizes || '');
-        const detail = brandName + ' · par ' + creatorName + (category ? ' · ' + category : '') + (sizesStr ? '<br>Tailles: ' + sizesStr : '');
-        const prodName = c.name || p.proposed_name || 'Sans nom';
-        const prodPrice = c.price || p.proposed_price || '?';
-
-        // Boutons ou badge selon le statut
-        let actionHtml = '';
-        const cardStyle = '';
-        if (p.status === 'approved') {
-          actionHtml = '<span class="badge badge-green">Approuvé</span>';
-        } else if (p.status === 'rejected') {
-          actionHtml = '<span class="badge badge-red">Refusé</span>';
-        } else {
-          pendingCount++;
-          actionHtml = '<div class="action-btns"><button class="btn-approve" onclick="askHandlePending(\'' + p.id + '\', \'approve\', \'' + (prodName||'').replace(/'/g, "\\\'") + '\')">Approuver</button><button class="btn-reject" onclick="askHandlePending(\'' + p.id + '\', \'reject\', \'' + (prodName||'').replace(/'/g, "\\\'") + '\')">Refuser</button></div>';
-        }
-
-        html += '<div class="pending-card" id="pending-' + p.id + '"' + (p.status !== 'pending' ? ' style="opacity:0.7"' : '') + '>' +
-          '<img class="pending-img" src="' + imgUrl + '" onclick="openLightbox(this.src)" alt="Photo produit" />' +
-          '<div class="pending-info">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span class="pending-name">' + prodName + ' — €' + prodPrice + '</span>' + typeBadge + '</div>' +
-            '<div class="pending-detail">' + detail + '</div>' +
-            '<div class="pending-bottom"><span class="pending-date">' + formatDate(p.created_at) + '</span>' +
-              actionHtml +
-            '</div>' +
-          '</div></div>';
-      });
-      document.getElementById('pending-list').innerHTML = html || '<div style="text-align:center;padding:32px;color:var(--gray-400)">Aucune demande</div>';
-      document.getElementById('pendingCount').textContent = pendingCount > 0 ? pendingCount : '';
-      document.getElementById('stat-pending').textContent = pendingCount;
-    } catch (err) {
-      console.error('Error loading pending:', err);
-    }
-  }
-
-  async function loadApplications() {
-    try {
-      const res = await fetch(API_BASE + '/admin/applications', { headers: { 'Authorization': 'Bearer ' + authToken } });
-      const data = await res.json();
-      const apps = data.applications || data || [];
-      let html = '';
-      let pendingAppCount = 0;
-      apps.forEach(a => {
-        let statusBadge = '';
-        let actionHtml = '';
-        if (a.status === 'accepted') {
-          statusBadge = '<span class="badge badge-green">Accepté</span>';
-          const codeDisplay = a.invite_code
-            ? (a.invite_used
-              ? '<span style="color:var(--gray-400);font-size:12px">Code utilisé</span>'
-              : '<div style="margin-top:6px;padding:8px 12px;background:var(--green-bg);border-radius:8px;font-family:monospace;font-size:14px;font-weight:600;color:var(--green);display:inline-block;cursor:pointer" onclick="copyCode(this,\'' + a.invite_code + '\')" title="Cliquer pour copier">' + a.invite_code + ' <span style="font-size:11px;font-weight:400">📋</span></div>')
-            : '';
-          actionHtml = '<span class="badge badge-green">Accepté</span>' + codeDisplay;
-        } else if (a.status === 'rejected') {
-          statusBadge = '<span class="badge badge-red">Refusé</span>';
-          actionHtml = '<span class="badge badge-red">Refusé</span>';
-        } else {
-          pendingAppCount++;
-          statusBadge = a.status === 'new' ? '<span class="badge badge-blue">Nouveau</span>' : '<span class="badge badge-orange">En review</span>';
-          actionHtml = '<div class="action-btns"><button class="btn-approve" onclick="askHandleApplication(\'' + a.id + '\', \'accept\', \'' + (a.brand_name||'').replace(/'/g, "\\\'") + '\')">Accepter</button><button class="btn-reject" onclick="askHandleApplication(\'' + a.id + '\', \'reject\', \'' + (a.brand_name||'').replace(/'/g, "\\\'") + '\')">Refuser</button></div>';
-        }
-        html += '<div class="cand-card" id="app-' + a.id + '"' + (['accepted','rejected'].includes(a.status) ? ' style="opacity:0.7"' : '') + '>' +
-          '<div class="cand-top"><span class="cand-name">' + a.brand_name + '</span>' + statusBadge + '</div>' +
-          '<div class="cand-meta">' + a.contact_name + ' · ' + a.email + (a.instagram ? ' · ' + a.instagram : '') + (a.website ? ' · ' + a.website : '') + '</div>' +
-          (a.message ? '<div class="cand-message">"' + a.message + '"</div>' : '') +
-          actionHtml +
+async function loadApplications() {
+  try {
+    const res = await fetch(API_BASE + '/admin/applications', { headers: { 'Authorization': 'Bearer ' + authToken } });
+    const data = await res.json();
+    const apps = data.applications || data || [];
+    let html = '';
+    let pendingAppCount = 0;
+    apps.forEach(a => {
+      let statusBadge = '';
+      let actionHtml = '';
+      if (a.status === 'accepted') {
+        statusBadge = '<span class="badge badge-green">Accepté</span>';
+        const codeDisplay = a.invite_code
+          ? (a.invite_used
+            ? '<span style="color:var(--gray-400);font-size:12px">Code utilisé</span>'
+            : '<div style="margin-top:6px;padding:8px 12px;background:var(--green-bg);border-radius:8px;font-family:monospace;font-size:14px;font-weight:600;color:var(--green);display:inline-block;cursor:pointer" onclick="copyCode(this,\'' + a.invite_code + '\')" title="Cliquer pour copier">' + a.invite_code + ' <span style="font-size:11px;font-weight:400">📋</span></div>')
+          : '';
+        actionHtml = '<span class="badge badge-green">Accepté</span>' + codeDisplay;
+      } else if (a.status === 'rejected') {
+        statusBadge = '<span class="badge badge-red">Refusé</span>';
+        actionHtml = '<span class="badge badge-red">Refusé</span>';
+      } else {
+        pendingAppCount++;
+        statusBadge = a.status === 'new' ? '<span class="badge badge-blue">Nouveau</span>' : '<span class="badge badge-orange">En review</span>';
+        actionHtml = '<div class="action-btns"><button class="btn-approve" onclick="askHandleApplication(\'' + a.id + '\', \'accept\', \'' + a.brand_name.replace(/'/g, "\\'") + '\')">Accepter</button><button class="btn-reject" onclick="askHandleApplication(\'' + a.id + '\', \'reject\', \'' + a.brand_name.replace(/'/g, "\\'") + '\')">Refuser</button></div>';
+      }
+      html += '<div class="cand-card" id="app-' + a.id + '"' + (['accepted','rejected'].includes(a.status) ? ' style="opacity:0.7"' : '') + '>' +
+        '<div class="cand-top"><span class="cand-name">' + a.brand_name + '</span>' + statusBadge + '</div>' +
+        '<div class="cand-meta">' + a.contact_name + ' · ' + a.email + (a.instagram ? ' · ' + a.instagram : '') + (a.website ? ' · ' + a.website : '') + '</div>' +
+        (a.message ? '<div class="cand-message">"' + a.message + '"</div>' : '') +
+        actionHtml +
         '</div>';
-      });
-      document.getElementById('applications-list').innerHTML = html || '<div style="text-align:center;padding:32px;color:var(--gray-400)">Aucune candidature</div>';
-      document.getElementById('appCount').textContent = pendingAppCount > 0 ? pendingAppCount : '';
-    } catch (err) {
-      console.error('Error loading applications:', err);
-    }
+    });
+    document.getElementById('applications-list').innerHTML = html || '<div style="text-align:center;padding:32px;color:var(--gray-400)">Aucune candidature</div>';
+    document.getElementById('appCount').textContent = pendingAppCount > 0 ? pendingAppCount : '';
+  } catch (err) {
+    console.error('Error loading applications:', err);
   }
+}
 
-  // --- ACTIONS ---
-  async function handlePending(id, action) {
-    try {
-      const res = await fetch(API_BASE + '/admin/pending', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
-        body: JSON.stringify({ edit_id: id, action })
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        showToast('Erreur: ' + (data.error || 'Échec de la mise à jour'), 'red');
-        return;
-      }
-      // Remplacer les boutons par un badge de statut
-      const card = document.getElementById('pending-' + id);
-      if (card) {
-        card.style.opacity = '0.7';
-        const btns = card.querySelector('.action-btns');
-        if (btns) {
-          btns.outerHTML = action === 'approve'
-            ? '<span class="badge badge-green">Approuvé</span>'
-            : '<span class="badge badge-red">Refusé</span>';
-        }
-      }
-      showToast(action === 'approve' ? '✓ Approuvé' : '✕ Refusé', action === 'approve' ? 'green' : 'red');
-      // Mettre à jour le compteur
-      const countEl = document.getElementById('pendingCount');
-      const current = parseInt(countEl.textContent) || 0;
-      if (current > 0) {
-        const newCount = current - 1;
-        countEl.textContent = newCount > 0 ? newCount : '';
-        document.getElementById('stat-pending').textContent = newCount;
-      }
-    } catch (err) {
-      showToast('Erreur: ' + err.message, 'red');
-    }
-  }
-
-  async function handleApplication(id, action) {
-    try {
-      const res = await fetch(API_BASE + '/admin/applications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
-        body: JSON.stringify({ id, action })
-      });
-      const data = await res.json();
-      // Remplacer les boutons par un badge
-      const card = document.getElementById('app-' + id);
-      if (card) {
-        card.style.opacity = '0.7';
-        const btns = card.querySelector('.action-btns');
-        if (btns) {
-          if (action === 'accept' && data.invite_code) {
-            btns.outerHTML = '<span class="badge badge-green">Accepté</span>' +
-              '<div style="margin-top:6px;padding:8px 12px;background:var(--green-bg);border-radius:8px;font-family:monospace;font-size:14px;font-weight:600;color:var(--green);display:inline-block;cursor:pointer" onclick="copyCode(this,\'' + data.invite_code + '\')" title="Cliquer pour copier">' + data.invite_code + ' <span style="font-size:11px;font-weight:400">📋</span></div>';
-          } else {
-            btns.outerHTML = action === 'accept'
-              ? '<span class="badge badge-green">Accepté</span>'
-              : '<span class="badge badge-red">Refusé</span>';
-          }
-        }
-        // Mettre à jour le badge en haut de la card
-        const topBadge = card.querySelector('.cand-top .badge');
-        if (topBadge) {
-          topBadge.outerHTML = action === 'accept'
-            ? '<span class="badge badge-green">Accepté</span>'
-            : '<span class="badge badge-red">Refusé</span>';
-        }
-      }
-      showToast(action === 'accept' ? '✓ Candidature acceptée' : '✕ Candidature refusée', action === 'accept' ? 'green' : 'red');
-      // Décrémenter le compteur
-      const appCountEl = document.getElementById('appCount');
-      const currentApp = parseInt(appCountEl.textContent) || 0;
-      if (currentApp > 0) {
-        const newApp = currentApp - 1;
-        appCountEl.textContent = newApp > 0 ? newApp : '';
-      }
-    } catch (err) {
-      showToast('Erreur: ' + err.message, 'red');
-    }
-  }
-
-  
 // --- CONFIRM WRAPPERS ---
 function askHandlePending(id, action, name) {
-  var title = action === 'approve' ? 'Approuver ce produit ?' : 'Refuser ce produit ?';
-  var msg = action === 'approve'
-    ? 'Tu vas approuver "' + name + '". Il sera publié sur le site.'
+  const title = action === 'approve' ? 'Approuver ce produit ?' : 'Refuser ce produit ?';
+  const msg = action === 'approve'
+    ? 'Tu vas approuver "' + name + '". Définis la commission UNEEK avant de confirmer.'
     : 'Tu vas refuser "' + name + '". Le créateur sera notifié.';
-  var color = action === 'approve' ? 'green' : 'red';
-  showConfirm(title, msg, color, function() { handlePending(id, action); });
+  const color = action === 'approve' ? 'green' : 'red';
+  const showCommission = action === 'approve';
+  showConfirm(title, msg, color, () => {
+    const commission = showCommission ? parseFloat(document.getElementById('confirmCommission').value) || 12 : null;
+    handlePending(id, action, commission);
+  }, showCommission);
 }
 
 function askHandleApplication(id, action, brandName) {
-  var title = action === 'accept' ? 'Accepter cette candidature ?' : 'Refuser cette candidature ?';
-  var msg = action === 'accept'
+  const title = action === 'accept' ? 'Accepter cette candidature ?' : 'Refuser cette candidature ?';
+  const msg = action === 'accept'
     ? 'Tu vas accepter "' + brandName + '". Un code d\'invitation sera généré.'
     : 'Tu vas refuser la candidature de "' + brandName + '".';
-  var color = action === 'accept' ? 'green' : 'red';
-  showConfirm(title, msg, color, function() { handleApplication(id, action); });
+  const color = action === 'accept' ? 'green' : 'red';
+  showConfirm(title, msg, color, () => handleApplication(id, action));
 }
 
 function askDeleteBrand(brandId, brandName) {
@@ -643,23 +577,107 @@ function askDeleteBrand(brandId, brandName) {
     'Supprimer cette marque ?',
     'Tu vas supprimer "' + brandName + '" et tous ses produits, comptes créateurs et données associées. Cette action est irréversible.',
     'red',
-    function() { deleteBrand(brandId); }
+    () => deleteBrand(brandId)
   );
+}
+
+// --- ACTIONS ---
+async function handlePending(id, action, commissionPercent) {
+  try {
+    const body = { edit_id: id, action };
+    if (commissionPercent !== null && commissionPercent !== undefined) {
+      body.commission_percent = commissionPercent;
+    }
+    const res = await fetch(API_BASE + '/admin/pending', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      showToast('Erreur: ' + (data.error || 'Échec de la mise à jour'), 'red');
+      return;
+    }
+    const card = document.getElementById('pending-' + id);
+    if (card) {
+      card.style.opacity = '0.7';
+      const btns = card.querySelector('.action-btns');
+      if (btns) {
+        btns.outerHTML = action === 'approve'
+          ? '<span class="badge badge-green">Approuvé</span>'
+          : '<span class="badge badge-red">Refusé</span>';
+      }
+    }
+    const toastMsg = action === 'approve'
+      ? '✓ Approuvé' + (commissionPercent ? ' — commission ' + commissionPercent + '%' : '')
+      : '✕ Refusé';
+    showToast(toastMsg, action === 'approve' ? 'green' : 'red');
+    const countEl = document.getElementById('pendingCount');
+    const current = parseInt(countEl.textContent) || 0;
+    if (current > 0) {
+      const newCount = current - 1;
+      countEl.textContent = newCount > 0 ? newCount : '';
+      document.getElementById('stat-pending').textContent = newCount;
+    }
+  } catch (err) {
+    showToast('Erreur: ' + err.message, 'red');
+  }
+}
+
+async function handleApplication(id, action) {
+  try {
+    const res = await fetch(API_BASE + '/admin/applications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ id, action })
+    });
+    const data = await res.json();
+    const card = document.getElementById('app-' + id);
+    if (card) {
+      card.style.opacity = '0.7';
+      const btns = card.querySelector('.action-btns');
+      if (btns) {
+        if (action === 'accept' && data.invite_code) {
+          btns.outerHTML = '<span class="badge badge-green">Accepté</span>' +
+            '<div style="margin-top:6px;padding:8px 12px;background:var(--green-bg);border-radius:8px;font-family:monospace;font-size:14px;font-weight:600;color:var(--green);display:inline-block;cursor:pointer" onclick="copyCode(this,\'' + data.invite_code + '\')" title="Cliquer pour copier">' + data.invite_code + ' <span style="font-size:11px;font-weight:400">📋</span></div>';
+        } else {
+          btns.outerHTML = action === 'accept'
+            ? '<span class="badge badge-green">Accepté</span>'
+            : '<span class="badge badge-red">Refusé</span>';
+        }
+      }
+      const topBadge = card.querySelector('.cand-top .badge');
+      if (topBadge) {
+        topBadge.outerHTML = action === 'accept'
+          ? '<span class="badge badge-green">Accepté</span>'
+          : '<span class="badge badge-red">Refusé</span>';
+      }
+    }
+    showToast(action === 'accept' ? '✓ Candidature acceptée' : '✕ Candidature refusée', action === 'accept' ? 'green' : 'red');
+    const appCountEl = document.getElementById('appCount');
+    const currentApp = parseInt(appCountEl.textContent) || 0;
+    if (currentApp > 0) {
+      const newApp = currentApp - 1;
+      appCountEl.textContent = newApp > 0 ? newApp : '';
+    }
+  } catch (err) {
+    showToast('Erreur: ' + err.message, 'red');
+  }
 }
 
 async function deleteBrand(brandId) {
   try {
-    var res = await fetch(API_BASE + '/admin/brands', {
+    const res = await fetch(API_BASE + '/admin/brands', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
       body: JSON.stringify({ brand_id: brandId })
     });
-    var data = await res.json();
+    const data = await res.json();
     if (!res.ok || !data.success) {
       showToast('Erreur: ' + (data.error || 'Échec de la suppression'), 'red');
       return;
     }
-    showToast('Marque supprimée', 'green');
+    showToast('✓ Marque supprimée', 'green');
     loadBrands();
     loadProducts();
   } catch (err) {
@@ -668,50 +686,50 @@ async function deleteBrand(brandId) {
 }
 
 // --- HELPERS ---
-  function shortOrder(num) { return num ? '…' + num.slice(-4) : ''; }
+function shortOrder(num) { return num ? '…' + num.slice(-4) : ''; }
 
-  function getShippingBadge(status) {
-    const map = {
-      'pending': '<span class="badge badge-orange">À expédier</span>',
-      'processing': '<span class="badge badge-orange">À expédier</span>',
-      'shipped': '<span class="badge badge-green">Expédié</span>',
-      'delivered': '<span class="badge badge-green">Expédié</span>',
-      'returned': '<span class="badge badge-red">En retour</span>'
-    };
-    return map[status] || '<span class="badge badge-orange">À expédier</span>';
-  }
+function getShippingBadge(status) {
+  const map = {
+    'pending': '<span class="badge badge-orange">À expédier</span>',
+    'processing': '<span class="badge badge-orange">À expédier</span>',
+    'shipped': '<span class="badge badge-green">Expédié</span>',
+    'delivered': '<span class="badge badge-green">Expédié</span>',
+    'returned': '<span class="badge badge-red">En retour</span>'
+  };
+  return map[status] || '<span class="badge badge-orange">À expédier</span>';
+}
 
-  function formatDate(d) {
-    if (!d) return '';
-    const date = new Date(d);
-    return date.toLocaleDateString('fr-BE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  }
+function formatDate(d) {
+  if (!d) return '';
+  const date = new Date(d);
+  return date.toLocaleDateString('fr-BE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
 
-  function copyCode(el, code) {
-    navigator.clipboard.writeText(code).then(() => {
-      const orig = el.innerHTML;
-      el.innerHTML = '✓ Copié !';
-      el.style.background = 'var(--green)';
-      el.style.color = '#fff';
-      setTimeout(() => { el.innerHTML = orig; el.style.background = 'var(--green-bg)'; el.style.color = 'var(--green)'; }, 1500);
-    });
-  }
+function copyCode(el, code) {
+  navigator.clipboard.writeText(code).then(() => {
+    const orig = el.innerHTML;
+    el.innerHTML = '✓ Copié !';
+    el.style.background = 'var(--green)';
+    el.style.color = '#fff';
+    setTimeout(() => { el.innerHTML = orig; el.style.background = 'var(--green-bg)'; el.style.color = 'var(--green)'; }, 1500);
+  });
+}
 
-  function openLightbox(src) {
-    document.getElementById('lightbox-img').src = src;
-    document.getElementById('lightbox').classList.add('show');
-  }
-  function closeLightbox() { document.getElementById('lightbox').classList.remove('show'); }
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('show');
+}
+function closeLightbox() { document.getElementById('lightbox').classList.remove('show'); }
 
-  function showToast(msg, type) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = 'toast show toast-' + type;
-    setTimeout(() => t.classList.remove('show'), 3000);
-  }
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show toast-' + type;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
 
-  // Allow Enter key on login
-  document.getElementById('loginPassword').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
+// Allow Enter key on login
+document.getElementById('loginPassword').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
 </script>
 </body>
 </html>
