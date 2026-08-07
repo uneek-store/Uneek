@@ -760,7 +760,7 @@ function submitPartner(){
   const email=document.getElementById('pf-email')?.value;
   const instagram=document.getElementById('pf-ig')?.value;
   const message=document.getElementById('pf-desc')?.value;
-  if(!brand||!name||!email){showToast('Remplis au moins le nom, l\'email et la marque');return;}
+  if(!brand||!name||!email){showToast('Remplis au moins le nom, l\'email et la marque');return;}  const emailRe=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;if(!emailRe.test(email)){showToast('Adresse email invalide — vérifie ton email.');return;}
   fetch('/api/partner-apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({brand_name:brand,contact_name:name,email:email,instagram:instagram,message:message})}).then(r=>r.json()).then(data=>{
     if(data.success){
       document.getElementById('partner-form').innerHTML=`<div style="text-align:center;padding:80px 0">
