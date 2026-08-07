@@ -185,8 +185,8 @@
 
     <!-- EN ATTENTE -->
     <div id="sec-pending" class="section">
-      <div class="page-title">En attente</div>
-      <div class="page-sub">Créateurs ont soumis un produit ou une modification — clique sur la photo pour la voir en grand</div>
+      <div class="page-title">Demandes créateurs</div>
+      <div class="page-sub">Historique des soumissions — clique sur la photo pour la voir en grand</div>
       <div class="card" id="pending-list"></div>
     </div>
 
@@ -396,12 +396,13 @@
     try {
       const res = await fetch(API_BASE + '/admin/pending', { headers: { 'Authorization': 'Bearer ' + authToken } });
       const data = await res.json();
-      const pending = data.pending || data || [];
+      const items = data.pending || data || [];
       let html = '';
-      pending.forEach(p => {
+      let pendingCount = 0;
+      items.forEach(p => {
         const c = p.changes || {};
         const isNew = p.is_new_product;
-        const badge = isNew ? '<span class="badge badge-blue">Nouveau produit</span>' : '<span class="badge badge-orange">Modification</span>';
+        const typeBadge = isNew ? '<span class="badge badge-blue">Nouveau produit</span>' : '<span class="badge badge-orange">Modification</span>';
         const imgUrl = c.image_url || p.image_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%234A5568' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%23fff' font-size='12' font-family='sans-serif'%3EPhoto%3C/text%3E%3C/svg%3E";
         const brandName = p.brands?.name || p.brand_name || '—';
         const creatorName = p.creator_accounts?.full_name || p.creator_name || 'Créateur';
@@ -411,19 +412,31 @@
         const prodName = c.name || p.proposed_name || 'Sans nom';
         const prodPrice = c.price || p.proposed_price || '?';
 
-        html += '<div class="pending-card" id="pending-' + p.id + '">' +
+        // Boutons ou badge selon le statut
+        let actionHtml = '';
+        const cardStyle = '';
+        if (p.status === 'approved') {
+          actionHtml = '<span class="badge badge-green">Approuvé</span>';
+        } else if (p.status === 'rejected') {
+          actionHtml = '<span class="badge badge-red">Refusé</span>';
+        } else {
+          pendingCount++;
+          actionHtml = '<div class="action-btns"><button class="btn-approve" onclick="handlePending(\'' + p.id + '\', \'approve\')">Approuver</button><button class="btn-reject" onclick="handlePending(\'' + p.id + '\', \'reject\')">Refuser</button></div>';
+        }
+
+        html += '<div class="pending-card" id="pending-' + p.id + '"' + (p.status !== 'pending' ? ' style="opacity:0.7"' : '') + '>' +
           '<img class="pending-img" src="' + imgUrl + '" onclick="openLightbox(this.src)" alt="Photo produit" />' +
           '<div class="pending-info">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span class="pending-name">' + prodName + ' — €' + prodPrice + '</span>' + badge + '</div>' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span class="pending-name">' + prodName + ' — €' + prodPrice + '</span>' + typeBadge + '</div>' +
             '<div class="pending-detail">' + detail + '</div>' +
             '<div class="pending-bottom"><span class="pending-date">' + formatDate(p.created_at) + '</span>' +
-              '<div class="action-btns"><button class="btn-approve" onclick="handlePending(\'' + p.id + '\', \'approve\')">Approuver</button><button class="btn-reject" onclick="handlePending(\'' + p.id + '\', \'reject\')">Refuser</button></div>' +
+              actionHtml +
             '</div>' +
           '</div></div>';
       });
-      document.getElementById('pending-list').innerHTML = html || '<div style="text-align:center;padding:32px;color:var(--gray-400)">Rien en attente</div>';
-      document.getElementById('pendingCount').textContent = pending.length;
-      document.getElementById('stat-pending').textContent = pending.length;
+      document.getElementById('pending-list').innerHTML = html || '<div style="text-align:center;padding:32px;color:var(--gray-400)">Aucune demande</div>';
+      document.getElementById('pendingCount').textContent = pendingCount > 0 ? pendingCount : '';
+      document.getElementById('stat-pending').textContent = pendingCount;
     } catch (err) {
       console.error('Error loading pending:', err);
     }
@@ -463,10 +476,26 @@
         showToast('Erreur: ' + (data.error || 'Échec de la mise à jour'), 'red');
         return;
       }
+      // Remplacer les boutons par un badge de statut
       const card = document.getElementById('pending-' + id);
-      if (card) { card.style.opacity = '0.3'; card.style.pointerEvents = 'none'; }
+      if (card) {
+        card.style.opacity = '0.7';
+        const btns = card.querySelector('.action-btns');
+        if (btns) {
+          btns.outerHTML = action === 'approve'
+            ? '<span class="badge badge-green">Approuvé</span>'
+            : '<span class="badge badge-red">Refusé</span>';
+        }
+      }
       showToast(action === 'approve' ? '✓ Approuvé' : '✕ Refusé', action === 'approve' ? 'green' : 'red');
-      setTimeout(() => loadPending(), 1500);
+      // Mettre à jour le compteur
+      const countEl = document.getElementById('pendingCount');
+      const current = parseInt(countEl.textContent) || 0;
+      if (current > 0) {
+        const newCount = current - 1;
+        countEl.textContent = newCount > 0 ? newCount : '';
+        document.getElementById('stat-pending').textContent = newCount;
+      }
     } catch (err) {
       showToast('Erreur: ' + err.message, 'red');
     }
