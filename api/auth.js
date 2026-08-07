@@ -148,7 +148,7 @@ export default async function handler(req, res) {
           email: email.toLowerCase(),
           instagram: app.instagram || null,
           city: null,
-          description: app.message || null,
+          story: app.message || null,
         })
         .select()
         .single();
