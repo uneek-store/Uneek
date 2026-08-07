@@ -277,6 +277,7 @@
       </div>
       <label>Stock initial par taille</label>
       <div class="size-grid" id="sizeGrid"></div>
+      <p id="stockError" style="display:none;color:var(--red);font-size:12px;margin-top:6px;">Minimum 3 pièces par taille — c'est dans les règles UNEEK.</p>
     </div>
 
     <div class="modal-btns">
@@ -516,11 +517,18 @@
       const imgUrl = document.getElementById('f-img').value;
       if (imgUrl) body.image_url = imgUrl;
       const sizes = {};
+      let stockError = false;
       document.querySelectorAll('#sizeGrid .size-item').forEach(item => {
         const size = item.querySelector('span').textContent;
         const qty = parseInt(item.querySelector('input').value) || 0;
+        if (qty > 0 && qty < 3) { stockError = true; }
         sizes[size] = qty;
       });
+      if (stockError) {
+        document.getElementById('stockError').style.display = 'block';
+        return;
+      }
+      document.getElementById('stockError').style.display = 'none';
       body.sizes_stock = sizes;
     }
 
@@ -546,7 +554,7 @@
     checked.forEach(sz => {
       const div = document.createElement('div'); div.className = 'size-item';
       const span = document.createElement('span'); span.textContent = sz;
-      const input = document.createElement('input'); input.type = 'number'; input.placeholder = '0'; input.min = '0';
+      const input = document.createElement('input'); input.type = 'number'; input.placeholder = '3'; input.min = '3';
       div.appendChild(span); div.appendChild(input); grid.appendChild(div);
     });
   }

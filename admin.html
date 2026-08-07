@@ -459,9 +459,13 @@
         body: JSON.stringify({ edit_id: id, action })
       });
       const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast('Erreur: ' + (data.error || 'Échec de la mise à jour'), 'red');
+        return;
+      }
       const card = document.getElementById('pending-' + id);
       if (card) { card.style.opacity = '0.3'; card.style.pointerEvents = 'none'; }
-      showToast(action === 'approve' ? '✓ Approuvé — email envoyé au créateur' : '✕ Refusé — email envoyé au créateur', action === 'approve' ? 'green' : 'red');
+      showToast(action === 'approve' ? '✓ Approuvé' : '✕ Refusé', action === 'approve' ? 'green' : 'red');
       setTimeout(() => loadPending(), 1500);
     } catch (err) {
       showToast('Erreur: ' + err.message, 'red');
