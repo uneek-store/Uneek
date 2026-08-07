@@ -1,5 +1,5 @@
 // API : /api/admin/pending
-// GET  → liste les modifications en attente de validation
+// GET  → liste toutes les modifications (pending, approved, rejected)
 // POST → approuver ou rejeter une modification
 
 import { supabaseAdmin } from "../lib/supabase.js";
@@ -14,12 +14,11 @@ export default async function handler(req, res) {
   // TODO: Vérifier que c'est bien l'admin (via le token)
 
   try {
-    // --- LISTE DES MODIFICATIONS EN ATTENTE ---
+    // --- LISTE DE TOUTES LES MODIFICATIONS ---
     if (req.method === "GET") {
       const { data, error } = await supabaseAdmin
         .from("product_edits")
         .select("*, brands(name), products(name), creator_accounts(full_name)")
-        .eq("status", "pending")
         .order("created_at", { ascending: false });
 
       if (error) {
