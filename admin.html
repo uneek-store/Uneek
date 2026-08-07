@@ -157,7 +157,7 @@
     <a onclick="showSection('products', this)">Produits</a>
     <a onclick="showSection('brands', this)">Marques</a>
     <a onclick="showSection('finances', this)">Finances</a>
-    <a onclick="showSection('applications', this)">Candidatures</a>
+    <a onclick="showSection('applications', this)">Candidatures <span class="badge-count" id="appCount"></span></a>
   </div>
 
   <div class="main">
@@ -471,6 +471,7 @@
         '</div>';
       });
       document.getElementById('applications-list').innerHTML = html || '<div style="text-align:center;padding:32px;color:var(--gray-400)">Aucune candidature</div>';
+      document.getElementById('appCount').textContent = pendingAppCount > 0 ? pendingAppCount : '';
     } catch (err) {
       console.error('Error loading applications:', err);
     }
@@ -541,6 +542,13 @@
         }
       }
       showToast(action === 'accept' ? '✓ Candidature acceptée' : '✕ Candidature refusée', action === 'accept' ? 'green' : 'red');
+      // Décrémenter le compteur
+      const appCountEl = document.getElementById('appCount');
+      const currentApp = parseInt(appCountEl.textContent) || 0;
+      if (currentApp > 0) {
+        const newApp = currentApp - 1;
+        appCountEl.textContent = newApp > 0 ? newApp : '';
+      }
     } catch (err) {
       showToast('Erreur: ' + err.message, 'red');
     }
