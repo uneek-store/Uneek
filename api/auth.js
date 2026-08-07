@@ -149,6 +149,7 @@ export default async function handler(req, res) {
           instagram: app.instagram || null,
           city: null,
           story: app.message || null,
+          is_active: true,
         })
         .select()
         .single();
