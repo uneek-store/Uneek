@@ -499,6 +499,31 @@
 
   function closeModal() { document.getElementById('productModal').classList.remove('show'); }
 
+  // Redimensionner et lire un fichier image en data URL
+  function resizeAndReadFile(file, maxSize) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          if (w > maxSize || h > maxSize) {
+            if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+            else { w = Math.round(w * maxSize / h); h = maxSize; }
+          }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.onerror = () => reject(new Error('Image illisible'));
+        img.src = e.target.result;
+      };
+      reader.onerror = () => reject(new Error('Erreur lecture fichier'));
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function submitProduct() {
     const name = document.getElementById('f-name').value;
     const price = document.getElementById('f-price').value;
@@ -514,8 +539,20 @@
       body.edit_type = 'modification';
     } else {
       body.edit_type = 'new';
+      // Image: priorité au fichier uploadé, sinon URL
+      const fileInput = document.getElementById('f-file');
       const imgUrl = document.getElementById('f-img').value;
-      if (imgUrl) body.image_url = imgUrl;
+      if (fileInput && fileInput.files && fileInput.files[0]) {
+        // Lire le fichier et le redimensionner avant envoi
+        try {
+          body.image_url = await resizeAndReadFile(fileInput.files[0], 800);
+        } catch (e) {
+          showToast('Erreur lecture image: ' + e.message);
+          return;
+        }
+      } else if (imgUrl) {
+        body.image_url = imgUrl;
+      }
       const sizes = {};
       let stockError = false;
       document.querySelectorAll('#sizeGrid .size-item').forEach(item => {

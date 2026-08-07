@@ -448,13 +448,26 @@
       const data = await res.json();
       const apps = data.applications || data || [];
       let html = '';
+      let pendingAppCount = 0;
       apps.forEach(a => {
-        const statusBadge = a.status === 'new' ? '<span class="badge badge-blue">Nouveau</span>' : '<span class="badge badge-orange">En review</span>';
-        html += '<div class="cand-card">' +
+        let statusBadge = '';
+        let actionHtml = '';
+        if (a.status === 'accepted') {
+          statusBadge = '<span class="badge badge-green">Accepté</span>';
+          actionHtml = '<span class="badge badge-green">Accepté</span>';
+        } else if (a.status === 'rejected') {
+          statusBadge = '<span class="badge badge-red">Refusé</span>';
+          actionHtml = '<span class="badge badge-red">Refusé</span>';
+        } else {
+          pendingAppCount++;
+          statusBadge = a.status === 'new' ? '<span class="badge badge-blue">Nouveau</span>' : '<span class="badge badge-orange">En review</span>';
+          actionHtml = '<div class="action-btns"><button class="btn-approve" onclick="handleApplication(\'' + a.id + '\', \'accept\')">Accepter</button><button class="btn-reject" onclick="handleApplication(\'' + a.id + '\', \'reject\')">Refuser</button></div>';
+        }
+        html += '<div class="cand-card" id="app-' + a.id + '"' + (['accepted','rejected'].includes(a.status) ? ' style="opacity:0.7"' : '') + '>' +
           '<div class="cand-top"><span class="cand-name">' + a.brand_name + '</span>' + statusBadge + '</div>' +
           '<div class="cand-meta">' + a.contact_name + ' · ' + a.email + (a.instagram ? ' · ' + a.instagram : '') + (a.website ? ' · ' + a.website : '') + '</div>' +
           (a.message ? '<div class="cand-message">"' + a.message + '"</div>' : '') +
-          '<div class="action-btns"><button class="btn-approve" onclick="handleApplication(\'' + a.id + '\', \'accept\')">Accepter</button><button class="btn-reject" onclick="handleApplication(\'' + a.id + '\', \'reject\')">Refuser</button></div>' +
+          actionHtml +
         '</div>';
       });
       document.getElementById('applications-list').innerHTML = html || '<div style="text-align:center;padding:32px;color:var(--gray-400)">Aucune candidature</div>';
@@ -509,8 +522,25 @@
         body: JSON.stringify({ id, action })
       });
       const data = await res.json();
+      // Remplacer les boutons par un badge
+      const card = document.getElementById('app-' + id);
+      if (card) {
+        card.style.opacity = '0.7';
+        const btns = card.querySelector('.action-btns');
+        if (btns) {
+          btns.outerHTML = action === 'accept'
+            ? '<span class="badge badge-green">Accepté</span>'
+            : '<span class="badge badge-red">Refusé</span>';
+        }
+        // Mettre à jour le badge en haut de la card
+        const topBadge = card.querySelector('.cand-top .badge');
+        if (topBadge) {
+          topBadge.outerHTML = action === 'accept'
+            ? '<span class="badge badge-green">Accepté</span>'
+            : '<span class="badge badge-red">Refusé</span>';
+        }
+      }
       showToast(action === 'accept' ? '✓ Candidature acceptée' : '✕ Candidature refusée', action === 'accept' ? 'green' : 'red');
-      setTimeout(() => loadApplications(), 1500);
     } catch (err) {
       showToast('Erreur: ' + err.message, 'red');
     }
