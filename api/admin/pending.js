@@ -1,5 +1,5 @@
 // API : /api/admin/pending
-// GET  → liste toutes les modifications (pending, approved, rejected)
+// GET → liste toutes les modifications (pending, approved, rejected)
 // POST → approuver ou rejeter une modification
 
 import { supabaseAdmin } from "../lib/supabase.js";
@@ -11,10 +11,7 @@ export default async function handler(req, res) {
 
   if (req.method === "OPTIONS") return res.status(200).end();
 
-  // TODO: Vérifier que c'est bien l'admin (via le token)
-
   try {
-    // --- LISTE DE TOUTES LES MODIFICATIONS ---
     if (req.method === "GET") {
       const { data, error } = await supabaseAdmin
         .from("product_edits")
@@ -29,15 +26,13 @@ export default async function handler(req, res) {
       return res.status(200).json(data || []);
     }
 
-    // --- APPROUVER OU REJETER ---
     if (req.method === "POST") {
-      const { edit_id, action, admin_note } = req.body;
+      const { edit_id, action, admin_note, commission_percent } = req.body;
 
       if (!edit_id || !["approve", "reject"].includes(action)) {
         return res.status(400).json({ error: "edit_id et action (approve/reject) requis" });
       }
 
-      // Récupérer la modification
       const { data: edit, error: editError } = await supabaseAdmin
         .from("product_edits")
         .select("*")
@@ -50,7 +45,6 @@ export default async function handler(req, res) {
 
       if (action === "approve") {
         const c = edit.changes || {};
-        // Mapper les champs changes → colonnes products
         const productData = {};
         if (c.name) productData.name = c.name;
         if (c.price) productData.price = c.price;
@@ -62,6 +56,11 @@ export default async function handler(req, res) {
           productData.stock = Object.values(c.sizes_stock).reduce((sum, qty) => sum + (parseInt(qty) || 0), 0);
         }
         if (c.stock_quantity) productData.stock = c.stock_quantity;
+
+        // Ajouter la commission si fournie
+        if (commission_percent !== undefined && commission_percent !== null) {
+          productData.commission_percent = parseFloat(commission_percent);
+        }
 
         if (edit.is_new_product) {
           const slug = (c.name || "produit").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
@@ -96,7 +95,6 @@ export default async function handler(req, res) {
         }
       }
 
-      // Marquer la modification comme approuvée/rejetée
       const { error: statusError } = await supabaseAdmin
         .from("product_edits")
         .update({
