@@ -280,6 +280,10 @@
     <label>Description</label>
     <textarea id="f-desc" placeholder="Décris ton produit..."></textarea>
 
+    <label>Commission UNEEK (%)</label>
+    <input id="f-commission" type="number" min="1" max="100" step="1" placeholder="12" />
+    <p class="modal-note" style="margin-top:2px">Pourcentage convenu dans ton contrat avec UNEEK.</p>
+
     <!-- IMAGE: only for new products -->
     <div class="img-section" id="imgSection">
       <label>Image du produit</label>
@@ -563,7 +567,6 @@
     document.getElementById('f-price').value = '';
     document.getElementById('f-desc').value = '';
     document.getElementById('f-img').value = '';
-document.getElementById('f-file').value = '';
     document.getElementById('imgSection').classList.add('show');
     document.getElementById('stockSection').style.display = '';
     document.querySelectorAll('#sizeChecks input').forEach((cb, i) => { cb.checked = [1,2,3,4].includes(i); });
@@ -620,9 +623,14 @@ document.getElementById('f-file').value = '';
     const category = document.getElementById('f-cat').value;
     const description = document.getElementById('f-desc').value;
 
-    if (!name || !price) { showToast('Nom et prix requis'); return; }
+    const commission = document.getElementById('f-commission').value;
 
-    const body = { brand_id: currentBrand.id, name, price: parseFloat(price), category, description };
+    if (!name || !price) { showToast('Nom et prix requis'); return; }
+    if (!commission || parseFloat(commission) < 1 || parseFloat(commission) > 100) {
+      showToast('Commission requise (entre 1 et 100%)'); return;
+    }
+
+    const body = { brand_id: currentBrand.id, name, price: parseFloat(price), category, description, commission_percent: parseFloat(commission) };
 
     if (isEditMode) {
       body.product_id = editProductId;
