@@ -126,6 +126,26 @@
 
     .faded { opacity: 0.5; }
 
+/* CONFIRM MODAL */
+.confirm-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 250; align-items: center; justify-content: center; }
+.confirm-overlay.show { display: flex; }
+.confirm-box { background: var(--white); border-radius: 16px; padding: 28px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+.confirm-title { font-family: var(--font-display); font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+.confirm-msg { font-size: 13px; color: var(--gray-500); margin-bottom: 20px; line-height: 1.5; }
+.confirm-btns { display: flex; gap: 10px; justify-content: center; }
+.confirm-btns button { padding: 10px 24px; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: var(--font-body); border: none; font-weight: 500; }
+.confirm-cancel { background: var(--gray-100); color: var(--gray-600); }
+.confirm-cancel:hover { background: var(--gray-200); }
+.confirm-ok { color: var(--white); }
+.confirm-ok.green { background: var(--green); }
+.confirm-ok.green:hover { background: #16A34A; }
+.confirm-ok.red { background: var(--red); }
+.confirm-ok.red:hover { background: #DC2626; }
+
+.btn-delete { padding: 5px 14px; background: var(--red); color: var(--white); border: none; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: var(--font-body); }
+.btn-delete:hover { background: #DC2626; }
+
+
     /* FINANCES */
     .stats-3 { grid-template-columns: repeat(3, 1fr); }
   </style>
@@ -262,6 +282,18 @@
   </div>
 </div>
 
+<!-- CONFIRM MODAL -->
+<div class="confirm-overlay" id="confirmModal">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirmTitle">Es-tu sûr ?</div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" onclick="closeConfirm()">Annuler</button>
+      <button class="confirm-ok" id="confirmOk" onclick="doConfirm()">Confirmer</button>
+    </div>
+  </div>
+</div>
+
 <!-- LIGHTBOX -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <span class="lightbox-close">✕</span>
@@ -274,6 +306,28 @@
 <script>
   const API_BASE = '/api';
   let authToken = null;
+
+let confirmCallback = null;
+
+// --- CONFIRM MODAL ---
+function showConfirm(title, msg, color, callback) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent = msg;
+  const btn = document.getElementById('confirmOk');
+  btn.className = 'confirm-ok ' + color;
+  confirmCallback = callback;
+  document.getElementById('confirmModal').classList.add('show');
+}
+function closeConfirm() {
+  document.getElementById('confirmModal').classList.remove('show');
+  confirmCallback = null;
+}
+function doConfirm() {
+  const cb = confirmCallback;
+  closeConfirm();
+  if (cb) cb();
+}
+
 
   // --- LOGIN ---
   async function doLogin() {
@@ -383,9 +437,9 @@
       const brands = data.brands || data || [];
       let html = '';
       brands.forEach(b => {
-        html += '<tr><td class="bold">' + b.name + '</td><td class="sec">' + (b.city || '') + '</td><td class="sec">' + (b.email || '') + '</td><td>' + (b.product_count || 0) + '</td><td><span class="badge badge-green">Active</span></td></tr>';
+        html += '<tr><td class="bold">' + b.name + '</td><td class="sec">' + (b.city || '') + '</td><td class="sec">' + (b.email || '') + '</td><td>' + (b.product_count || 0) + '</td><td><span class="badge badge-green">Active</span></td><td><button class="btn-delete" onclick="askDeleteBrand(\'' + b.id + '\', \'' + b.name.replace(/'/g, "\\\'") + '\')">Supprimer</button></td></tr>';
       });
-      document.getElementById('brands-table').innerHTML = html || '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune marque</td></tr>';
+      document.getElementById('brands-table').innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune marque</td></tr>';
       document.getElementById('stat-brands').textContent = brands.length;
     } catch (err) {
       console.error('Error loading brands:', err);
@@ -421,7 +475,7 @@
           actionHtml = '<span class="badge badge-red">Refusé</span>';
         } else {
           pendingCount++;
-          actionHtml = '<div class="action-btns"><button class="btn-approve" onclick="handlePending(\'' + p.id + '\', \'approve\')">Approuver</button><button class="btn-reject" onclick="handlePending(\'' + p.id + '\', \'reject\')">Refuser</button></div>';
+          actionHtml = '<div class="action-btns"><button class="btn-approve" onclick="askHandlePending(\'' + p.id + '\', \'approve\', \'' + (prodName||'').replace(/'/g, "\\\'") + '\')">Approuver</button><button class="btn-reject" onclick="askHandlePending(\'' + p.id + '\', \'reject\', \'' + (prodName||'').replace(/'/g, "\\\'") + '\')">Refuser</button></div>';
         }
 
         html += '<div class="pending-card" id="pending-' + p.id + '"' + (p.status !== 'pending' ? ' style="opacity:0.7"' : '') + '>' +
@@ -466,7 +520,7 @@
         } else {
           pendingAppCount++;
           statusBadge = a.status === 'new' ? '<span class="badge badge-blue">Nouveau</span>' : '<span class="badge badge-orange">En review</span>';
-          actionHtml = '<div class="action-btns"><button class="btn-approve" onclick="handleApplication(\'' + a.id + '\', \'accept\')">Accepter</button><button class="btn-reject" onclick="handleApplication(\'' + a.id + '\', \'reject\')">Refuser</button></div>';
+          actionHtml = '<div class="action-btns"><button class="btn-approve" onclick="askHandleApplication(\'' + a.id + '\', \'accept\', \'' + (a.brand_name||'').replace(/'/g, "\\\'") + '\')">Accepter</button><button class="btn-reject" onclick="askHandleApplication(\'' + a.id + '\', \'reject\', \'' + (a.brand_name||'').replace(/'/g, "\\\'") + '\')">Refuser</button></div>';
         }
         html += '<div class="cand-card" id="app-' + a.id + '"' + (['accepted','rejected'].includes(a.status) ? ' style="opacity:0.7"' : '') + '>' +
           '<div class="cand-top"><span class="cand-name">' + a.brand_name + '</span>' + statusBadge + '</div>' +
@@ -564,7 +618,56 @@
     }
   }
 
-  // --- HELPERS ---
+  
+// --- CONFIRM WRAPPERS ---
+function askHandlePending(id, action, name) {
+  var title = action === 'approve' ? 'Approuver ce produit ?' : 'Refuser ce produit ?';
+  var msg = action === 'approve'
+    ? 'Tu vas approuver "' + name + '". Il sera publié sur le site.'
+    : 'Tu vas refuser "' + name + '". Le créateur sera notifié.';
+  var color = action === 'approve' ? 'green' : 'red';
+  showConfirm(title, msg, color, function() { handlePending(id, action); });
+}
+
+function askHandleApplication(id, action, brandName) {
+  var title = action === 'accept' ? 'Accepter cette candidature ?' : 'Refuser cette candidature ?';
+  var msg = action === 'accept'
+    ? 'Tu vas accepter "' + brandName + '". Un code d\'invitation sera généré.'
+    : 'Tu vas refuser la candidature de "' + brandName + '".';
+  var color = action === 'accept' ? 'green' : 'red';
+  showConfirm(title, msg, color, function() { handleApplication(id, action); });
+}
+
+function askDeleteBrand(brandId, brandName) {
+  showConfirm(
+    'Supprimer cette marque ?',
+    'Tu vas supprimer "' + brandName + '" et tous ses produits, comptes créateurs et données associées. Cette action est irréversible.',
+    'red',
+    function() { deleteBrand(brandId); }
+  );
+}
+
+async function deleteBrand(brandId) {
+  try {
+    var res = await fetch(API_BASE + '/admin/brands', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ brand_id: brandId })
+    });
+    var data = await res.json();
+    if (!res.ok || !data.success) {
+      showToast('Erreur: ' + (data.error || 'Échec de la suppression'), 'red');
+      return;
+    }
+    showToast('Marque supprimée', 'green');
+    loadBrands();
+    loadProducts();
+  } catch (err) {
+    showToast('Erreur: ' + err.message, 'red');
+  }
+}
+
+// --- HELPERS ---
   function shortOrder(num) { return num ? '…' + num.slice(-4) : ''; }
 
   function getShippingBadge(status) {
