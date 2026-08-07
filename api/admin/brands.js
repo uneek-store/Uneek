@@ -26,7 +26,7 @@ export default async function handler(req, res) {
       if (products && products.length > 0) {
         const productIds = products.map(p => p.id);
         await supabaseAdmin
-          .from("pending_edits")
+          .from("product_edits")
           .delete()
           .in("product_id", productIds);
       }
