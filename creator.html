@@ -138,7 +138,8 @@
 
 <!-- LOGIN -->
 <div class="login-wrap" id="loginScreen">
-  <div class="login-box">
+  <!-- LOGIN -->
+  <div class="login-box" id="loginBox">
     <h1>UNEEK</h1>
     <p>Espace créateur</p>
     <label>Email</label>
@@ -147,6 +148,29 @@
     <input type="password" id="loginPassword" placeholder="••••••••" />
     <button class="login-btn" onclick="doLogin()">Se connecter</button>
     <div class="login-error" id="loginError">Email ou mot de passe incorrect</div>
+    <div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-200)">
+      <span style="font-size:13px;color:var(--gray-500)">Pas encore de compte ?</span><br>
+      <a href="#" onclick="showRegister();return false" style="font-size:13px;color:var(--black);font-weight:600;text-decoration:underline">Créer un compte avec mon code</a>
+    </div>
+  </div>
+  <!-- REGISTER -->
+  <div class="login-box" id="registerBox" style="display:none">
+    <h1>UNEEK</h1>
+    <p>Créer ton compte créateur</p>
+    <label>Code d'invitation</label>
+    <input type="text" id="regCode" placeholder="UNEEK-XXXX" style="text-transform:uppercase;font-family:monospace;font-weight:600;letter-spacing:2px" />
+    <label>Email</label>
+    <input type="email" id="regEmail" placeholder="ton@email.com" />
+    <label>Mot de passe</label>
+    <input type="password" id="regPassword" placeholder="Choisis un mot de passe" />
+    <label>Confirme le mot de passe</label>
+    <input type="password" id="regPassword2" placeholder="Répète ton mot de passe" />
+    <button class="login-btn" onclick="doRegister()">Créer mon compte</button>
+    <div class="login-error" id="registerError"></div>
+    <div class="login-error" id="registerSuccess" style="color:var(--green)"></div>
+    <div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-200)">
+      <a href="#" onclick="showLogin();return false" style="font-size:13px;color:var(--gray-500);text-decoration:underline">← Retour à la connexion</a>
+    </div>
   </div>
 </div>
 
@@ -298,6 +322,71 @@
   let creatorName = '';
   let isEditMode = false;
   let editProductId = null;
+
+  // --- REGISTER / LOGIN TOGGLE ---
+  function showRegister() {
+    document.getElementById('loginBox').style.display = 'none';
+    document.getElementById('registerBox').style.display = 'block';
+  }
+  function showLogin() {
+    document.getElementById('registerBox').style.display = 'none';
+    document.getElementById('loginBox').style.display = 'block';
+  }
+
+  async function doRegister() {
+    const code = document.getElementById('regCode').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const password2 = document.getElementById('regPassword2').value;
+    const errorEl = document.getElementById('registerError');
+    const successEl = document.getElementById('registerSuccess');
+    errorEl.style.display = 'none';
+    successEl.style.display = 'none';
+
+    if (!code || !email || !password) {
+      errorEl.textContent = 'Tous les champs sont requis';
+      errorEl.style.display = 'block';
+      return;
+    }
+    if (password.length < 6) {
+      errorEl.textContent = 'Le mot de passe doit faire au moins 6 caractères';
+      errorEl.style.display = 'block';
+      return;
+    }
+    if (password !== password2) {
+      errorEl.textContent = 'Les mots de passe ne correspondent pas';
+      errorEl.style.display = 'block';
+      return;
+    }
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRe.test(email)) {
+      errorEl.textContent = 'Adresse email invalide';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    try {
+      const res = await fetch(API_BASE + '/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'register_creator', email, password, invite_code: code.toUpperCase() })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        errorEl.textContent = data.error || 'Erreur lors de la création du compte';
+        errorEl.style.display = 'block';
+        return;
+      }
+      successEl.textContent = 'Compte créé ! Tu peux maintenant te connecter.';
+      successEl.style.display = 'block';
+      // Pré-remplir le login
+      document.getElementById('loginEmail').value = email;
+      setTimeout(() => showLogin(), 2000);
+    } catch (err) {
+      errorEl.textContent = 'Erreur de connexion au serveur';
+      errorEl.style.display = 'block';
+    }
+  }
 
   // --- LOGIN ---
   async function doLogin() {

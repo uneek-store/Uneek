@@ -454,7 +454,12 @@
         let actionHtml = '';
         if (a.status === 'accepted') {
           statusBadge = '<span class="badge badge-green">Accepté</span>';
-          actionHtml = '<span class="badge badge-green">Accepté</span>';
+          const codeDisplay = a.invite_code
+            ? (a.invite_used
+              ? '<span style="color:var(--gray-400);font-size:12px">Code utilisé</span>'
+              : '<div style="margin-top:6px;padding:8px 12px;background:var(--green-bg);border-radius:8px;font-family:monospace;font-size:14px;font-weight:600;color:var(--green);display:inline-block;cursor:pointer" onclick="copyCode(this,\'' + a.invite_code + '\')" title="Cliquer pour copier">' + a.invite_code + ' <span style="font-size:11px;font-weight:400">📋</span></div>')
+            : '';
+          actionHtml = '<span class="badge badge-green">Accepté</span>' + codeDisplay;
         } else if (a.status === 'rejected') {
           statusBadge = '<span class="badge badge-red">Refusé</span>';
           actionHtml = '<span class="badge badge-red">Refusé</span>';
@@ -529,9 +534,14 @@
         card.style.opacity = '0.7';
         const btns = card.querySelector('.action-btns');
         if (btns) {
-          btns.outerHTML = action === 'accept'
-            ? '<span class="badge badge-green">Accepté</span>'
-            : '<span class="badge badge-red">Refusé</span>';
+          if (action === 'accept' && data.invite_code) {
+            btns.outerHTML = '<span class="badge badge-green">Accepté</span>' +
+              '<div style="margin-top:6px;padding:8px 12px;background:var(--green-bg);border-radius:8px;font-family:monospace;font-size:14px;font-weight:600;color:var(--green);display:inline-block;cursor:pointer" onclick="copyCode(this,\'' + data.invite_code + '\')" title="Cliquer pour copier">' + data.invite_code + ' <span style="font-size:11px;font-weight:400">📋</span></div>';
+          } else {
+            btns.outerHTML = action === 'accept'
+              ? '<span class="badge badge-green">Accepté</span>'
+              : '<span class="badge badge-red">Refusé</span>';
+          }
         }
         // Mettre à jour le badge en haut de la card
         const topBadge = card.querySelector('.cand-top .badge');
@@ -572,6 +582,16 @@
     if (!d) return '';
     const date = new Date(d);
     return date.toLocaleDateString('fr-BE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  function copyCode(el, code) {
+    navigator.clipboard.writeText(code).then(() => {
+      const orig = el.innerHTML;
+      el.innerHTML = '✓ Copié !';
+      el.style.background = 'var(--green)';
+      el.style.color = '#fff';
+      setTimeout(() => { el.innerHTML = orig; el.style.background = 'var(--green-bg)'; el.style.color = 'var(--green)'; }, 1500);
+    });
   }
 
   function openLightbox(src) {
