@@ -50,12 +50,27 @@ export default async function handler(req, res) {
       }
 
       if (action === "approve") {
+        const c = edit.changes || {};
+        // Mapper les champs changes → colonnes products
+        const productData = {};
+        if (c.name) productData.name = c.name;
+        if (c.price) productData.price = c.price;
+        if (c.category) productData.category = c.category;
+        if (c.description) productData.description = c.description;
+        if (c.image_url) productData.image_urls = [c.image_url];
+        if (c.sizes_stock) {
+          productData.sizes = Object.keys(c.sizes_stock);
+          productData.stock = Object.values(c.sizes_stock).reduce((sum, qty) => sum + (parseInt(qty) || 0), 0);
+        }
+        if (c.stock_quantity) productData.stock = c.stock_quantity;
+
         if (edit.is_new_product) {
-          // Créer le nouveau produit
+          const slug = (c.name || "produit").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
           const { error: createError } = await supabaseAdmin
             .from("products")
             .insert({
-              ...edit.changes,
+              ...productData,
+              slug,
               brand_id: edit.brand_id,
               is_published: true,
               is_pending_review: false,
@@ -66,11 +81,10 @@ export default async function handler(req, res) {
             return res.status(500).json({ error: "Erreur création produit" });
           }
         } else {
-          // Appliquer les modifications au produit existant
           const { error: updateError } = await supabaseAdmin
             .from("products")
             .update({
-              ...edit.changes,
+              ...productData,
               is_pending_review: false,
               updated_at: new Date().toISOString(),
             })
