@@ -478,8 +478,30 @@ async function loadPending() {
       const category = c.category || p.category || '';
       const sizesStr = c.sizes_stock ? Object.keys(c.sizes_stock).join(', ') : (p.sizes || '');
       const commissionStr = c.commission_percent ? '<br><span style="color:var(--blue);font-weight:500">Commission: ' + c.commission_percent + '%</span>' : '';
-      const detail = brandName + ' · par ' + creatorName + (category ? ' · ' + category : '') + (sizesStr ? '<br>Tailles: ' + sizesStr : '') + commissionStr;
-      const prodName = c.name || p.proposed_name || 'Sans nom';
+
+      // Pour les modifications, construire un résumé des changements
+      let changesStr = '';
+      if (!isNew && p.products) {
+        const diffs = [];
+        if (c.price !== undefined && p.products.price !== undefined && parseFloat(c.price) !== parseFloat(p.products.price)) {
+          diffs.push('Prix: €' + p.products.price + ' → €' + c.price);
+        }
+        if (c.name && p.products.name && c.name !== p.products.name) {
+          diffs.push('Nom: ' + p.products.name + ' → ' + c.name);
+        }
+        if (c.category && p.products.category && c.category !== p.products.category) {
+          diffs.push('Catégorie: ' + p.products.category + ' → ' + c.category);
+        }
+        if (c.description && p.products.description && c.description !== p.products.description) {
+          diffs.push('Description modifiée');
+        }
+        if (diffs.length > 0) {
+          changesStr = '<br><span style="color:var(--orange);font-weight:500">' + diffs.join(' · ') + '</span>';
+        }
+      }
+
+      const detail = brandName + ' · par ' + creatorName + (category ? ' · ' + category : '') + (sizesStr ? '<br>Tailles: ' + sizesStr : '') + changesStr + commissionStr;
+      const prodName = c.name || p.products?.name || p.proposed_name || 'Sans nom';
       const prodPrice = c.price || p.proposed_price || '?';
 
       let actionHtml = '';
@@ -495,7 +517,7 @@ async function loadPending() {
       html += '<div class="pending-card" id="pending-' + p.id + '"' + (p.status !== 'pending' ? ' style="opacity:0.7"' : '') + '>' +
         '<img class="pending-img" src="' + imgUrl + '" onclick="openLightbox(this.src)" alt="Photo produit" />' +
         '<div class="pending-info">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span class="pending-name">' + prodName + ' — €' + prodPrice + '</span>' + typeBadge + '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span class="pending-name">' + prodName + (isNew ? ' — €' + prodPrice : '') + '</span>' + typeBadge + '</div>' +
         '<div class="pending-detail">' + detail + '</div>' +
         '<div class="pending-bottom"><span class="pending-date">' + formatDate(p.created_at) + '</span>' +
         actionHtml +
