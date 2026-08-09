@@ -39,19 +39,21 @@ export default async function handler(req, res) {
 
     // --- SOUMETTRE UN NOUVEAU PRODUIT OU UNE MODIFICATION ---
     if (req.method === "POST") {
-      const { product_id, name, price, category, description, image_url, sizes_stock, edit_type, creator_id, commission_percent } = req.body;
+      const { product_id, name, price, category, description, image_url, sizes_stock, edit_type, creator_id, commission_percent, _original  } = req.body;
 
       const isNew = edit_type === 'new' || !product_id;
 
       // Construire l'objet changes
       const changes = {};
       if (name) changes.name = name;
-      if (price !== undefined) changes.price = price;
+      if (price != undefined) changes.price = price;
       if (category) changes.category = category;
       if (description) changes.description = description;
       if (image_url) changes.image_url = image_url;
       if (sizes_stock) changes.sizes_stock = sizes_stock;
       if (commission_percent !== undefined) changes.commission_percent = commission_percent;
+            // Stocker les valeurs originales pour les modifications (permet d'afficher le diff)
+            if (!isNew && _original) changes._original = _original;
 
       // Créer une entrée dans product_edits (en attente de validation)
       const { data: edit, error } = await supabaseAdmin
