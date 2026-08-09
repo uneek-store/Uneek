@@ -234,7 +234,7 @@
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Produit</th><th>Détail</th><th>Date</th><th>Statut</th><th>Note UNEEK</th></tr></thead>
+            <thead><tr><th>Produit</th><th>Type</th><th>Date</th><th>Statut</th><th>Changement</th></tr></thead>
             <tbody id="edits-table"></tbody>
           </table>
         </div>
@@ -328,6 +328,7 @@
   let creatorName = '';
   let isEditMode = false;
   let editProductId = null;
+  let editOriginal = null;
 
   // --- REGISTER / LOGIN TOGGLE ---
   function showRegister() {
@@ -453,7 +454,7 @@
       products.forEach(p => {
         const stockStr = p.sizes_stock
           ? Object.entries(p.sizes_stock).map(([s, q]) => s + ':' + q).join(' · ')
-          : (p.stock_quantity || 0);
+          : (p.stock || 0);
         const encoded = encodeURIComponent(JSON.stringify({
           id: p.id, name: p.name, price: p.price, category: p.category, description: p.description
         }));
@@ -541,21 +542,38 @@
       let html = '';
       edits.forEach(e => {
         const c = e.changes || {};
+        const orig = c._original || {};
         const name = c.name || e.products?.name || 'Sans nom';
         let typeBadge;
+        let changeDetail = '';
         if (e.is_new_product) {
           typeBadge = '<span class="badge badge-blue">Nouveau produit</span>';
+          changeDetail = '€' + (c.price || '?');
         } else {
-          // Déterminer ce qui a été modifié
+          // Déterminer ce qui a été modifié avec détail
           const mods = [];
-          if (c.price !== undefined) mods.push('prix');
-          if (c.name) mods.push('nom');
-          if (c.category) mods.push('catégorie');
-          if (c.description) mods.push('description');
-          if (c.image_url) mods.push('image');
-          if (c.sizes_stock) mods.push('stock');
-          const detail = mods.length > 0 ? 'Modif ' + mods.join(', ') : 'Modification';
-          typeBadge = '<span class="badge badge-orange">' + detail + '</span>';
+          const details = [];
+          if (c.price !== undefined) {
+            mods.push('prix');
+            if (orig.price !== undefined) details.push('Prix: €' + orig.price + ' → €' + c.price);
+            else if (e.products?.price !== undefined) details.push('Prix: €' + e.products.price + ' → €' + c.price);
+            else details.push('Prix: €' + c.price);
+          }
+          if (c.name && orig.name && c.name !== orig.name) {
+            mods.push('nom');
+            details.push('Nom: ' + orig.name + ' → ' + c.name);
+          }
+          if (c.category && orig.category && c.category !== orig.category) {
+            mods.push('catégorie');
+            details.push('Catégorie: ' + orig.category + ' → ' + c.category);
+          }
+          if (c.description && orig.description && c.description !== orig.description) {
+            mods.push('description');
+            details.push('Description modifiée');
+          }
+          const label = mods.length > 0 ? 'Modif ' + mods.join(', ') : 'Modification';
+          typeBadge = '<span class="badge badge-orange">' + label + '</span>';
+          changeDetail = details.length > 0 ? details.join(' · ') : '—';
         }
         const statusMap = {
           'pending': '<span class="badge badge-orange">En attente</span>',
@@ -564,8 +582,7 @@
         };
         const statusBadge = statusMap[e.status] || '<span class="badge badge-orange">' + e.status + '</span>';
         const date = e.created_at ? new Date(e.created_at).toLocaleDateString('fr-BE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
-        const note = e.admin_note || '—';
-        html += '<tr><td class="bold">' + name + '</td><td>' + typeBadge + '</td><td class="sec">' + date + '</td><td>' + statusBadge + '</td><td class="sec">' + note + '</td></tr>';
+        html += '<tr><td class="bold">' + name + '</td><td>' + typeBadge + '</td><td class="sec">' + date + '</td><td>' + statusBadge + '</td><td class="sec">' + changeDetail + '</td></tr>';
       });
       document.getElementById('edits-table').innerHTML = html || '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune demande</td></tr>';
     } catch (err) {
@@ -577,6 +594,7 @@
   function openAddModal() {
     isEditMode = false;
     editProductId = null;
+    editOriginal = null;
     document.getElementById('modalTitle').textContent = 'Ajouter un produit';
     document.getElementById('f-name').value = '';
     document.getElementById('f-price').value = '';
@@ -596,6 +614,7 @@
     const p = JSON.parse(decodeURIComponent(encoded));
     isEditMode = true;
     editProductId = p.id;
+    editOriginal = { name: p.name, price: p.price, category: p.category, description: p.description };
     document.getElementById('modalTitle').textContent = 'Modifier : ' + p.name;
     document.getElementById('f-name').value = p.name;
     document.getElementById('f-price').value = p.price;
@@ -658,6 +677,7 @@
     if (isEditMode) {
       body.product_id = editProductId;
       body.edit_type = 'modification';
+      if (editOriginal) body._original = editOriginal;
     } else {
       body.edit_type = 'new';
       // Image: priorité au fichier uploadé, sinon URL

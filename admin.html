@@ -138,6 +138,48 @@ td.sec { color: var(--gray-500); }
 .lightbox { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 200; align-items: center; justify-content: center; cursor: pointer; }
 .lightbox.show { display: flex; }
 .lightbox img { max-width: 80%; max-height: 80%; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+
+/* STOCK PAR TAILLE */
+.stock-sizes { display: flex; flex-wrap: wrap; gap: 4px; }
+.size-chip { display: inline-flex; align-items: center; gap: 2px; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; background: var(--gray-100); color: var(--gray-600); white-space: nowrap; }
+.size-chip .sz-label { color: var(--gray-400); font-weight: 400; }
+.size-chip .sz-qty { font-weight: 600; color: var(--black); }
+.stock-total { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+.size-chip.out { background: var(--red-bg); }
+.size-chip.out .sz-qty { color: var(--red); }
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .sidebar { width: 56px; padding: 16px 0; }
+  .sidebar-logo { padding: 0 8px 2px; font-size: 14px; text-align: center; }
+  .sidebar-tag { display: none; }
+  .sidebar a { padding: 10px 0; justify-content: center; font-size: 0; }
+  .sidebar a svg { font-size: 18px; }
+  .sidebar .badge-count { display: none; }
+  .main { margin-left: 56px; padding: 16px; }
+  .stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .page-title { font-size: 18px; }
+}
+@media (max-width: 600px) {
+  .sidebar { position: fixed; bottom: 0; top: auto; left: 0; right: 0; width: 100%; height: 52px; display: flex; flex-direction: row; align-items: center; justify-content: space-around; padding: 0; z-index: 100; }
+  .sidebar-logo, .sidebar-tag { display: none; }
+  .sidebar a { padding: 8px; flex-direction: column; font-size: 0; gap: 0; width: auto; border-right: none !important; }
+  .sidebar .badge-count { position: absolute; top: 2px; right: -4px; }
+  .main { margin-left: 0; padding: 12px; padding-bottom: 64px; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .stat-value { font-size: 20px; }
+  th, td { padding: 8px 10px; font-size: 12px; }
+
+  /* Products table: stack on mobile */
+  #sec-products table, #sec-products thead, #sec-products tbody, #sec-products th, #sec-products td, #sec-products tr { display: block; }
+  #sec-products thead { display: none; }
+  #sec-products tr { margin-bottom: 12px; padding: 12px; border: 1px solid var(--gray-200); border-radius: 10px; background: var(--white); position: relative; }
+  #sec-products td { padding: 4px 0; border: none; font-size: 13px; }
+  #sec-products td::before { content: attr(data-label); display: inline-block; width: 80px; font-size: 10px; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; vertical-align: top; }
+  #sec-products td:first-child { font-size: 15px; font-weight: 600; padding-bottom: 6px; }
+  #sec-products td:first-child::before { display: none; }
+  .stock-sizes { margin-top: 2px; }
+}
 .lightbox-close { position: fixed; top: 20px; right: 24px; color: var(--white); font-size: 28px; cursor: pointer; z-index: 201; }
 
 /* TOAST */
@@ -234,7 +276,7 @@ td.sec { color: var(--gray-500); }
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Produit</th><th>Marque</th><th>Prix</th><th>Commission</th><th>Stock</th><th>Statut</th></tr></thead>
+            <thead><tr><th>Produit</th><th>Marque</th><th>Prix</th><th>Commission</th><th>Stock / Taille</th><th>Statut</th></tr></thead>
             <tbody id="products-table"></tbody>
           </table>
         </div>
@@ -437,7 +479,27 @@ async function loadProducts() {
     const products = data.products || data || [];
     let html = '';
     products.forEach(p => {
-      html += '<tr><td class="bold">' + p.name + '</td><td class="sec">' + (p.brand_name || p.brands?.name || '') + '</td><td>€' + p.price + '</td><td>' + (p.commission_percent || 12) + '%</td><td>' + (p.stock_quantity || 0) + '</td><td><span class="badge badge-green">Publié</span></td></tr>';
+      // Stock par taille
+      let stockHtml = '';
+      const ss = p.sizes_stock;
+      if (ss && typeof ss === 'object' && Object.keys(ss).length > 0) {
+        const chips = Object.entries(ss).map(([sz, qty]) => {
+          const out = parseInt(qty) === 0 ? ' out' : '';
+          return '<span class="size-chip' + out + '"><span class="sz-label">' + sz + '</span><span class="sz-qty">' + qty + '</span></span>';
+        }).join('');
+        const total = Object.values(ss).reduce((s, q) => s + (parseInt(q) || 0), 0);
+        stockHtml = '<div class="stock-sizes">' + chips + '</div><div class="stock-total">Total : ' + total + '</div>';
+      } else {
+        stockHtml = '<span style="color:var(--gray-400)">' + (p.stock || 0) + '</span>';
+      }
+      html += '<tr>'
+        + '<td class="bold" data-label="">' + p.name + '</td>'
+        + '<td class="sec" data-label="Marque">' + (p.brand_name || p.brands?.name || '') + '</td>'
+        + '<td data-label="Prix">€' + p.price + '</td>'
+        + '<td data-label="Commission">' + (p.commission_percent || 12) + '%</td>'
+        + '<td data-label="Stock">' + stockHtml + '</td>'
+        + '<td data-label="Statut"><span class="badge badge-green">Publié</span></td>'
+        + '</tr>';
     });
     document.getElementById('products-table').innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucun produit</td></tr>';
   } catch (err) {
