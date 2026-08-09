@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     // Liste de toutes les marques actives
     const { data, error } = await supabaseAdmin
       .from("brands")
-      .select("id, name, slug, tagline, city, year, image_url, logo_url")
+            .select("id, name, slug, tagline, city, year, image_url, logo_url, email, products(count)")
       .eq("is_active", true)
       .order("name");
 
@@ -43,7 +43,8 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Erreur serveur" });
     }
 
-    return res.status(200).json(data || []);
+        const brands = (data || []).map(b => ({ ...b, product_count: b.products?.[0]?.count || 0, products: undefined }));
+        return res.status(200).json(brands);
   } catch (err) {
     console.error("Brands API error:", err);
     return res.status(500).json({ error: "Erreur serveur" });
