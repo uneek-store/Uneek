@@ -58,6 +58,7 @@ export default async function handler(req, res) {
         if (c.description) productData.description = c.description;
         if (c.image_url) productData.image_urls = [c.image_url];
         if (c.sizes_stock) {
+                    productData.sizes_stock = c.sizes_stock;
           productData.sizes = Object.keys(c.sizes_stock);
           productData.stock = Object.values(c.sizes_stock).reduce((sum, qty) => sum + (parseInt(qty) || 0), 0);
         }
