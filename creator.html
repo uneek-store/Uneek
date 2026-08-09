@@ -234,7 +234,7 @@
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Produit</th><th>Type</th><th>Date</th><th>Statut</th><th>Note UNEEK</th></tr></thead>
+            <thead><tr><th>Produit</th><th>Détail</th><th>Date</th><th>Statut</th><th>Note UNEEK</th></tr></thead>
             <tbody id="edits-table"></tbody>
           </table>
         </div>
@@ -280,9 +280,11 @@
     <label>Description</label>
     <textarea id="f-desc" placeholder="Décris ton produit..."></textarea>
 
-    <label>Commission UNEEK (%)</label>
-    <input id="f-commission" type="number" min="1" max="100" step="1" placeholder="12" />
-    <p class="modal-note" style="margin-top:2px">Pourcentage convenu dans ton contrat avec UNEEK.</p>
+    <div id="commissionSection">
+      <label>Commission UNEEK (%)</label>
+      <input id="f-commission" type="number" min="1" max="100" step="1" placeholder="12" />
+      <p class="modal-note" style="margin-top:2px">Pourcentage convenu dans ton contrat avec UNEEK.</p>
+    </div>
 
     <!-- IMAGE: only for new products -->
     <div class="img-section" id="imgSection">
@@ -540,8 +542,21 @@
       edits.forEach(e => {
         const c = e.changes || {};
         const name = c.name || e.products?.name || 'Sans nom';
-        const type = e.is_new_product ? 'Nouveau produit' : 'Modification';
-        const typeBadge = e.is_new_product ? '<span class="badge badge-blue">Nouveau</span>' : '<span class="badge badge-orange">Modif</span>';
+        let typeBadge;
+        if (e.is_new_product) {
+          typeBadge = '<span class="badge badge-blue">Nouveau produit</span>';
+        } else {
+          // Déterminer ce qui a été modifié
+          const mods = [];
+          if (c.price !== undefined) mods.push('prix');
+          if (c.name) mods.push('nom');
+          if (c.category) mods.push('catégorie');
+          if (c.description) mods.push('description');
+          if (c.image_url) mods.push('image');
+          if (c.sizes_stock) mods.push('stock');
+          const detail = mods.length > 0 ? 'Modif ' + mods.join(', ') : 'Modification';
+          typeBadge = '<span class="badge badge-orange">' + detail + '</span>';
+        }
         const statusMap = {
           'pending': '<span class="badge badge-orange">En attente</span>',
           'approved': '<span class="badge badge-green">Approuvé</span>',
@@ -567,6 +582,8 @@
     document.getElementById('f-price').value = '';
     document.getElementById('f-desc').value = '';
     document.getElementById('f-img').value = '';
+    document.getElementById('f-commission').value = '';
+    document.getElementById('commissionSection').style.display = '';
     document.getElementById('imgSection').classList.add('show');
     document.getElementById('stockSection').style.display = '';
     document.querySelectorAll('#sizeChecks input').forEach((cb, i) => { cb.checked = [1,2,3,4].includes(i); });
@@ -584,6 +601,8 @@
     document.getElementById('f-price').value = p.price;
     if (p.category) document.getElementById('f-cat').value = p.category;
     document.getElementById('f-desc').value = p.description || '';
+    document.getElementById('f-commission').value = '';
+    document.getElementById('commissionSection').style.display = 'none';
     document.getElementById('imgSection').classList.remove('show');
     document.getElementById('stockSection').style.display = 'none';
     document.getElementById('modalNote').textContent = "La modification sera validée par UNEEK. Les photos sont gérées par l'admin.";
@@ -626,11 +645,15 @@
     const commission = document.getElementById('f-commission').value;
 
     if (!name || !price) { showToast('Nom et prix requis'); return; }
-    if (!commission || parseFloat(commission) < 1 || parseFloat(commission) > 100) {
+    // Commission obligatoire seulement pour les nouveaux produits
+    if (!isEditMode && (!commission || parseFloat(commission) < 1 || parseFloat(commission) > 100)) {
       showToast('Commission requise (entre 1 et 100%)'); return;
     }
 
-    const body = { brand_id: currentBrand.id, name, price: parseFloat(price), category, description, commission_percent: parseFloat(commission) };
+    const body = { brand_id: currentBrand.id, name, price: parseFloat(price), category, description };
+    if (commission && parseFloat(commission) >= 1 && parseFloat(commission) <= 100) {
+      body.commission_percent = parseFloat(commission);
+    }
 
     if (isEditMode) {
       body.product_id = editProductId;
