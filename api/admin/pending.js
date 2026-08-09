@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     if (req.method === "GET") {
       const { data, error } = await supabaseAdmin
         .from("product_edits")
-        .select("*, brands(name), products(name), creator_accounts(full_name)")
+        .select("*, brands(name), products(name, price, category, description), creator_accounts(full_name)")
         .order("created_at", { ascending: false });
 
       if (error) {
