@@ -63,6 +63,9 @@
     .stat-card { background: var(--white); padding: 16px; border-radius: 12px; border: 1px solid var(--gray-200); }
     .stat-label { font-size: 10px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
     .stat-value { font-size: 24px; font-weight: 600; font-family: var(--font-display); color: var(--black); }
+    .stat-card.highlight-toship { background: var(--orange-bg); border-color: var(--orange); }
+    .stat-card.highlight-toship .stat-value { color: var(--orange); font-weight: 700; }
+    .stat-card.highlight-toship .stat-label { color: var(--orange); font-weight: 600; }
 
     /* CARDS & TABLES */
     .card { background: var(--white); border: 1px solid var(--gray-200); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
@@ -526,6 +529,8 @@
       document.getElementById('stat-ca').textContent = '€' + totalCA.toFixed(0);
       document.getElementById('stat-revenue').textContent = '€' + totalRevenue.toFixed(0);
       document.getElementById('stat-toship').textContent = toShip;
+      const toshipCard = document.getElementById('stat-toship').closest('.stat-card');
+      if (toShip > 0) { toshipCard.classList.add('highlight-toship'); } else { toshipCard.classList.remove('highlight-toship'); }
     } catch (err) {
       console.error('Error loading orders:', err);
     }
