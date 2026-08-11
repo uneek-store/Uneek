@@ -987,10 +987,10 @@ async function doLogin() {
   if (!email || !password) { errEl.textContent = 'Remplis tous les champs'; errEl.style.display = 'block'; return; }
   btn.textContent = 'Connexion...'; btn.disabled = true;
   try {
-    const res = await fetch(API + '/api/customer-auth', {
+    const res = await fetch(API + '/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'login', email, password })
+      body: JSON.stringify({ action: 'customer_login', email, password })
     });
     const data = await res.json();
     if (data.success) {
@@ -1039,10 +1039,10 @@ async function doRegister() {
   if (password.length < 6) { errEl.textContent = 'Mot de passe trop court (min. 6)'; errEl.style.display = 'block'; return; }
   btn.textContent = 'Création...'; btn.disabled = true;
   try {
-    const res = await fetch(API + '/api/customer-auth', {
+    const res = await fetch(API + '/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'register', email, password, first_name, last_name, nickname })
+      body: JSON.stringify({ action: 'customer_register', email, password, first_name, last_name, nickname })
     });
     const data = await res.json();
     if (data.success) {
@@ -1116,10 +1116,10 @@ function profilePage() {
 async function loadProfileOrders() {
   if (!authToken) return;
   try {
-    const res = await fetch(API + '/api/customer-auth', {
+    const res = await fetch(API + '/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
-      body: JSON.stringify({ action: 'profile' })
+      body: JSON.stringify({ action: 'customer_profile' })
     });
     const data = await res.json();
     if (data.success && data.orders) {
@@ -1153,10 +1153,10 @@ async function updateProfile() {
   const nickname = document.getElementById('prof-nick')?.value;
   btn.textContent = 'Sauvegarde...'; btn.disabled = true;
   try {
-    const res = await fetch(API + '/api/customer-auth', {
+    const res = await fetch(API + '/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
-      body: JSON.stringify({ action: 'update_profile', first_name, last_name, nickname })
+      body: JSON.stringify({ action: 'customer_update_profile', first_name, last_name, nickname })
     });
     const data = await res.json();
     if (data.success) {
