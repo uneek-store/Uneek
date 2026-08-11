@@ -14,6 +14,16 @@ function generateOrderNumber() {
   return `UNEEK-${y}${m}${d}-${rand}`;
 }
 
+function parseToken(token) {
+  try {
+    const decoded = Buffer.from(token, "base64").toString("utf-8");
+    const [customerId] = decoded.split(":");
+    return customerId;
+  } catch {
+    return null;
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -48,15 +58,38 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Panier vide" });
       }
 
+      // Récupérer le customer_id si un token est fourni
+      let customerId = null;
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith("Bearer ")) {
+        customerId = parseToken(authHeader.split(" ")[1]);
+      }
+
       // Récupérer les vrais prix depuis la base
       const productIds = items.map((i) => i.product_id);
       const { data: products, error: prodError } = await supabaseAdmin
         .from("products")
-        .select("id, price, brand_id, name, commission_percent")
+        .select("id, price, brand_id, name, commission_percent, sizes_stock")
         .in("id", productIds);
 
       if (prodError || !products) {
         return res.status(500).json({ error: "Erreur récupération produits" });
+      }
+
+      // Vérifier le stock AVANT de créer la commande
+      for (const item of items) {
+        const product = products.find((p) => p.id === item.product_id);
+        if (!product) {
+          return res.status(400).json({ error: `Produit introuvable` });
+        }
+        if (item.size && product.sizes_stock) {
+          const available = product.sizes_stock[item.size] || 0;
+          if (available < (item.quantity || 1)) {
+            return res.status(400).json({
+              error: `Stock insuffisant pour ${product.name} taille ${item.size} (${available} restant(s))`,
+            });
+          }
+        }
       }
 
       let totalAmount = 0;
@@ -65,7 +98,8 @@ export default async function handler(req, res) {
         const product = products.find((p) => p.id === item.product_id);
         if (!product) throw new Error(`Produit ${item.product_id} non trouvé`);
 
-        const lineTotal = product.price * item.quantity;
+        const qty = item.quantity || 1;
+        const lineTotal = product.price * qty;
         const commissionPercent = product.commission_percent || 12;
         const commissionAmount = Math.round(lineTotal * commissionPercent) / 100;
         const creatorPayout = lineTotal - commissionAmount;
@@ -78,7 +112,7 @@ export default async function handler(req, res) {
           brand_id: product.brand_id,
           product_name: product.name,
           product_price: product.price,
-          quantity: item.quantity,
+          quantity: qty,
           size: item.size || null,
           color: item.color || null,
           commission_percent: commissionPercent,
@@ -88,12 +122,15 @@ export default async function handler(req, res) {
         };
       });
 
+      // Créer la commande
       const { data: order, error: orderError } = await supabaseAdmin
         .from("orders")
         .insert({
           order_number: generateOrderNumber(),
           customer_email: customer.email,
           customer_name: customer.name,
+          customer_nickname: customer.nickname || null,
+          customer_id: customerId,
           shipping_address: customer.address,
           total_amount: totalAmount,
           uneek_commission: totalCommission,
@@ -120,6 +157,21 @@ export default async function handler(req, res) {
       if (itemsError) {
         console.error("Error creating order items:", itemsError);
         return res.status(500).json({ error: "Erreur ajout produits à la commande" });
+      }
+
+      // Décrémenter le stock
+      for (const item of items) {
+        const product = products.find((p) => p.id === item.product_id);
+        if (item.size && product?.sizes_stock) {
+          const currentStock = product.sizes_stock[item.size] || 0;
+          const newStock = Math.max(0, currentStock - (item.quantity || 1));
+          const updatedSizesStock = { ...product.sizes_stock, [item.size]: newStock };
+
+          await supabaseAdmin
+            .from("products")
+            .update({ sizes_stock: updatedSizesStock })
+            .eq("id", product.id);
+        }
       }
 
       return res.status(201).json({
