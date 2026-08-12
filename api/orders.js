@@ -34,7 +34,7 @@ export default async function handler(req, res) {
   try {
     // --- GET : liste toutes les commandes avec leurs items ---
     if (req.method === "GET") {
-      const { data: orders, error } = await supabaseAdmin
+      const { data: rawOrders, error } = await supabaseAdmin
         .from("orders")
         .select("*, order_items(*, products(name), brands(name))")
         .order("created_at", { ascending: false });
@@ -44,7 +44,44 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Erreur serveur" });
       }
 
-      return res.status(200).json(orders || []);
+      // Reformatter pour le frontend admin
+      const orders = (rawOrders || []).map(order => {
+        const items = (order.order_items || []).map(item => ({
+          product_name: item.product_name || item.products?.name || "",
+          brand_name: item.brands?.name || "",
+          quantity: item.quantity,
+          size: item.size,
+          price: item.product_price,
+          commission_amount: item.commission_amount || 0,
+          creator_payout: item.creator_payout || 0,
+          fulfillment_status: item.fulfillment_status || "pending",
+        }));
+
+        // Statut global d'expédition basé sur les items
+        const statuses = items.map(i => i.fulfillment_status);
+        let shipping_status = "pending";
+        if (statuses.length > 0 && statuses.every(s => s === "shipped" || s === "delivered")) {
+          shipping_status = "shipped";
+        } else if (statuses.some(s => s === "returned")) {
+          shipping_status = "returned";
+        }
+
+        return {
+          id: order.id,
+          order_number: order.order_number,
+          customer_name: order.customer_name,
+          customer_email: order.customer_email,
+          shipping_address: order.shipping_address,
+          total_amount: order.total_amount,
+          uneek_commission: order.uneek_commission,
+          status: order.status,
+          shipping_status,
+          created_at: order.created_at,
+          items,
+        };
+      });
+
+      return res.status(200).json({ orders });
     }
 
     // --- POST : créer une nouvelle commande ---
