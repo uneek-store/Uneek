@@ -1,6 +1,6 @@
 // API : /api/brands
-// GET  → liste toutes les marques actives
-// GET  ?slug=xxx → une marque spécifique avec ses produits
+// GET → liste toutes les marques actives
+// GET ?slug=xxx → une marque spécifique avec ses produits
 
 import { supabaseAdmin } from "./lib/supabase.js";
 
@@ -31,10 +31,10 @@ export default async function handler(req, res) {
       return res.status(200).json(brand);
     }
 
-    // Liste de toutes les marques actives
+    // Liste de toutes les marques actives (avec créateur)
     const { data, error } = await supabaseAdmin
       .from("brands")
-            .select("id, name, slug, tagline, city, year, image_url, logo_url, email, products(count)")
+      .select("id, name, slug, tagline, city, year, image_url, logo_url, email, products(count), creator_accounts(full_name)")
       .eq("is_active", true)
       .order("name");
 
@@ -43,8 +43,14 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Erreur serveur" });
     }
 
-        const brands = (data || []).map(b => ({ ...b, product_count: b.products?.[0]?.count || 0, products: undefined }));
-        return res.status(200).json(brands);
+    const brands = (data || []).map(b => ({
+      ...b,
+      product_count: b.products?.[0]?.count || 0,
+      creator_name: b.creator_accounts?.[0]?.full_name || "",
+      products: undefined,
+      creator_accounts: undefined,
+    }));
+    return res.status(200).json(brands);
   } catch (err) {
     console.error("Brands API error:", err);
     return res.status(500).json({ error: "Erreur serveur" });
