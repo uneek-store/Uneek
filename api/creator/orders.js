@@ -25,7 +25,7 @@ export default async function handler(req, res) {
         .from("order_items")
         .select("*, orders(order_number, customer_name, customer_email, shipping_address, status), products(name)")
         .eq("brand_id", brand_id)
-        .order("created_at", { ascending: false });
+        ;
 
       if (error) {
         console.error("Error fetching creator orders:", error);
