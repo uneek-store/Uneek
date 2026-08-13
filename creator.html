@@ -44,6 +44,10 @@
     .login-btn { width: 100%; padding: 12px; background: var(--black); color: var(--white); border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 20px; font-family: var(--font-body); }
     .login-btn:hover { background: var(--gray-800); }
     .login-error { color: var(--red); font-size: 12px; margin-top: 8px; display: none; }
+    .login-success { color: var(--green); font-size: 12px; margin-top: 8px; display: none; }
+    .login-box input[type="text"] { width: 100%; padding: 10px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 14px; font-family: var(--font-body); }
+    .login-toggle { text-align: center; margin-top: 16px; font-size: 13px; color: var(--gray-500); }
+    .login-toggle a { color: var(--black); cursor: pointer; text-decoration: underline; font-weight: 500; }
 
     /* LAYOUT */
     .app { display: none; min-height: 100vh; }
@@ -147,6 +151,23 @@
     <input type="password" id="loginPassword" placeholder="••••••••" />
     <button class="login-btn" onclick="doLogin()">Se connecter</button>
     <div class="login-error" id="loginError">Email ou mot de passe incorrect</div>
+    <div class="login-toggle">Pas encore de compte ? <a onclick="showRegister()">Créer un compte</a></div>
+  </div>
+
+  <!-- REGISTER FORM -->
+  <div class="login-box" id="registerBox" style="display:none">
+    <h1>UNEEK</h1>
+    <p>Créer un compte créateur</p>
+    <label>Code d'invitation</label>
+    <input type="text" id="regCode" placeholder="UNEEK-XXXX" />
+    <label>Email</label>
+    <input type="email" id="regEmail" placeholder="julien@brouillon.com" />
+    <label>Mot de passe</label>
+    <input type="password" id="regPassword" placeholder="••••••••" />
+    <button class="login-btn" onclick="doRegister()">Créer un compte</button>
+    <div class="login-error" id="regError"></div>
+    <div class="login-success" id="regSuccess"></div>
+    <div class="login-toggle">Déjà un compte ? <a onclick="showLogin()">Se connecter</a></div>
   </div>
 </div>
 
@@ -578,9 +599,56 @@
     setTimeout(() => t.classList.remove('show'), 3000);
   }
 
+  // --- REGISTER / LOGIN TOGGLE ---
+  function showRegister() {
+    document.querySelector('#loginScreen > .login-box:first-child').style.display = 'none';
+    document.getElementById('registerBox').style.display = 'block';
+  }
+  function showLogin() {
+    document.querySelector('#loginScreen > .login-box:first-child').style.display = 'block';
+    document.getElementById('registerBox').style.display = 'none';
+  }
+
+  async function doRegister() {
+    const code = document.getElementById('regCode').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const errorEl = document.getElementById('regError');
+    const successEl = document.getElementById('regSuccess');
+    errorEl.style.display = 'none';
+    successEl.style.display = 'none';
+
+    if (!code || !email || !password) {
+      errorEl.textContent = 'Tous les champs sont requis';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    try {
+      const res = await fetch(API_BASE + '/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'register_creator', email, password, invite_code: code })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        errorEl.textContent = data.error || 'Erreur lors de la création du compte';
+        errorEl.style.display = 'block';
+        return;
+      }
+      successEl.textContent = 'Compte créé ! Tu peux maintenant te connecter.';
+      successEl.style.display = 'block';
+      setTimeout(() => showLogin(), 2000);
+    } catch (err) {
+      errorEl.textContent = 'Erreur de connexion au serveur';
+      errorEl.style.display = 'block';
+    }
+  }
+
   // Init
   updateSizeGrid();
   document.getElementById('loginPassword').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
+  document.getElementById('regPassword').addEventListener('keyup', e => { if (e.key === 'Enter') doRegister(); });
 </script>
 </body>
 </html>
