@@ -39,15 +39,11 @@
     .login-box h1 { font-family: var(--font-display); font-size: 24px; font-weight: 700; margin-bottom: 4px; }
     .login-box p { color: var(--gray-500); font-size: 13px; margin-bottom: 24px; }
     .login-box label { display: block; font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; margin-top: 14px; }
-    .login-box input[type="email"], .login-box input[type="password"] { width: 100%; padding: 10px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 14px; font-family: var(--font-body); }
+    .login-box input[type="email"], .login-box input[type="password"], .login-box input[type="text"] { width: 100%; padding: 10px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 14px; font-family: var(--font-body); }
     .login-box input:focus { outline: none; border-color: var(--black); }
     .login-btn { width: 100%; padding: 12px; background: var(--black); color: var(--white); border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 20px; font-family: var(--font-body); }
     .login-btn:hover { background: var(--gray-800); }
     .login-error { color: var(--red); font-size: 12px; margin-top: 8px; display: none; }
-    .login-success { color: var(--green); font-size: 12px; margin-top: 8px; display: none; }
-    .login-box input[type="text"] { width: 100%; padding: 10px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 14px; font-family: var(--font-body); }
-    .login-toggle { text-align: center; margin-top: 16px; font-size: 13px; color: var(--gray-500); }
-    .login-toggle a { color: var(--black); cursor: pointer; text-decoration: underline; font-weight: 500; }
 
     /* LAYOUT */
     .app { display: none; min-height: 100vh; }
@@ -142,7 +138,8 @@
 
 <!-- LOGIN -->
 <div class="login-wrap" id="loginScreen">
-  <div class="login-box">
+  <!-- LOGIN -->
+  <div class="login-box" id="loginBox">
     <h1>UNEEK</h1>
     <p>Espace créateur</p>
     <label>Email</label>
@@ -151,23 +148,29 @@
     <input type="password" id="loginPassword" placeholder="••••••••" />
     <button class="login-btn" onclick="doLogin()">Se connecter</button>
     <div class="login-error" id="loginError">Email ou mot de passe incorrect</div>
-    <div class="login-toggle">Pas encore de compte ? <a onclick="showRegister()">Créer un compte</a></div>
+    <div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-200)">
+      <span style="font-size:13px;color:var(--gray-500)">Pas encore de compte ?</span><br>
+      <a href="#" onclick="showRegister();return false" style="font-size:13px;color:var(--black);font-weight:600;text-decoration:underline">Créer un compte avec mon code</a>
+    </div>
   </div>
-
-  <!-- REGISTER FORM -->
+  <!-- REGISTER -->
   <div class="login-box" id="registerBox" style="display:none">
     <h1>UNEEK</h1>
-    <p>Créer un compte créateur</p>
+    <p>Créer ton compte créateur</p>
     <label>Code d'invitation</label>
-    <input type="text" id="regCode" placeholder="UNEEK-XXXX" />
+    <input type="text" id="regCode" placeholder="UNEEK-XXXX" style="text-transform:uppercase;font-family:monospace;font-weight:600;letter-spacing:2px" />
     <label>Email</label>
-    <input type="email" id="regEmail" placeholder="julien@brouillon.com" />
+    <input type="email" id="regEmail" placeholder="ton@email.com" />
     <label>Mot de passe</label>
-    <input type="password" id="regPassword" placeholder="••••••••" />
-    <button class="login-btn" onclick="doRegister()">Créer un compte</button>
-    <div class="login-error" id="regError"></div>
-    <div class="login-success" id="regSuccess"></div>
-    <div class="login-toggle">Déjà un compte ? <a onclick="showLogin()">Se connecter</a></div>
+    <input type="password" id="regPassword" placeholder="Choisis un mot de passe" />
+    <label>Confirme le mot de passe</label>
+    <input type="password" id="regPassword2" placeholder="Répète ton mot de passe" />
+    <button class="login-btn" onclick="doRegister()">Créer mon compte</button>
+    <div class="login-error" id="registerError"></div>
+    <div class="login-error" id="registerSuccess" style="color:var(--green)"></div>
+    <div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-200)">
+      <a href="#" onclick="showLogin();return false" style="font-size:13px;color:var(--gray-500);text-decoration:underline">← Retour à la connexion</a>
+    </div>
   </div>
 </div>
 
@@ -179,6 +182,7 @@
     <div class="sidebar-tag">Créateur</div>
     <a class="active" onclick="showSection('overview', this)">Vue d'ensemble</a>
     <a onclick="showSection('products', this)">Mes produits</a>
+    <a onclick="showSection('edits', this)">Mes demandes</a>
     <a onclick="showSection('orders', this)">Commandes</a>
   </div>
 
@@ -223,6 +227,20 @@
       </div>
     </div>
 
+    <!-- MES DEMANDES -->
+    <div id="sec-edits" class="section">
+      <div class="page-title">Mes demandes</div>
+      <div class="page-sub">Suivi de tes soumissions — nouveau produit ou modification</div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Produit</th><th>Détail</th><th>Date</th><th>Statut</th><th>Note UNEEK</th></tr></thead>
+            <tbody id="edits-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- COMMANDES -->
     <div id="sec-orders" class="section">
       <div class="page-title">Commandes à traiter</div>
@@ -262,6 +280,12 @@
     <label>Description</label>
     <textarea id="f-desc" placeholder="Décris ton produit..."></textarea>
 
+    <div id="commissionSection">
+      <label>Commission UNEEK (%)</label>
+      <input id="f-commission" type="number" min="1" max="100" step="1" placeholder="12" />
+      <p class="modal-note" style="margin-top:2px">Pourcentage convenu dans ton contrat avec UNEEK.</p>
+    </div>
+
     <!-- IMAGE: only for new products -->
     <div class="img-section" id="imgSection">
       <label>Image du produit</label>
@@ -270,7 +294,7 @@
       <input id="f-img" placeholder="https://..." />
     </div>
 
-    <!-- STOCK: only for new products -->
+    <!-- STOCK -->
     <div id="stockSection">
       <label>Tailles disponibles</label>
       <div class="size-checks" id="sizeChecks">
@@ -283,6 +307,7 @@
       </div>
       <label>Stock initial par taille</label>
       <div class="size-grid" id="sizeGrid"></div>
+      <p id="stockError" style="display:none;color:var(--red);font-size:12px;margin-top:6px;">Minimum 3 pièces par taille — c'est dans les règles UNEEK.</p>
     </div>
 
     <div class="modal-btns">
@@ -303,6 +328,70 @@
   let creatorName = '';
   let isEditMode = false;
   let editProductId = null;
+
+  // --- REGISTER / LOGIN TOGGLE ---
+  function showRegister() {
+    document.getElementById('loginBox').style.display = 'none';
+    document.getElementById('registerBox').style.display = 'block';
+  }
+  function showLogin() {
+    document.getElementById('registerBox').style.display = 'none';
+    document.getElementById('loginBox').style.display = 'block';
+  }
+
+  async function doRegister() {
+    const code = document.getElementById('regCode').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const password2 = document.getElementById('regPassword2').value;
+    const errorEl = document.getElementById('registerError');
+    const successEl = document.getElementById('registerSuccess');
+    errorEl.style.display = 'none';
+    successEl.style.display = 'none';
+
+    if (!code || !email || !password) {
+      errorEl.textContent = 'Tous les champs sont requis';
+      errorEl.style.display = 'block';
+      return;
+    }
+    if (password.length < 6) {
+      errorEl.textContent = 'Le mot de passe doit faire au moins 6 caractères';
+      errorEl.style.display = 'block';
+      return;
+    }
+    if (password !== password2) {
+      errorEl.textContent = 'Les mots de passe ne correspondent pas';
+      errorEl.style.display = 'block';
+      return;
+    }
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRe.test(email)) {
+      errorEl.textContent = 'Adresse email invalide';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    try {
+      const res = await fetch(API_BASE + '/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'register_creator', email, password, invite_code: code.toUpperCase() })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        errorEl.textContent = data.error || 'Erreur lors de la création du compte';
+        errorEl.style.display = 'block';
+        return;
+      }
+      successEl.textContent = 'Compte créé ! Tu peux maintenant te connecter.';
+      successEl.style.display = 'block';
+      document.getElementById('loginEmail').value = email;
+      setTimeout(() => showLogin(), 2000);
+    } catch (err) {
+      errorEl.textContent = 'Erreur de connexion au serveur';
+      errorEl.style.display = 'block';
+    }
+  }
 
   // --- LOGIN ---
   async function doLogin() {
@@ -349,7 +438,7 @@
   // --- LOAD DATA ---
   async function loadDashboard() {
     if (!currentBrand) return;
-    await Promise.all([loadProducts(), loadOrders()]);
+    await Promise.all([loadProducts(), loadOrders(), loadEdits()]);
   }
 
   async function loadProducts() {
@@ -388,7 +477,6 @@
       const data = await res.json();
       const orders = data.orders || data || [];
 
-      // Sort: à expédier first, then shipped, then returned
       const priority = { 'pending': 0, 'processing': 0, 'shipped': 1, 'delivered': 1, 'returned': 2 };
       orders.sort((a, b) => (priority[a.shipping_status] || 0) - (priority[b.shipping_status] || 0));
 
@@ -446,6 +534,48 @@
     }
   }
 
+  // --- MES DEMANDES ---
+  async function loadEdits() {
+    try {
+      const res = await fetch(API_BASE + '/creator/edits?brand_id=' + currentBrand.id, {
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+      const data = await res.json();
+      const edits = data.edits || data || [];
+      let html = '';
+      edits.forEach(e => {
+        const c = e.changes || {};
+        const name = c.name || e.products?.name || 'Sans nom';
+        let typeBadge;
+        if (e.is_new_product) {
+          typeBadge = '<span class="badge badge-blue">Nouveau produit</span>';
+        } else {
+          const mods = [];
+          if (c.price !== undefined) mods.push('prix');
+          if (c.name) mods.push('nom');
+          if (c.category) mods.push('catégorie');
+          if (c.description) mods.push('description');
+          if (c.image_url) mods.push('image');
+          if (c.sizes_stock) mods.push('stock');
+          const detail = mods.length > 0 ? 'Modif ' + mods.join(', ') : 'Modification';
+          typeBadge = '<span class="badge badge-orange">' + detail + '</span>';
+        }
+        const statusMap = {
+          'pending': '<span class="badge badge-orange">En attente</span>',
+          'approved': '<span class="badge badge-green">Approuvé</span>',
+          'rejected': '<span class="badge badge-red">Refusé</span>'
+        };
+        const statusBadge = statusMap[e.status] || '<span class="badge badge-orange">' + e.status + '</span>';
+        const date = e.created_at ? new Date(e.created_at).toLocaleDateString('fr-BE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+        const note = e.admin_note || '—';
+        html += '<tr><td class="bold">' + name + '</td><td>' + typeBadge + '</td><td class="sec">' + date + '</td><td>' + statusBadge + '</td><td class="sec">' + note + '</td></tr>';
+      });
+      document.getElementById('edits-table').innerHTML = html || '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune demande</td></tr>';
+    } catch (err) {
+      console.error('Error loading edits:', err);
+    }
+  }
+
   // --- PRODUCT MODAL ---
   function openAddModal() {
     isEditMode = false;
@@ -455,6 +585,8 @@
     document.getElementById('f-price').value = '';
     document.getElementById('f-desc').value = '';
     document.getElementById('f-img').value = '';
+    document.getElementById('f-commission').value = '';
+    document.getElementById('commissionSection').style.display = '';
     document.getElementById('imgSection').classList.add('show');
     document.getElementById('stockSection').style.display = '';
     document.querySelectorAll('#sizeChecks input').forEach((cb, i) => { cb.checked = [1,2,3,4].includes(i); });
@@ -472,6 +604,8 @@
     document.getElementById('f-price').value = p.price;
     if (p.category) document.getElementById('f-cat').value = p.category;
     document.getElementById('f-desc').value = p.description || '';
+    document.getElementById('f-commission').value = '';
+    document.getElementById('commissionSection').style.display = 'none';
     document.getElementById('imgSection').classList.remove('show');
     // Show stock section pre-populated with current values
     document.getElementById('stockSection').style.display = '';
@@ -481,7 +615,6 @@
         cb.checked = sizes.includes(cb.value);
       });
       updateSizeGrid();
-      // Fill in current stock values
       document.querySelectorAll('#sizeGrid .size-item').forEach(item => {
         const sz = item.querySelector('span').textContent;
         if (p.sizes_stock[sz] !== undefined) {
@@ -495,15 +628,47 @@
 
   function closeModal() { document.getElementById('productModal').classList.remove('show'); }
 
+  // Redimensionner et lire un fichier image en data URL
+  function resizeAndReadFile(file, maxSize) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          if (w > maxSize || h > maxSize) {
+            if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+            else { w = Math.round(w * maxSize / h); h = maxSize; }
+          }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.onerror = () => reject(new Error('Image illisible'));
+        img.src = e.target.result;
+      };
+      reader.onerror = () => reject(new Error('Erreur lecture fichier'));
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function submitProduct() {
     const name = document.getElementById('f-name').value;
     const price = document.getElementById('f-price').value;
     const category = document.getElementById('f-cat').value;
     const description = document.getElementById('f-desc').value;
+    const commission = document.getElementById('f-commission').value;
 
     if (!name || !price) { showToast('Nom et prix requis'); return; }
+    if (!isEditMode && (!commission || parseFloat(commission) < 1 || parseFloat(commission) > 100)) {
+      showToast('Commission requise (entre 1 et 100%)'); return;
+    }
 
     const body = { brand_id: currentBrand.id, name, price: parseFloat(price), category, description };
+    if (commission && parseFloat(commission) >= 1 && parseFloat(commission) <= 100) {
+      body.commission_percent = parseFloat(commission);
+    }
 
     // Always collect sizes_stock from the grid
     const sizes = {};
@@ -519,15 +684,29 @@
       body.edit_type = 'modification';
     } else {
       body.edit_type = 'new';
+      const fileInput = document.getElementById('f-file');
       const imgUrl = document.getElementById('f-img').value;
-      if (imgUrl) body.image_url = imgUrl;
-      const sizes = {};
+      if (fileInput && fileInput.files && fileInput.files[0]) {
+        try {
+          body.image_url = await resizeAndReadFile(fileInput.files[0], 800);
+        } catch (e) {
+          showToast('Erreur lecture image: ' + e.message);
+          return;
+        }
+      } else if (imgUrl) {
+        body.image_url = imgUrl;
+      }
+      // Stock min 3 validation for new products
+      let stockError = false;
       document.querySelectorAll('#sizeGrid .size-item').forEach(item => {
-        const size = item.querySelector('span').textContent;
         const qty = parseInt(item.querySelector('input').value) || 0;
-        sizes[size] = qty;
+        if (qty > 0 && qty < 3) { stockError = true; }
       });
-      body.sizes_stock = sizes;
+      if (stockError) {
+        document.getElementById('stockError').style.display = 'block';
+        return;
+      }
+      document.getElementById('stockError').style.display = 'none';
     }
 
     try {
@@ -599,56 +778,10 @@
     setTimeout(() => t.classList.remove('show'), 3000);
   }
 
-  // --- REGISTER / LOGIN TOGGLE ---
-  function showRegister() {
-    document.querySelector('#loginScreen > .login-box:first-child').style.display = 'none';
-    document.getElementById('registerBox').style.display = 'block';
-  }
-  function showLogin() {
-    document.querySelector('#loginScreen > .login-box:first-child').style.display = 'block';
-    document.getElementById('registerBox').style.display = 'none';
-  }
-
-  async function doRegister() {
-    const code = document.getElementById('regCode').value.trim();
-    const email = document.getElementById('regEmail').value.trim();
-    const password = document.getElementById('regPassword').value;
-    const errorEl = document.getElementById('regError');
-    const successEl = document.getElementById('regSuccess');
-    errorEl.style.display = 'none';
-    successEl.style.display = 'none';
-
-    if (!code || !email || !password) {
-      errorEl.textContent = 'Tous les champs sont requis';
-      errorEl.style.display = 'block';
-      return;
-    }
-
-    try {
-      const res = await fetch(API_BASE + '/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'register_creator', email, password, invite_code: code })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        errorEl.textContent = data.error || 'Erreur lors de la création du compte';
-        errorEl.style.display = 'block';
-        return;
-      }
-      successEl.textContent = 'Compte créé ! Tu peux maintenant te connecter.';
-      successEl.style.display = 'block';
-      setTimeout(() => showLogin(), 2000);
-    } catch (err) {
-      errorEl.textContent = 'Erreur de connexion au serveur';
-      errorEl.style.display = 'block';
-    }
-  }
-
   // Init
   updateSizeGrid();
   document.getElementById('loginPassword').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
-  document.getElementById('regPassword').addEventListener('keyup', e => { if (e.key === 'Enter') doRegister(); });
+  document.getElementById('regPassword2').addEventListener('keyup', e => { if (e.key === 'Enter') doRegister(); });
 </script>
 </body>
 </html>
