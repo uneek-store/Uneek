@@ -147,6 +147,8 @@ td.sec { color: var(--gray-500); }
 .stock-total { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
 .size-chip.out { background: var(--red-bg); }
 .size-chip.out .sz-qty { color: var(--red); }
+.size-chip.low { background: var(--red-bg); }
+.size-chip.low .sz-qty { color: var(--red); }
 
 /* RESPONSIVE */
 @media (max-width: 900px) {
@@ -290,7 +292,7 @@ td.sec { color: var(--gray-500); }
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Marque</th><th>Ville</th><th>Email</th><th>Produits</th><th>Statut</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Marque</th><th>Créateur</th><th>Email</th><th>Produits</th><th>Statut</th><th>Actions</th></tr></thead>
             <tbody id="brands-table"></tbody>
           </table>
         </div>
@@ -484,7 +486,7 @@ async function loadProducts() {
       const ss = p.sizes_stock;
       if (ss && typeof ss === 'object' && Object.keys(ss).length > 0) {
         const chips = Object.entries(ss).map(([sz, qty]) => {
-          const out = parseInt(qty) === 0 ? ' out' : '';
+          const qtyN = parseInt(qty); const out = qtyN === 0 ? ' out' : qtyN < 3 ? ' low' : '';
           return '<span class="size-chip' + out + '"><span class="sz-label">' + sz + '</span><span class="sz-qty">' + qty + '</span></span>';
         }).join('');
         const total = Object.values(ss).reduce((s, q) => s + (parseInt(q) || 0), 0);
@@ -514,7 +516,7 @@ async function loadBrands() {
     const brands = data.brands || data || [];
     let html = '';
     brands.forEach(b => {
-      html += '<tr><td class="bold">' + b.name + '</td><td class="sec">' + (b.city || '') + '</td><td class="sec">' + (b.email || '') + '</td><td>' + (b.product_count || 0) + '</td><td><span class="badge badge-green">Active</span></td><td><button class="btn-delete" onclick="askDeleteBrand(\'' + b.id + '\', \'' + b.name.replace(/'/g, "\\'") + '\')">Supprimer</button></td></tr>';
+      html += '<tr><td class="bold">' + b.name + '</td><td class="sec">' + (b.creator_name || '') + '</td><td class="sec">' + (b.email || '') + '</td><td>' + (b.product_count || 0) + '</td><td><span class="badge badge-green">Active</span></td><td><button class="btn-delete" onclick="askDeleteBrand(\'' + b.id + '\', \'' + b.name.replace(/'/g, "\\'") + '\')">Supprimer</button></td></tr>';
     });
     document.getElementById('brands-table').innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune marque</td></tr>';
     document.getElementById('stat-brands').textContent = brands.length;
