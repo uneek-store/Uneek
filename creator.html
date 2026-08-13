@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>UNEEK Créateur</title>
+  <title>UNEEK CrÃ©ateur</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
 
@@ -140,11 +140,11 @@
 <div class="login-wrap" id="loginScreen">
   <div class="login-box">
     <h1>UNEEK</h1>
-    <p>Espace créateur</p>
+    <p>Espace crÃ©ateur</p>
     <label>Email</label>
     <input type="email" id="loginEmail" placeholder="julien@brouillon.com" />
     <label>Mot de passe</label>
-    <input type="password" id="loginPassword" placeholder="••••••••" />
+    <input type="password" id="loginPassword" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢" />
     <button class="login-btn" onclick="doLogin()">Se connecter</button>
     <div class="login-error" id="loginError">Email ou mot de passe incorrect</div>
   </div>
@@ -154,8 +154,8 @@
 <div class="app" id="app">
   <div class="sidebar">
     <div class="sidebar-logo">UNEEK</div>
-    <div class="sidebar-brand" id="sidebarBrand">—</div>
-    <div class="sidebar-tag">Créateur</div>
+    <div class="sidebar-brand" id="sidebarBrand">â</div>
+    <div class="sidebar-tag">CrÃ©ateur</div>
     <a class="active" onclick="showSection('overview', this)">Vue d'ensemble</a>
     <a onclick="showSection('products', this)">Mes produits</a>
     <a onclick="showSection('orders', this)">Commandes</a>
@@ -169,15 +169,15 @@
       <div class="page-sub" id="welcomeSub">Tableau de bord</div>
       <div class="stats">
         <div class="stat-card"><div class="stat-label">Ventes ce mois</div><div class="stat-value" id="stat-sales">0</div></div>
-        <div class="stat-card"><div class="stat-label">Chiffre d'affaires</div><div class="stat-value" id="stat-ca">€0</div></div>
-        <div class="stat-card"><div class="stat-label">Ton revenu</div><div class="stat-value" id="stat-revenue">€0</div></div>
-        <div class="stat-card"><div class="stat-label">À expédier</div><div class="stat-value" id="stat-toship">0</div></div>
+        <div class="stat-card"><div class="stat-label">Chiffre d'affaires</div><div class="stat-value" id="stat-ca">â¬0</div></div>
+        <div class="stat-card"><div class="stat-label">Ton revenu</div><div class="stat-value" id="stat-revenue">â¬0</div></div>
+        <div class="stat-card"><div class="stat-label">Ã expÃ©dier</div><div class="stat-value" id="stat-toship">0</div></div>
       </div>
       <div class="card">
-        <div class="card-header">Commandes récentes</div>
+        <div class="card-header">Commandes rÃ©centes</div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Commande</th><th>Produit(s)</th><th>Variante</th><th>Taille</th><th>Qté</th><th>Client</th><th>Statut</th></tr></thead>
+            <thead><tr><th>Commande</th><th>Produit(s)</th><th>Variante</th><th>Taille</th><th>QtÃ©</th><th>Client</th><th>Statut</th></tr></thead>
             <tbody id="overview-orders"></tbody>
           </table>
         </div>
@@ -187,7 +187,7 @@
     <!-- MES PRODUITS -->
     <div id="sec-products" class="section">
       <div class="page-title">Mes produits</div>
-      <div class="page-sub">Le stock se met à jour automatiquement à chaque vente</div>
+      <div class="page-sub">Le stock se met Ã  jour automatiquement Ã  chaque vente</div>
       <div class="card">
         <div class="card-header">
           <span id="productCount">0 produits</span>
@@ -195,7 +195,7 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Produit</th><th>Prix</th><th>Catégorie</th><th>Stock restant</th><th>Statut</th><th></th></tr></thead>
+            <thead><tr><th>Produit</th><th>Prix</th><th>CatÃ©gorie</th><th>Stock restant</th><th>Statut</th><th></th></tr></thead>
             <tbody id="products-table"></tbody>
           </table>
         </div>
@@ -204,12 +204,12 @@
 
     <!-- COMMANDES -->
     <div id="sec-orders" class="section">
-      <div class="page-title">Commandes à traiter</div>
-      <div class="page-sub">Les commandes multi-produits sont groupées — les retours sont signalés en rouge</div>
+      <div class="page-title">Commandes Ã  traiter</div>
+      <div class="page-sub">Les commandes multi-produits sont groupÃ©es â les retours sont signalÃ©s en rouge</div>
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Commande</th><th>Produit</th><th>Variante</th><th>Taille</th><th>Qté</th><th>Client</th><th>Adresse</th><th>Tél</th><th>Statut</th><th></th></tr></thead>
+            <thead><tr><th>Commande</th><th>Produit</th><th>Variante</th><th>Taille</th><th>QtÃ©</th><th>Client</th><th>Adresse</th><th>TÃ©l</th><th>Statut</th><th></th></tr></thead>
             <tbody id="orders-table"></tbody>
           </table>
         </div>
@@ -227,10 +227,10 @@
     <label>Nom du produit</label>
     <input id="f-name" placeholder="ex: Hoodie Oversized" />
 
-    <label>Prix (€)</label>
+    <label>Prix (â¬)</label>
     <input id="f-price" type="number" placeholder="65" />
 
-    <label>Catégorie</label>
+    <label>CatÃ©gorie</label>
     <select id="f-cat">
       <option>Tops</option>
       <option>Bottoms</option>
@@ -239,7 +239,7 @@
     </select>
 
     <label>Description</label>
-    <textarea id="f-desc" placeholder="Décris ton produit..."></textarea>
+    <textarea id="f-desc" placeholder="DÃ©cris ton produit..."></textarea>
 
     <!-- IMAGE: only for new products -->
     <div class="img-section" id="imgSection">
@@ -303,11 +303,11 @@
         return;
       }
       authToken = data.token;
-      currentBrand = data.brand;
-      creatorName = data.user.contact_name || 'Créateur';
+      currentBrand = data.user.brand;
+      creatorName = data.user.name || 'CrÃ©ateur';
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('app').style.display = 'block';
-      document.getElementById('sidebarBrand').textContent = currentBrand?.name || '—';
+      document.getElementById('sidebarBrand').textContent = currentBrand?.name || 'â';
       document.getElementById('welcomeTitle').textContent = 'Bonjour, ' + creatorName.split(' ')[0];
       document.getElementById('welcomeSub').textContent = 'Tableau de bord ' + (currentBrand?.name || '');
       loadDashboard();
@@ -350,7 +350,7 @@
         const encoded = encodeURIComponent(JSON.stringify({
           id: p.id, name: p.name, price: p.price, category: p.category, description: p.description, sizes_stock: p.sizes_stock
         }));
-        html += '<tr><td class="bold">' + p.name + '</td><td>&euro;' + p.price + '</td><td class="sec">' + (p.category || '') + '</td><td class="sec">' + stockStr + '</td><td><span class="badge badge-green">Publié</span></td><td><button class="btn-edit" onclick="openEditModal(\'' + encoded + '\')">Modifier</button></td></tr>';
+        html += '<tr><td class="bold">' + p.name + '</td><td>&euro;' + p.price + '</td><td class="sec">' + (p.category || '') + '</td><td class="sec">' + stockStr + '</td><td><span class="badge badge-green">PubliÃ©</span></td><td><button class="btn-edit" onclick="openEditModal(\'' + encoded + '\')">Modifier</button></td></tr>';
       });
       document.getElementById('products-table').innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucun produit</td></tr>';
       document.getElementById('productCount').textContent = products.length + ' produit' + (products.length > 1 ? 's' : '');
@@ -367,7 +367,7 @@
       const data = await res.json();
       const orders = data.orders || data || [];
 
-      // Sort: à expédier first, then shipped, then returned
+      // Sort: Ã  expÃ©dier first, then shipped, then returned
       const priority = { 'pending': 0, 'processing': 0, 'shipped': 1, 'delivered': 1, 'returned': 2 };
       orders.sort((a, b) => (priority[a.shipping_status] || 0) - (priority[b.shipping_status] || 0));
 
@@ -381,8 +381,8 @@
       orders.forEach(order => {
         const items = order.items || [order];
         const productStr = items.map(i => (i.product_name || i.name)).join(' + ');
-        const varianteStr = items.map(i => i.color || '—').join(', ');
-        const tailleStr = items.map(i => i.size || '—').join(', ');
+        const varianteStr = items.map(i => i.color || 'â').join(', ');
+        const tailleStr = items.map(i => i.size || 'â').join(', ');
         const totalQty = items.reduce((s, i) => s + (i.quantity || 1), 0);
         const statusBadge = getShippingBadge(order.shipping_status);
         const isFaded = ['shipped', 'delivered', 'returned'].includes(order.shipping_status);
@@ -403,22 +403,22 @@
           items.forEach((item, idx) => {
             const rowCls = isFaded ? 'faded grp' : 'grp';
             if (idx === 0) {
-              ordersHtml += '<tr class="' + rowCls + '"><td class="bold" rowspan="' + items.length + '">' + shortOrder(order.order_number) + '</td><td class="sec">' + (item.product_name || item.name) + '</td><td class="sec">' + (item.color || '—') + '</td><td>' + (item.size || '—') + '</td><td>' + (item.quantity || 1) + '</td><td class="sec" rowspan="' + items.length + '">' + (order.customer_name || '') + '</td><td class="sec" rowspan="' + items.length + '">' + (order.shipping_address || '') + '</td><td class="sec" rowspan="' + items.length + '">' + (order.customer_phone || '') + '</td><td rowspan="' + items.length + '">' + statusBadge + '</td><td rowspan="' + items.length + '">' + getActionBtn(order) + '</td></tr>';
+              ordersHtml += '<tr class="' + rowCls + '"><td class="bold" rowspan="' + items.length + '">' + shortOrder(order.order_number) + '</td><td class="sec">' + (item.product_name || item.name) + '</td><td class="sec">' + (item.color || 'â') + '</td><td>' + (item.size || 'â') + '</td><td>' + (item.quantity || 1) + '</td><td class="sec" rowspan="' + items.length + '">' + (order.customer_name || '') + '</td><td class="sec" rowspan="' + items.length + '">' + (order.shipping_address || '') + '</td><td class="sec" rowspan="' + items.length + '">' + (order.customer_phone || '') + '</td><td rowspan="' + items.length + '">' + statusBadge + '</td><td rowspan="' + items.length + '">' + getActionBtn(order) + '</td></tr>';
             } else {
-              ordersHtml += '<tr class="' + rowCls + ' grp-sub"><td class="sec">' + (item.product_name || item.name) + '</td><td class="sec">' + (item.color || '—') + '</td><td>' + (item.size || '—') + '</td><td>' + (item.quantity || 1) + '</td></tr>';
+              ordersHtml += '<tr class="' + rowCls + ' grp-sub"><td class="sec">' + (item.product_name || item.name) + '</td><td class="sec">' + (item.color || 'â') + '</td><td>' + (item.size || 'â') + '</td><td>' + (item.quantity || 1) + '</td></tr>';
             }
           });
         } else {
           const item = items[0];
-          ordersHtml += '<tr' + fadedAttr + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + (item.product_name || item.name || '') + '</td><td class="sec">' + (item.color || '—') + '</td><td>' + (item.size || '—') + '</td><td>' + (item.quantity || 1) + '</td><td class="sec">' + (order.customer_name || '') + '</td><td class="sec">' + (order.shipping_address || '') + '</td><td class="sec">' + (order.customer_phone || '') + '</td><td>' + statusBadge + '</td><td>' + getActionBtn(order) + '</td></tr>';
+          ordersHtml += '<tr' + fadedAttr + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + (item.product_name || item.name || '') + '</td><td class="sec">' + (item.color || 'â') + '</td><td>' + (item.size || 'â') + '</td><td>' + (item.quantity || 1) + '</td><td class="sec">' + (order.customer_name || '') + '</td><td class="sec">' + (order.shipping_address || '') + '</td><td class="sec">' + (order.customer_phone || '') + '</td><td>' + statusBadge + '</td><td>' + getActionBtn(order) + '</td></tr>';
         }
       });
 
       document.getElementById('overview-orders').innerHTML = overviewHtml || '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
       document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
       document.getElementById('stat-sales').textContent = totalSales;
-      document.getElementById('stat-ca').textContent = '€' + totalCA.toFixed(0);
-      document.getElementById('stat-revenue').textContent = '€' + totalRevenue.toFixed(0);
+      document.getElementById('stat-ca').textContent = 'â¬' + totalCA.toFixed(0);
+      document.getElementById('stat-revenue').textContent = 'â¬' + totalRevenue.toFixed(0);
       document.getElementById('stat-toship').textContent = toShip;
     } catch (err) {
       console.error('Error loading orders:', err);
@@ -468,7 +468,7 @@
         }
       });
     }
-    document.getElementById('modalNote').textContent = "Les photos sont gérées par l'admin.";
+    document.getElementById('modalNote').textContent = "Les photos sont gÃ©rÃ©es par l'admin.";
     document.getElementById('productModal').classList.add('show');
   }
 
@@ -516,7 +516,7 @@
         body: JSON.stringify(body)
       });
       closeModal();
-      showToast(isEditMode ? '✓ Modification soumise — UNEEK te notifiera' : '✓ Nouveau produit soumis — UNEEK validera avant publication');
+      showToast(isEditMode ? 'â Modification soumise â UNEEK te notifiera' : 'â Nouveau produit soumis â UNEEK validera avant publication');
       setTimeout(() => loadProducts(), 1000);
     } catch (err) {
       showToast('Erreur: ' + err.message);
@@ -544,7 +544,7 @@
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
         body: JSON.stringify({ order_item_id: orderId, action: 'ship' })
       });
-      showToast('✓ Marqué comme expédié — le client est notifié');
+      showToast('â MarquÃ© comme expÃ©diÃ© â le client est notifiÃ©');
       setTimeout(() => loadOrders(), 1000);
     } catch (err) {
       showToast('Erreur: ' + err.message);
@@ -552,23 +552,23 @@
   }
 
   // --- HELPERS ---
-  function shortOrder(num) { return num ? '…' + num.slice(-4) : ''; }
+  function shortOrder(num) { return num ? 'â¦' + num.slice(-4) : ''; }
 
   function getShippingBadge(status) {
     const map = {
-      'pending': '<span class="badge badge-orange">À expédier</span>',
-      'processing': '<span class="badge badge-orange">À expédier</span>',
-      'shipped': '<span class="badge badge-green">Expédié</span>',
-      'delivered': '<span class="badge badge-green">Expédié</span>',
+      'pending': '<span class="badge badge-orange">Ã expÃ©dier</span>',
+      'processing': '<span class="badge badge-orange">Ã expÃ©dier</span>',
+      'shipped': '<span class="badge badge-green">ExpÃ©diÃ©</span>',
+      'delivered': '<span class="badge badge-green">ExpÃ©diÃ©</span>',
       'returned': '<span class="badge badge-red">En retour</span>'
     };
-    return map[status] || '<span class="badge badge-orange">À expédier</span>';
+    return map[status] || '<span class="badge badge-orange">Ã expÃ©dier</span>';
   }
 
   function getActionBtn(order) {
-    if (order.shipping_status === 'returned') return '<span class="return-mark">↩ Retour</span>';
-    if (['shipped', 'delivered'].includes(order.shipping_status)) return '<span class="done-mark">✓</span>';
-    return '<button class="btn-ship" onclick="markShipped(\'' + order.id + '\', this)">Expédié</button>';
+    if (order.shipping_status === 'returned') return '<span class="return-mark">â© Retour</span>';
+    if (['shipped', 'delivered'].includes(order.shipping_status)) return '<span class="done-mark">â</span>';
+    return '<button class="btn-ship" onclick="markShipped(\'' + order.id + '\', this)">ExpÃ©diÃ©</button>';
   }
 
   function showToast(msg) {
