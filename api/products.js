@@ -47,7 +47,12 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Erreur serveur" });
     }
 
-    return res.status(200).json(data || []);
+    // Map image_urls array to image_url for frontend
+    const products = (data || []).map(p => ({
+      ...p,
+      image_url: (p.image_urls && p.image_urls.length > 0) ? p.image_urls[0] : ''
+    }));
+    return res.status(200).json(products);
   } catch (err) {
     console.error("Products API error:", err);
     return res.status(500).json({ error: "Erreur serveur" });
