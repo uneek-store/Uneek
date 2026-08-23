@@ -281,7 +281,7 @@
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Produit</th><th>Détail</th><th>Date</th><th>Statut</th><th>Note UNEEK</th></tr></thead>
+            <thead><tr><th>Produit</th><th style="min-width:280px">Détail de la demande</th><th>Date</th><th>Statut</th><th>Note UNEEK</th></tr></thead>
             <tbody id="edits-table"></tbody>
           </table>
         </div>
@@ -576,7 +576,7 @@
           : (p.stock_quantity || 0);
         const encoded = encodeURIComponent(JSON.stringify({
           id: p.id, name: p.name, price: p.price, category: p.category, description: p.description,
-          commission_percent: p.commission_percent, variants: p.variants
+          commission_percent: p.commission_percent, variants: p.variants, sizes_stock: p.sizes_stock
         }));
         // Le statut etait code en dur sur "Publie" : un produit en attente
         // de validation s'affichait comme publie chez le createur.
@@ -665,19 +665,24 @@
       edits.forEach(e => {
         const c = e.changes || {};
         const name = c.name || e.products?.name || 'Sans nom';
+        // Detail exact de ce qui a ete demande, valeur avant -> valeur apres
         let typeBadge;
         if (e.is_new_product) {
-          typeBadge = '<span class="badge badge-blue">Nouveau produit</span>';
+          typeBadge = '<span class="badge badge-blue">Nouveau produit</span>'
+            + '<div style="margin-top:6px;font-size:12px;color:var(--gray-500);line-height:1.7">'
+            + (c.price !== undefined ? '<div>&rsaquo; Prix : ' + esc(c.price) + ' €</div>' : '')
+            + (c.category ? '<div>&rsaquo; Catégorie : ' + esc(c.category) + '</div>' : '')
+            + (Array.isArray(c.variants) && c.variants.length ? '<div>&rsaquo; Variantes : ' + esc(c.variants.join(', ')) + '</div>' : '')
+            + (c.image_url ? '<div>&rsaquo; Photo fournie</div>' : '<div style="color:var(--red)">&rsaquo; Aucune photo</div>')
+            + '</div>';
         } else {
-          const mods = [];
-          if (c.price !== undefined) mods.push('prix');
-          if (c.name) mods.push('nom');
-          if (c.category) mods.push('catégorie');
-          if (c.description) mods.push('description');
-          if (c.image_url) mods.push('image');
-          if (c.sizes_stock) mods.push('stock');
-          const detail = mods.length > 0 ? 'Modif ' + mods.join(', ') : 'Modification';
-          typeBadge = '<span class="badge badge-orange">' + detail + '</span>';
+          const diffs = describeChanges(c, e.products);
+          typeBadge = '<span class="badge badge-orange">' + esc(shortChangeLabel(c)) + '</span>'
+            + (diffs.length
+              ? '<div style="margin-top:6px;padding:8px 12px;background:var(--orange-bg);border-radius:8px;font-size:12px;line-height:1.7">'
+                + diffs.map(d => '<div>&rsaquo; ' + esc(d) + '</div>').join('')
+                + '</div>'
+              : '');
         }
         const statusMap = {
           'pending': '<span class="badge badge-orange">En attente</span>',
@@ -687,12 +692,68 @@
         const statusBadge = statusMap[e.status] || '<span class="badge badge-orange">' + e.status + '</span>';
         const date = e.created_at ? new Date(e.created_at).toLocaleDateString('fr-BE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
         const note = e.admin_note || '—';
-        html += '<tr><td class="bold">' + name + '</td><td>' + typeBadge + '</td><td class="sec">' + date + '</td><td>' + statusBadge + '</td><td class="sec">' + note + '</td></tr>';
+        html += '<tr><td class="bold">' + esc(name) + '</td><td>' + typeBadge + '</td><td class="sec">' + date + '</td><td>' + statusBadge + '</td><td class="sec">' + note + '</td></tr>';
       });
       document.getElementById('edits-table').innerHTML = html || '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune demande</td></tr>';
     } catch (err) {
       console.error('Error loading edits:', err);
     }
+  }
+
+  // Decrit precisement ce que le createur demande de changer :
+  // "Prix : 65 EUR -> 69 EUR" plutot qu'un vague "Modification".
+  function describeChanges(c, before) {
+    c = c || {};
+    const b = before || {};
+    const out = [];
+    const money = v => (v === undefined || v === null || v === '') ? '—' : v + ' €';
+    const list = v => (Array.isArray(v) && v.length) ? v.join(', ') : 'aucune';
+    const stock = v => (v && Object.keys(v).length)
+      ? Object.keys(v).map(k => k + ':' + v[k]).join(' · ') : '—';
+
+    if (c.name !== undefined && c.name !== b.name) {
+      out.push('Nom : ' + (b.name || '—') + ' → ' + c.name);
+    }
+    if (c.price !== undefined && parseFloat(c.price) !== parseFloat(b.price)) {
+      out.push('Prix : ' + money(b.price) + ' → ' + money(c.price));
+    }
+    if (c.category !== undefined && c.category !== b.category) {
+      out.push('Catégorie : ' + (b.category || '—') + ' → ' + c.category);
+    }
+    if (c.description !== undefined && c.description !== b.description) {
+      out.push('Description modifiée');
+    }
+    if (c.image_url) {
+      out.push('Photo : nouvelle image proposée');
+    }
+    if (c.variants !== undefined && list(c.variants) !== list(b.variants)) {
+      out.push('Variantes : ' + list(b.variants) + ' → ' + list(c.variants));
+    }
+    if (c.commission_percent !== undefined
+        && parseFloat(c.commission_percent) !== parseFloat(b.commission_percent)) {
+      const bc = (b.commission_percent === undefined || b.commission_percent === null)
+        ? '—' : b.commission_percent + ' %';
+      out.push('Commission : ' + bc + ' → ' + c.commission_percent + ' %');
+    }
+    if (c.sizes_stock && stock(c.sizes_stock) !== stock(b.sizes_stock)) {
+      out.push('Stock : ' + stock(b.sizes_stock) + ' → ' + stock(c.sizes_stock));
+    }
+    return out;
+  }
+
+  // Etiquette courte pour le badge : "Modif prix, variantes"
+  function shortChangeLabel(c) {
+    c = c || {};
+    const parts = [];
+    if (c.name !== undefined) parts.push('nom');
+    if (c.price !== undefined) parts.push('prix');
+    if (c.category !== undefined) parts.push('catégorie');
+    if (c.description !== undefined) parts.push('description');
+    if (c.image_url) parts.push('photo');
+    if (c.variants !== undefined) parts.push('variantes');
+    if (c.commission_percent !== undefined) parts.push('commission');
+    if (c.sizes_stock) parts.push('stock');
+    return parts.length ? 'Modif ' + parts.join(', ') : 'Modification';
   }
 
   // --- DIALOGUE GENERIQUE ---
@@ -744,8 +805,16 @@
     document.getElementById('f-img').value = '';
     document.getElementById('f-file').value = '';
     document.getElementById('imgSection').classList.add('show');
-    document.getElementById('stockSection').style.display = 'none';
-    document.getElementById('modalNote').textContent = "La modification sera validée par UNEEK.";
+    // Le stock etait masque en modification : il est desormais modifiable et
+    // s'applique immediatement, sans validation.
+    document.getElementById('stockSection').style.display = '';
+    const stock = p.sizes_stock || {};
+    document.querySelectorAll('#sizeChecks input').forEach(cb => {
+      cb.checked = Object.prototype.hasOwnProperty.call(stock, cb.value);
+    });
+    updateSizeGrid(stock);
+    document.getElementById('modalNote').innerHTML =
+      "Le <strong>stock</strong> est mis \u00e0 jour imm\u00e9diatement.<br>Les autres changements (nom, prix, photo, variantes\u2026) sont soumis \u00e0 la validation d'UNEEK.";
     document.getElementById('productModal').classList.add('show');
   }
 
@@ -824,6 +893,12 @@
       } else if (editUrl) {
         body.image_url = editUrl;
       }
+      const editSizes = {};
+      document.querySelectorAll('#sizeGrid .size-item').forEach(item => {
+        editSizes[item.querySelector('span').textContent] =
+          parseInt(item.querySelector('input').value) || 0;
+      });
+      if (Object.keys(editSizes).length > 0) body.sizes_stock = editSizes;
     } else {
       body.edit_type = 'new';
       // Le champ fichier n'etait plus lu du tout : l'image etait ignoree en silence.
@@ -849,21 +924,36 @@
     }
 
     try {
-      await fetch(API_BASE + '/creator/products', {
+      const res = await fetch(API_BASE + '/creator/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
         body: JSON.stringify(body)
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { showToast(data.error || 'Erreur lors de l\'envoi'); return; }
       closeModal();
-      showToast(isEditMode ? '✓ Modification soumise — UNEEK te notifiera' : '✓ Nouveau produit soumis — UNEEK validera avant publication');
-      setTimeout(() => loadProducts(), 1000);
+      if (!isEditMode) {
+        showToast('✓ Nouveau produit soumis — UNEEK validera avant publication');
+      } else if (data.stock_only) {
+        showToast('✓ Stock mis à jour');
+      } else if (data.stock_applied) {
+        showToast('✓ Stock mis à jour — les autres changements attendent UNEEK');
+      } else {
+        showToast('✓ Modification soumise — UNEEK te notifiera');
+      }
+      setTimeout(() => { loadProducts(); loadEdits(); }, 1000);
     } catch (err) {
       showToast('Erreur: ' + err.message);
     }
   }
 
-  function updateSizeGrid() {
+  function updateSizeGrid(values) {
     const grid = document.getElementById('sizeGrid');
+    // On conserve ce qui est deja saisi pour ne pas le perdre en cochant une taille
+    const existing = {};
+    grid.querySelectorAll('.size-item').forEach(it => {
+      existing[it.querySelector('span').textContent] = it.querySelector('input').value;
+    });
     const checked = [];
     document.querySelectorAll('#sizeChecks input:checked').forEach(cb => checked.push(cb.value));
     grid.innerHTML = '';
@@ -871,6 +961,8 @@
       const div = document.createElement('div'); div.className = 'size-item';
       const span = document.createElement('span'); span.textContent = sz;
       const input = document.createElement('input'); input.type = 'number'; input.placeholder = '0'; input.min = '0';
+      if (values && values[sz] !== undefined) input.value = values[sz];
+      else if (existing[sz] !== undefined) input.value = existing[sz];
       div.appendChild(span); div.appendChild(input); grid.appendChild(div);
     });
   }

@@ -366,6 +366,68 @@
     }
   }
 
+  function esc(v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // Decrit precisement ce que le createur demande de changer :
+  // "Prix : 65 EUR -> 69 EUR" plutot qu'un vague "Modification".
+  function describeChanges(c, before) {
+    c = c || {};
+    const b = before || {};
+    const out = [];
+    const money = v => (v === undefined || v === null || v === '') ? '—' : v + ' €';
+    const list = v => (Array.isArray(v) && v.length) ? v.join(', ') : 'aucune';
+    const stock = v => (v && Object.keys(v).length)
+      ? Object.keys(v).map(k => k + ':' + v[k]).join(' · ') : '—';
+
+    if (c.name !== undefined && c.name !== b.name) {
+      out.push('Nom : ' + (b.name || '—') + ' → ' + c.name);
+    }
+    if (c.price !== undefined && parseFloat(c.price) !== parseFloat(b.price)) {
+      out.push('Prix : ' + money(b.price) + ' → ' + money(c.price));
+    }
+    if (c.category !== undefined && c.category !== b.category) {
+      out.push('Catégorie : ' + (b.category || '—') + ' → ' + c.category);
+    }
+    if (c.description !== undefined && c.description !== b.description) {
+      out.push('Description modifiée');
+    }
+    if (c.image_url) {
+      out.push('Photo : nouvelle image proposée');
+    }
+    if (c.variants !== undefined && list(c.variants) !== list(b.variants)) {
+      out.push('Variantes : ' + list(b.variants) + ' → ' + list(c.variants));
+    }
+    if (c.commission_percent !== undefined
+        && parseFloat(c.commission_percent) !== parseFloat(b.commission_percent)) {
+      const bc = (b.commission_percent === undefined || b.commission_percent === null)
+        ? '—' : b.commission_percent + ' %';
+      out.push('Commission : ' + bc + ' → ' + c.commission_percent + ' %');
+    }
+    if (c.sizes_stock && stock(c.sizes_stock) !== stock(b.sizes_stock)) {
+      out.push('Stock : ' + stock(b.sizes_stock) + ' → ' + stock(c.sizes_stock));
+    }
+    return out;
+  }
+
+  // Etiquette courte pour le badge : "Modif prix, variantes"
+  function shortChangeLabel(c) {
+    c = c || {};
+    const parts = [];
+    if (c.name !== undefined) parts.push('nom');
+    if (c.price !== undefined) parts.push('prix');
+    if (c.category !== undefined) parts.push('catégorie');
+    if (c.description !== undefined) parts.push('description');
+    if (c.image_url) parts.push('photo');
+    if (c.variants !== undefined) parts.push('variantes');
+    if (c.commission_percent !== undefined) parts.push('commission');
+    if (c.sizes_stock) parts.push('stock');
+    return parts.length ? 'Modif ' + parts.join(', ') : 'Modification';
+  }
+
   // --- DIALOGUE DE CONFIRMATION ---
   let confirmCallback = null;
 
@@ -589,7 +651,9 @@
       items.forEach(p => {
         const c = p.changes || {};
         const isNew = p.is_new_product;
-        const typeBadge = isNew ? '<span class="badge badge-blue">Nouveau produit</span>' : '<span class="badge badge-orange">Modification</span>';
+        const typeBadge = isNew
+        ? '<span class="badge badge-blue">Nouveau produit</span>'
+        : '<span class="badge badge-orange">' + esc(shortChangeLabel(c)) + '</span>';
         const hasPhoto = !!(c.image_url || p.image_url);
       const photoWarn = hasPhoto ? '' : '<br><span style="color:var(--red);font-weight:500">Aucune photo fournie par le créateur</span>';
       const imgUrl = c.image_url || p.image_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%234A5568' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%23fff' font-size='11' font-family='sans-serif'%3EAucune photo%3C/text%3E%3C/svg%3E";
@@ -600,23 +664,16 @@
         const commissionStr = c.commission_percent ? '<br><span style="color:var(--blue);font-weight:500">Commission: ' + c.commission_percent + '%</span>' : '';
 
         // Pour les modifications, construire un résumé des changements
+        // Detail ligne par ligne : ancienne valeur -> nouvelle valeur
         let changesStr = '';
-        if (!isNew && p.products) {
-          const diffs = [];
-          if (c.price !== undefined && p.products.price !== undefined && parseFloat(c.price) !== parseFloat(p.products.price)) {
-            diffs.push('Prix: €' + p.products.price + ' → €' + c.price);
-          }
-          if (c.name && p.products.name && c.name !== p.products.name) {
-            diffs.push('Nom: ' + p.products.name + ' → ' + c.name);
-          }
-          if (c.category && p.products.category && c.category !== p.products.category) {
-            diffs.push('Catégorie: ' + p.products.category + ' → ' + c.category);
-          }
-          if (c.description && p.products.description && c.description !== p.products.description) {
-            diffs.push('Description modifiée');
-          }
+        if (!isNew) {
+          const diffs = describeChanges(c, p.products);
           if (diffs.length > 0) {
-            changesStr = '<br><span style="color:var(--orange);font-weight:500">' + diffs.join(' · ') + '</span>';
+            changesStr = '<div style="margin-top:6px;padding:8px 12px;background:var(--orange-bg);border-radius:8px;color:var(--gray-800);font-size:12px;line-height:1.7">'
+              + diffs.map(d => '<div>&rsaquo; ' + esc(d) + '</div>').join('')
+              + '</div>';
+          } else {
+            changesStr = '<br><span style="color:var(--gray-400)">Aucun changement d\u00e9tectable</span>';
           }
         }
 

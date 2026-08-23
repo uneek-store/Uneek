@@ -57,10 +57,40 @@ export default async function handler(req, res) {
         if (commission_percent !== undefined && commission_percent !== null) {
           changes.commission_percent = parseFloat(commission_percent);
         }
-        if (sizes_stock) changes.sizes_stock = sizes_stock;
+        // Le stock est operationnel, pas editorial : il s'applique tout de
+        // suite, sans validation. Tout le reste passe par l'admin.
+        let stockApplied = false;
+        if (sizes_stock && Object.keys(sizes_stock).length > 0) {
+          const totalStock = Object.values(sizes_stock).reduce(
+            (s, q) => s + (parseInt(q) || 0), 0);
+          const { error: stockError } = await supabaseAdmin
+            .from("products")
+            .update({
+              sizes_stock,
+              sizes: Object.keys(sizes_stock),
+              stock: totalStock,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", product_id)
+            .eq("brand_id", brand_id);
 
+          if (stockError) {
+            console.error("Error updating stock:", stockError);
+            return res.status(500).json({ error: "Erreur mise à jour du stock" });
+          }
+          stockApplied = true;
+        }
+
+        // Rien d'autre que le stock : pas de demande a creer.
         if (Object.keys(changes).length === 0) {
-          return res.status(400).json({ error: "Aucune modification a soumettre" });
+          if (stockApplied) {
+            return res.status(200).json({
+              success: true,
+              stock_only: true,
+              message: "Stock mis à jour",
+            });
+          }
+          return res.status(400).json({ error: "Aucune modification à soumettre" });
         }
 
         const { data: edit, error } = await supabaseAdmin
@@ -83,7 +113,10 @@ export default async function handler(req, res) {
 
         return res.status(200).json({
           success: true,
-          message: "Modification soumise — en attente de validation par UNEEK",
+          stock_applied: stockApplied,
+          message: stockApplied
+            ? "Stock mis à jour. Les autres changements sont soumis à validation UNEEK."
+            : "Modification soumise — en attente de validation par UNEEK",
           edit_id: edit.id,
         });
       }
