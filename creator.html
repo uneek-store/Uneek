@@ -469,11 +469,12 @@
   let isEditMode = false;
   let editProductId = null;
   let loadedProducts = [];
+  let originalProduct = null;
 
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-08-23-stock-photos-5';
+  const APP_VERSION = '2026-08-23-diff-reel-6';
 
   async function checkAppVersion() {
     try {
@@ -635,7 +636,7 @@
         const stockStr = (p.sizes_stock && Object.keys(p.sizes_stock).length)
           ? Object.keys(p.sizes_stock).map(t => {
               const q = parseInt(p.sizes_stock[t]) || 0;
-              const cls = q === 0 ? 'size-chip out' : (q < 3 ? 'size-chip low' : 'size-chip');
+              const cls = q === 0 ? 'size-chip out' : (q <= 3 ? 'size-chip low' : 'size-chip');
               return '<span class="' + cls + '"><span class="sz-label">' + esc(t) + '</span><span class="sz-qty">' + q + '</span></span>';
             }).join('')
           : '<span style="color:var(--gray-400)">' + (p.stock || p.stock_quantity || 0) + '</span>';
@@ -904,6 +905,7 @@
     document.getElementById('f-file').value = '';
     selectedImages = [];
     renderImagePreviews();
+    originalProduct = null;
     const errEl = document.getElementById('stockError');
     if (errEl) errEl.style.display = 'none';
     document.getElementById('f-commission').value = '';
@@ -933,6 +935,16 @@
     // On repart des photos actuelles : le createur peut en retirer et en ajouter.
     selectedImages = Array.isArray(p.image_urls) ? p.image_urls.slice(0, MAX_IMAGES) : [];
     renderImagePreviews();
+    // Etat de depart : on ne soumettra que ce qui aura reellement change.
+    originalProduct = {
+      name: p.name || '',
+      price: String(p.price === undefined || p.price === null ? '' : p.price),
+      category: p.category || '',
+      description: p.description || '',
+      commission: String(p.commission_percent === undefined || p.commission_percent === null ? '' : p.commission_percent),
+      variants: (p.variants || []).join(', '),
+      images: selectedImages.slice(),
+    };
     document.getElementById('imgSection').classList.add('show');
     // Le stock etait masque en modification : il est desormais modifiable et
     // s'applique immediatement, sans validation.
@@ -977,7 +989,21 @@
 
   // Attache les photos au corps de la requete. image_url reste renseigne
   // avec la principale : d'anciens appels et d'anciennes lignes s'en servent.
-  function attachImages(body) {
+  function imagesOntChange() {
+    const av = (originalProduct && originalProduct.images) || [];
+    if (selectedImages.length !== av.length) return true;
+    return selectedImages.some((src, i) => src !== av[i]);
+  }
+
+  function attachImages(body, enModification) {
+    if (enModification) {
+      // Les photos n'etaient renvoyees qu'en cas de changement reel : sinon
+      // une simple correction de stock creait une demande "Photos remplacees".
+      if (!imagesOntChange()) return;
+      body.image_urls = selectedImages;
+      body.image_url = selectedImages[0] || '';
+      return;
+    }
     if (selectedImages.length > 0) {
       body.image_urls = selectedImages;
       body.image_url = selectedImages[0];
@@ -1026,8 +1052,17 @@
     if (isEditMode) {
       body.product_id = editProductId;
       body.edit_type = 'modification';
-      // Le champ image etait visible en modification mais jamais envoye.
-      attachImages(body);
+      // Tous les champs etaient envoyes systematiquement : la moindre
+      // modification de stock creait donc une demande de validation, avec
+      // un faux "Photos remplacees". On ne garde que ce qui a bouge.
+      const o = originalProduct || {};
+      if (String(name) === String(o.name)) delete body.name;
+      if (String(price) === String(o.price)) delete body.price;
+      if (String(category) === String(o.category)) delete body.category;
+      if (String(description) === String(o.description)) delete body.description;
+      if (String(commissionVal) === String(o.commission)) delete body.commission_percent;
+      if (variants.join(', ') === o.variants) delete body.variants;
+      attachImages(body, true);
       const editSizes = {};
       document.querySelectorAll('#sizeGrid .size-item').forEach(item => {
         editSizes[item.querySelector('span').textContent] =
@@ -1036,7 +1071,7 @@
       if (Object.keys(editSizes).length > 0) body.sizes_stock = editSizes;
     } else {
       body.edit_type = 'new';
-      attachImages(body);
+      attachImages(body, false);
       // Regle UNEEK : au moins 3 pieces par taille proposee.
       const fautives = [];
       document.querySelectorAll('#sizeGrid .size-item').forEach(item => {

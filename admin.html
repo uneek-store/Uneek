@@ -220,7 +220,7 @@
     <a onclick="showSection('products', this)">Produits</a>
     <a onclick="showSection('brands', this)">Marques</a>
     <a onclick="showSection('finances', this)">Finances</a>
-    <a onclick="showSection('applications', this)">Candidatures</a>
+    <a onclick="showSection('applications', this)">Candidatures <span class="badge-count" id="applicationsCount">0</span></a>
   </div>
 
   <div class="main">
@@ -389,7 +389,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-08-23-stock-photos-5';
+  const APP_VERSION = '2026-08-23-diff-reel-6';
 
   async function checkAppVersion() {
     try {
@@ -635,7 +635,7 @@
         if (ss && typeof ss === 'object' && Object.keys(ss).length > 0) {
           const chips = Object.keys(ss).map(t => {
             const q = parseInt(ss[t]) || 0;
-            const cls = q === 0 ? 'size-chip out' : (q < 3 ? 'size-chip low' : 'size-chip');
+            const cls = q === 0 ? 'size-chip out' : (q <= 3 ? 'size-chip low' : 'size-chip');
             return '<span class="' + cls + '"><span class="sz-label">' + esc(t) + '</span><span class="sz-qty">' + q + '</span></span>';
           }).join('');
           const total = Object.keys(ss).reduce((n, t) => n + (parseInt(ss[t]) || 0), 0);
@@ -781,7 +781,9 @@
           '</div></div>';
       });
       document.getElementById('pending-list').innerHTML = html || '<div style="text-align:center;padding:32px;color:var(--gray-400)">Aucune demande</div>';
-      document.getElementById('pendingCount').textContent = pendingCount > 0 ? pendingCount : '';
+      const pastillePending = document.getElementById('pendingCount');
+      pastillePending.textContent = pendingCount > 0 ? pendingCount : '';
+      pastillePending.style.display = pendingCount > 0 ? '' : 'none';
       document.getElementById('stat-pending').textContent = pendingCount;
     } catch (err) {
       console.error('Error loading pending:', err);
@@ -794,9 +796,11 @@
       const data = await res.json();
       const apps = data.applications || data || [];
       let html = '';
+      let attente = 0;
       apps.forEach(a => {
         // Les candidatures acceptees / refusees n'etaient pas gerees : le code
         // d'invitation genere par l'API n'etait donc jamais affiche a l'admin.
+        if (!['accepted', 'rejected'].includes(a.status)) attente++;
         let statusBadge, actionHtml;
         if (a.status === 'accepted') {
           statusBadge = '<span class="badge badge-green">Accepté</span>';
@@ -822,6 +826,10 @@
         '</div>';
       });
       document.getElementById('applications-list').innerHTML = html || '<div style="text-align:center;padding:32px;color:var(--gray-400)">Aucune candidature</div>';
+      // Meme pastille que "En attente" : vide quand il n'y a rien a traiter.
+      const pastille = document.getElementById('applicationsCount');
+      pastille.textContent = attente > 0 ? attente : '';
+      pastille.style.display = attente > 0 ? '' : 'none';
     } catch (err) {
       console.error('Error loading applications:', err);
     }

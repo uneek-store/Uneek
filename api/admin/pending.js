@@ -158,7 +158,7 @@ export default async function handler(req, res) {
         if (c.category) productData.category = c.category;
         if (c.description) productData.description = c.description;
         // image_urls est une colonne tableau : on y met toutes les photos.
-        if (Array.isArray(c.image_urls) && c.image_urls.length > 0) {
+        if (Array.isArray(c.image_urls)) {
           productData.image_urls = c.image_urls;
         } else if (c.image_url) {
           productData.image_urls = [c.image_url];

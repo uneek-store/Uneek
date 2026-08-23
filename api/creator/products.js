@@ -52,9 +52,10 @@ export default async function handler(req, res) {
         if (price !== undefined && price !== null && price !== "") changes.price = parseFloat(price);
         if (category) changes.category = category;
         if (description !== undefined) changes.description = description;
-        if (Array.isArray(image_urls) && image_urls.length > 0) {
+        if (Array.isArray(image_urls)) {
+          // Un tableau vide est un choix explicite : le createur a tout retire.
           changes.image_urls = image_urls;
-          changes.image_url = image_urls[0];
+          changes.image_url = image_urls[0] || '';
         } else if (image_url) {
           changes.image_url = image_url;
         }
