@@ -624,6 +624,19 @@ function renderShopGrid() {
   grid.innerHTML = filtered.length > 0 ? filtered.map(p => productCardHTML(p)).join('') : '<div style="grid-column:1/-1;text-align:center;padding:80px 0;color:var(--gray-400);font-size:14px">Aucun produit trouvé.</div>';
 }
 
+// Bascule la grande photo de la fiche produit quand on clique une miniature.
+function switchProductImage(el) {
+  const main = document.getElementById('pd-main-img');
+  if (!main) return;
+  main.src = el.src;
+  el.parentElement.querySelectorAll('img').forEach(t => {
+    t.style.border = '2px solid transparent';
+    t.style.opacity = '0.6';
+  });
+  el.style.border = '2px solid var(--black)';
+  el.style.opacity = '1';
+}
+
 function productPage() {
   const p = PRODUCTS.find(x => x.id === pageData);
   if (!p) return '<div style="padding:120px 24px;text-align:center"><h2>Produit introuvable</h2></div>';
@@ -636,9 +649,15 @@ function productPage() {
   return `<div>
     <section class="section" style="padding-top:96px">
       <div class="pd-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start">
-        <div class="pd-sticky" style="aspect-ratio:3/4;overflow:hidden;background:var(--gray-100);border-radius:var(--radius-lg);position:sticky;top:96px"
-             onmousemove="tilt(event,this)" onmouseleave="tiltReset(this)">
-          <img src="${p.image_url || PLACEHOLDER_IMG}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease-out">
+        <div class="pd-sticky" style="position:sticky;top:96px">
+          <div style="aspect-ratio:3/4;overflow:hidden;background:var(--gray-100);border-radius:var(--radius-lg)"
+               onmousemove="tilt(event,this)" onmouseleave="tiltReset(this)">
+            <img id="pd-main-img" src="${(p.image_urls && p.image_urls[0]) || p.image_url || PLACEHOLDER_IMG}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease-out">
+          </div>
+          ${(p.image_urls && p.image_urls.length > 1) ? `
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+            ${p.image_urls.map((u, i) => `<img src="${u}" alt="${p.name} ${i + 1}" onclick="switchProductImage(this,'${i}')" data-i="${i}" style="width:64px;height:84px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid ${i === 0 ? 'var(--black)' : 'transparent'};opacity:${i === 0 ? '1' : '0.6'};transition:all .15s">`).join('')}
+          </div>` : ''}
         </div>
         <div style="padding-top:32px">
           <div style="font-size:12px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px;cursor:pointer" onclick="navigate('brand','${b?.slug}')">${b?.name || ''} &rarr;</div>

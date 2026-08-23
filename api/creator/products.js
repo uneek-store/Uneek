@@ -37,7 +37,7 @@ export default async function handler(req, res) {
 
     // --- POST: NEW PRODUCT OR MODIFICATION ---
     if (req.method === "POST") {
-      const { product_id, edit_type, name, price, category, description, sizes_stock, image_url, variants, commission_percent } = req.body;
+      const { product_id, edit_type, name, price, category, description, sizes_stock, image_url, image_urls, variants, commission_percent } = req.body;
 
       // EDIT MODE: update product directly (stock, name, price, etc.)
       // --- MODIFICATION : soumise a la validation de l'admin ---
@@ -52,7 +52,12 @@ export default async function handler(req, res) {
         if (price !== undefined && price !== null && price !== "") changes.price = parseFloat(price);
         if (category) changes.category = category;
         if (description !== undefined) changes.description = description;
-        if (image_url) changes.image_url = image_url;
+        if (Array.isArray(image_urls) && image_urls.length > 0) {
+          changes.image_urls = image_urls;
+          changes.image_url = image_urls[0];
+        } else if (image_url) {
+          changes.image_url = image_url;
+        }
         if (Array.isArray(variants)) changes.variants = variants;
         if (commission_percent !== undefined && commission_percent !== null) {
           changes.commission_percent = parseFloat(commission_percent);
@@ -124,6 +129,10 @@ export default async function handler(req, res) {
       // NEW PRODUCT: submit for approval
       if (edit_type === "new" || !product_id) {
         const product_data = { name, price, category, description, sizes_stock, image_url };
+        if (Array.isArray(image_urls) && image_urls.length > 0) {
+          product_data.image_urls = image_urls;
+          product_data.image_url = image_urls[0];
+        }
         // Ces deux champs etaient saisis par le createur puis jetes.
         if (Array.isArray(variants)) product_data.variants = variants;
         if (commission_percent !== undefined && commission_percent !== null) {

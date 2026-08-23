@@ -395,7 +395,14 @@
     if (c.description !== undefined && c.description !== b.description) {
       out.push('Description modifiée');
     }
-    if (c.image_url) {
+    const avantPhotos = Array.isArray(b.image_urls) ? b.image_urls.length : 0;
+    if (Array.isArray(c.image_urls)) {
+      if (c.image_urls.length !== avantPhotos) {
+        out.push('Photos : ' + avantPhotos + ' → ' + c.image_urls.length);
+      } else {
+        out.push('Photos : ' + c.image_urls.length + ' (remplacées)');
+      }
+    } else if (c.image_url) {
       out.push('Photo : nouvelle image proposée');
     }
     // Cote produit, les variantes sont stockees dans la colonne colors.
@@ -423,7 +430,7 @@
     if (c.price !== undefined) parts.push('prix');
     if (c.category !== undefined) parts.push('catégorie');
     if (c.description !== undefined) parts.push('description');
-    if (c.image_url) parts.push('photo');
+    if (c.image_urls || c.image_url) parts.push('photos');
     if (c.variants !== undefined) parts.push('variantes');
     if (c.commission_percent !== undefined) parts.push('commission');
     if (c.sizes_stock) parts.push('stock');
@@ -656,8 +663,13 @@
         const typeBadge = isNew
         ? '<span class="badge badge-blue">Nouveau produit</span>'
         : '<span class="badge badge-orange">' + esc(shortChangeLabel(c)) + '</span>';
-        const hasPhoto = !!(c.image_url || p.image_url);
-      const photoWarn = hasPhoto ? '' : '<br><span style="color:var(--red);font-weight:500">Aucune photo fournie par le créateur</span>';
+        const photos = Array.isArray(c.image_urls) && c.image_urls.length
+        ? c.image_urls
+        : (c.image_url ? [c.image_url] : (p.image_url ? [p.image_url] : []));
+      const hasPhoto = photos.length > 0;
+      const photoWarn = hasPhoto
+        ? (photos.length > 1 ? '<br><span style="color:var(--gray-500)">' + photos.length + ' photos — clique pour les voir en grand</span>' : '')
+        : '<br><span style="color:var(--red);font-weight:500">Aucune photo fournie par le créateur</span>';
       const imgUrl = c.image_url || p.image_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%234A5568' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%23fff' font-size='11' font-family='sans-serif'%3EAucune photo%3C/text%3E%3C/svg%3E";
         const brandName = p.brands?.name || p.brand_name || '—';
         const creatorName = p.creator_accounts?.full_name || p.creator_name || 'Créateur';
@@ -694,7 +706,13 @@
         }
 
         html += '<div class="pending-card" id="pending-' + p.id + '"' + (p.status !== 'pending' ? ' style="opacity:0.7"' : '') + '>' +
-          '<img class="pending-img" src="' + imgUrl + '" onclick="openLightbox(this.src)" alt="Photo produit" />' +
+          (photos.length > 1
+          ? '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">'
+              + '<img class="pending-img" src="' + photos[0] + '" onclick="openLightbox(this.src)" alt="Photo 1" />'
+              + '<div style="display:flex;gap:4px;flex-wrap:wrap;max-width:96px">'
+              + photos.slice(1).map((u, k) => '<img src="' + u + '" onclick="openLightbox(this.src)" alt="Photo ' + (k + 2) + '" style="width:28px;height:36px;object-fit:cover;border-radius:4px;cursor:pointer;border:1px solid var(--gray-200)" />').join('')
+              + '</div></div>'
+          : '<img class="pending-img" src="' + imgUrl + '" onclick="openLightbox(this.src)" alt="Photo produit" />') +
           '<div class="pending-info">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span class="pending-name">' + prodName + (isNew ? ' — €' + prodPrice : '') + '</span>' + typeBadge + '</div>' +
           '<div class="pending-detail">' + detail + '</div>' +

@@ -134,7 +134,12 @@ export default async function handler(req, res) {
         if (c.price) productData.price = c.price;
         if (c.category) productData.category = c.category;
         if (c.description) productData.description = c.description;
-        if (c.image_url) productData.image_urls = [c.image_url];
+        // image_urls est une colonne tableau : on y met toutes les photos.
+        if (Array.isArray(c.image_urls) && c.image_urls.length > 0) {
+          productData.image_urls = c.image_urls;
+        } else if (c.image_url) {
+          productData.image_urls = [c.image_url];
+        }
         // La colonne de la table products s'appelle "colors", pas "variants".
         // Ecrire dans variants faisait echouer toute l'approbation.
         if (Array.isArray(c.variants)) productData.colors = c.variants;
