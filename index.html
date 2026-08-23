@@ -364,7 +364,7 @@ function renderCart() {
   } else {
     const total = cart.reduce((s, i) => s + (i.price || 0), 0);
     body.innerHTML = cart.map(item => {
-      return `<div class="cart-item"><div class="cart-item-img"><img src="${item.image_url || ''}" alt="${item.name}"></div><div class="cart-item-info"><div><div class="cart-item-brand">${item._brand_name || ''}</div><div class="cart-item-name">${item.name}</div><div class="cart-item-meta">Taille: ${item.selectedSize}</div></div><div class="cart-item-bottom"><span class="cart-item-price">${item.price} &euro;</span><button class="cart-item-remove" onclick="removeFromCart('${item.cartId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Retirer</button></div></div></div>`;
+      return `<div class="cart-item"><div class="cart-item-img"><img src="${item.image_url || PLACEHOLDER_IMG}" alt="${item.name}"></div><div class="cart-item-info"><div><div class="cart-item-brand">${item._brand_name || ''}</div><div class="cart-item-name">${item.name}</div><div class="cart-item-meta">Taille: ${item.selectedSize}</div></div><div class="cart-item-bottom"><span class="cart-item-price">${item.price} &euro;</span><button class="cart-item-remove" onclick="removeFromCart('${item.cartId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Retirer</button></div></div></div>`;
     }).join('');
     document.getElementById('cart-total-amount').textContent = total + ' €';
     footer.style.display = 'block';
@@ -389,7 +389,7 @@ function renderFav() {
       const p = PRODUCTS.find(x => x.id === pid);
       if (!p) return '';
       const b = getBrand(p);
-      return `<div class="cart-item" style="cursor:pointer" onclick="navigate('product','${p.id}');closeFav()"><div class="cart-item-img"><img src="${p.image_url || ''}" alt="${p.name}"></div><div class="cart-item-info"><div><div class="cart-item-brand">${b?.name || ''}</div><div class="cart-item-name">${p.name}</div></div><div class="cart-item-bottom"><span class="cart-item-price">${p.price} &euro;</span><button class="cart-item-remove" onclick="event.stopPropagation();toggleFav('${p.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div></div></div>`;
+      return `<div class="cart-item" style="cursor:pointer" onclick="navigate('product','${p.id}');closeFav()"><div class="cart-item-img"><img src="${p.image_url || PLACEHOLDER_IMG}" alt="${p.name}"></div><div class="cart-item-info"><div><div class="cart-item-brand">${b?.name || ''}</div><div class="cart-item-name">${p.name}</div></div><div class="cart-item-bottom"><span class="cart-item-price">${p.price} &euro;</span><button class="cart-item-remove" onclick="event.stopPropagation();toggleFav('${p.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div></div></div>`;
     }).join('');
   }
 }
@@ -443,7 +443,7 @@ function productCardHTML(p) {
   const isFav = favorites.includes(p.id);
   return `<div class="product-card" onclick="navigate('product','${p.id}')">
     <div class="product-card-image" onmousemove="tilt(event,this)" onmouseleave="tiltReset(this)">
-      <img src="${p.image_url || ''}" alt="${p.name}" loading="lazy">
+      <img src="${p.image_url || PLACEHOLDER_IMG}" alt="${p.name}" loading="lazy">
       <button class="product-card-fav ${isFav ? 'is-fav' : ''}" data-fav="${p.id}" onclick="event.stopPropagation();toggleFav('${p.id}')" aria-label="Favori">
         ${isFav ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="url(#heartGrad)" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'}
       </button>
@@ -638,7 +638,7 @@ function productPage() {
       <div class="pd-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start">
         <div class="pd-sticky" style="aspect-ratio:3/4;overflow:hidden;background:var(--gray-100);border-radius:var(--radius-lg);position:sticky;top:96px"
              onmousemove="tilt(event,this)" onmouseleave="tiltReset(this)">
-          <img src="${p.image_url || ''}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease-out">
+          <img src="${p.image_url || PLACEHOLDER_IMG}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease-out">
         </div>
         <div style="padding-top:32px">
           <div style="font-size:12px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px;cursor:pointer" onclick="navigate('brand','${b?.slug}')">${b?.name || ''} &rarr;</div>
@@ -839,6 +839,9 @@ function submitPartner() {
 // CHECKOUT — connected to /api/orders
 // ==========================================
 
+// Image de repli : certains produits n ont pas encore de photo en base.
+const PLACEHOLDER_IMG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='500'%3E%3Crect fill='%23E5E5E5' width='400' height='500'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%23A3A3A3' font-size='16' font-family='sans-serif'%3EPhoto a venir%3C/text%3E%3C/svg%3E";
+
 function checkoutPage() {
   if (cart.length === 0) {
     return `<div style="padding-top:112px;text-align:center;min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center">
@@ -884,7 +887,7 @@ function checkoutPage() {
           <div style="font-family:var(--font-display);font-size:18px;font-weight:700;margin-bottom:28px">Récapitulatif</div>
           ${cart.map(item => {
             return `<div style="display:flex;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--gray-200)">
-              <div style="width:56px;height:72px;overflow:hidden;background:var(--gray-200);border-radius:8px"><img src="${item.image_url || ''}" style="width:100%;height:100%;object-fit:cover"></div>
+              <div style="width:56px;height:72px;overflow:hidden;background:var(--gray-200);border-radius:8px"><img src="${item.image_url || PLACEHOLDER_IMG}" style="width:100%;height:100%;object-fit:cover"></div>
               <div style="flex:1"><div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400)">${item._brand_name || ''}</div><div style="font-family:var(--font-display);font-size:13px;font-weight:600">${item.name}</div><div style="font-size:12px;color:var(--gray-500)">Taille : ${item.selectedSize}</div></div>
               <div style="font-size:14px;font-weight:500">${item.price} &euro;</div>
             </div>`;
