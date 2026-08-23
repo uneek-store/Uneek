@@ -46,12 +46,30 @@ export default async function handler(req, res) {
         image_url: (p.image_urls && p.image_urls.length > 0) ? p.image_urls[0] : "",
       }));
 
-      return res.status(200).json({
-        products,
+      const summary = {
         total: products.length,
         published: products.filter((p) => p.is_published).length,
+        unpublished: products.filter((p) => !p.is_published).length,
         without_image: products.filter((p) => !p.image_urls || p.image_urls.length === 0).length,
-      });
+      };
+
+      // ?summary=1 : reponse compacte, sans les images base64, pour pouvoir
+      // diagnostiquer l'etat du catalogue sans charger plusieurs Mo.
+      if (req.query.summary) {
+        return res.status(200).json({
+          ...summary,
+          items: products.map((p) => ({
+            id: p.id,
+            name: p.name,
+            brand_name: p.brand_name,
+            price: p.price,
+            is_published: p.is_published,
+            has_image: !!(p.image_urls && p.image_urls.length > 0),
+          })),
+        });
+      }
+
+      return res.status(200).json({ ...summary, products });
     }
 
     if (req.method === "GET") {
