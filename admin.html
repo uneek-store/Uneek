@@ -74,6 +74,24 @@
     td.sec { color: var(--gray-500); }
     .bold { font-weight: 500; }
 
+    /* DIALOGUE DE CONFIRMATION */
+    .confirm-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 250; align-items: center; justify-content: center; }
+    .confirm-overlay.show { display: flex; }
+    .confirm-box { background: var(--white); border-radius: 16px; padding: 28px; max-width: 400px; width: 90%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    .confirm-title { font-family: var(--font-display); font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+    .confirm-msg { font-size: 13px; color: var(--gray-500); margin-bottom: 20px; line-height: 1.5; }
+    .confirm-btns { display: flex; gap: 10px; justify-content: center; }
+    .confirm-btns button { padding: 10px 24px; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: var(--font-body); border: none; font-weight: 500; }
+    .confirm-cancel { background: var(--gray-100); color: var(--gray-600); }
+    .confirm-cancel:hover { background: var(--gray-200); }
+    .confirm-ok { color: var(--white); }
+    .confirm-ok.green { background: var(--green); }
+    .confirm-ok.green:hover { background: #16A34A; }
+    .confirm-ok.red { background: var(--red); }
+    .confirm-ok.red:hover { background: #DC2626; }
+    .btn-delete-brand { padding: 4px 12px; background: transparent; color: var(--red); border: 1px solid var(--gray-200); border-radius: 6px; font-size: 12px; cursor: pointer; font-family: var(--font-body); }
+    .btn-delete-brand:hover { background: var(--red-bg); border-color: var(--red); }
+
     /* CODE D'INVITATION */
     .invite-code { margin-top: 8px; padding: 8px 12px; background: var(--green-bg); border-radius: 8px; font-family: monospace; font-size: 14px; font-weight: 600; color: var(--green); display: inline-block; cursor: pointer; user-select: all; }
 
@@ -256,7 +274,7 @@
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Marque</th><th>Ville</th><th>Email</th><th>Produits</th><th>Statut</th></tr></thead>
+            <thead><tr><th>Marque</th><th>Ville</th><th>Email</th><th>Produits</th><th>Statut</th><th></th></tr></thead>
             <tbody id="brands-table"></tbody>
           </table>
         </div>
@@ -290,6 +308,18 @@
       <div class="card" id="applications-list"></div>
     </div>
 
+  </div>
+</div>
+
+<!-- DIALOGUE DE CONFIRMATION -->
+<div class="confirm-overlay" id="confirmModal">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirmTitle">Es-tu sûr ?</div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" onclick="closeConfirm()">Annuler</button>
+      <button class="confirm-ok" id="confirmOk" onclick="doConfirm()">Confirmer</button>
+    </div>
   </div>
 </div>
 
@@ -332,6 +362,79 @@
     } catch (err) {
       errorEl.textContent = 'Erreur de connexion au serveur';
       errorEl.style.display = 'block';
+    }
+  }
+
+  // --- DIALOGUE DE CONFIRMATION ---
+  let confirmCallback = null;
+
+  function showConfirm(title, msg, color, callback) {
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMsg').textContent = msg;
+    document.getElementById('confirmOk').className = 'confirm-ok ' + color;
+    confirmCallback = callback;
+    document.getElementById('confirmModal').classList.add('show');
+  }
+
+  function closeConfirm() {
+    document.getElementById('confirmModal').classList.remove('show');
+    confirmCallback = null;
+  }
+
+  function doConfirm() {
+    const cb = confirmCallback;
+    closeConfirm();
+    if (cb) cb();
+  }
+
+  function askHandlePending(id, action, name) {
+    showConfirm(
+      action === 'approve' ? 'Approuver cette soumission ?' : 'Refuser cette soumission ?',
+      (action === 'approve'
+        ? 'Le produit "' + name + '" sera publié sur le site et le créateur sera notifié par email.'
+        : 'La soumission "' + name + '" sera refusée et le créateur sera notifié par email.'),
+      action === 'approve' ? 'green' : 'red',
+      () => handlePending(id, action)
+    );
+  }
+
+  function askHandleApplication(id, action, name) {
+    showConfirm(
+      action === 'accept' ? 'Accepter cette candidature ?' : 'Refuser cette candidature ?',
+      (action === 'accept'
+        ? 'Un code d\'invitation sera généré pour "' + name + '". Tu devras le lui transmettre pour qu\'il crée son compte.'
+        : 'La candidature de "' + name + '" sera refusée.'),
+      action === 'accept' ? 'green' : 'red',
+      () => handleApplication(id, action)
+    );
+  }
+
+  function askDeleteBrand(brandId, brandName) {
+    showConfirm(
+      'Supprimer cette marque ?',
+      'Tu vas supprimer "' + brandName + '" et tous ses produits, comptes créateurs et données associées. Cette action est irréversible.',
+      'red',
+      () => deleteBrand(brandId)
+    );
+  }
+
+  async function deleteBrand(brandId) {
+    try {
+      const res = await fetch(API_BASE + '/admin/brands', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify({ brand_id: brandId })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast('Erreur: ' + (data.error || 'Échec de la suppression'), 'red');
+        return;
+      }
+      showToast('✓ Marque supprimée', 'green');
+      loadBrands();
+      loadProducts();
+    } catch (err) {
+      showToast('Erreur: ' + err.message, 'red');
     }
   }
 
@@ -416,9 +519,11 @@
       const brands = data.brands || data || [];
       let html = '';
       brands.forEach(b => {
-        html += '<tr><td class="bold">' + b.name + '</td><td class="sec">' + (b.city || '') + '</td><td class="sec">' + (b.email || '') + '</td><td>' + (b.product_count || 0) + '</td><td><span class="badge badge-green">Active</span></td></tr>';
+        const safeName = String(b.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        html += '<tr><td class="bold">' + b.name + '</td><td class="sec">' + (b.city || '') + '</td><td class="sec">' + (b.email || '') + '</td><td>' + (b.product_count || 0) + '</td><td><span class="badge badge-green">Active</span></td>' +
+          '<td><button class="btn-delete-brand" onclick="askDeleteBrand(\'' + b.id + '\', \'' + safeName + '\')">Supprimer</button></td></tr>';
       });
-      document.getElementById('brands-table').innerHTML = html || '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune marque</td></tr>';
+      document.getElementById('brands-table').innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune marque</td></tr>';
       document.getElementById('stat-brands').textContent = brands.length;
     } catch (err) {
       console.error('Error loading brands:', err);
@@ -443,7 +548,7 @@
             '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span class="pending-name">' + p.proposed_name + ' — €' + p.proposed_price + '</span>' + badge + '</div>' +
             '<div class="pending-detail">' + detail + '</div>' +
             '<div class="pending-bottom"><span class="pending-date">' + formatDate(p.created_at) + '</span>' +
-              '<div class="action-btns"><button class="btn-approve" onclick="handlePending(' + p.id + ', \'approve\')">Approuver</button><button class="btn-reject" onclick="handlePending(' + p.id + ', \'reject\')">Refuser</button></div>' +
+              '<div class="action-btns"><button class="btn-approve" onclick="askHandlePending(\'' + p.id + '\', \'approve\', \'' + String(p.name || 'ce produit').replace(/\\/g, '\\\\').replace(/'/g, "\\'") + '\')">Approuver</button><button class="btn-reject" onclick="askHandlePending(\'' + p.id + '\', \'reject\', \'' + String(p.name || 'ce produit').replace(/\\/g, '\\\\').replace(/'/g, "\\'") + '\')">Refuser</button></div>' +
             '</div>' +
           '</div></div>';
       });
@@ -477,7 +582,8 @@
           actionHtml = '';
         } else {
           statusBadge = a.status === 'new' ? '<span class="badge badge-blue">Nouveau</span>' : '<span class="badge badge-orange">En review</span>';
-          actionHtml = '<div class="action-btns"><button class="btn-approve" onclick="handleApplication(\'' + a.id + '\', \'accept\')">Accepter</button><button class="btn-reject" onclick="handleApplication(\'' + a.id + '\', \'reject\')">Refuser</button></div>';
+          const safeBrand = String(a.brand_name || 'cette marque').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+          actionHtml = '<div class="action-btns"><button class="btn-approve" onclick="askHandleApplication(\'' + a.id + '\', \'accept\', \'' + safeBrand + '\')">Accepter</button><button class="btn-reject" onclick="askHandleApplication(\'' + a.id + '\', \'reject\', \'' + safeBrand + '\')">Refuser</button></div>';
         }
         const faded = ['accepted', 'rejected'].includes(a.status) ? ' style="opacity:0.75"' : '';
         html += '<div class="cand-card" id="app-' + a.id + '"' + faded + '>' +
