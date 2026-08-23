@@ -576,7 +576,7 @@
           : (p.stock_quantity || 0);
         const encoded = encodeURIComponent(JSON.stringify({
           id: p.id, name: p.name, price: p.price, category: p.category, description: p.description,
-          commission_percent: p.commission_percent, variants: p.variants, sizes_stock: p.sizes_stock
+          commission_percent: p.commission_percent, variants: p.colors || p.variants || [], sizes_stock: p.sizes_stock
         }));
         // Le statut etait code en dur sur "Publie" : un produit en attente
         // de validation s'affichait comme publie chez le createur.
@@ -726,8 +726,10 @@
     if (c.image_url) {
       out.push('Photo : nouvelle image proposée');
     }
-    if (c.variants !== undefined && list(c.variants) !== list(b.variants)) {
-      out.push('Variantes : ' + list(b.variants) + ' → ' + list(c.variants));
+    // Cote produit, les variantes sont stockees dans la colonne colors.
+    const beforeVariants = (b.variants !== undefined && b.variants !== null) ? b.variants : b.colors;
+    if (c.variants !== undefined && list(c.variants) !== list(beforeVariants)) {
+      out.push('Variantes : ' + list(beforeVariants) + ' → ' + list(c.variants));
     }
     if (c.commission_percent !== undefined
         && parseFloat(c.commission_percent) !== parseFloat(b.commission_percent)) {
