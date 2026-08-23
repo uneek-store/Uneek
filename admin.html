@@ -534,27 +534,68 @@
     try {
       const res = await fetch(API_BASE + '/admin/pending', { headers: { 'Authorization': 'Bearer ' + authToken } });
       const data = await res.json();
-      const pending = data.pending || data || [];
+      const items = data.pending || data || [];
       let html = '';
-      pending.forEach(p => {
-        const isNew = p.edit_type === 'new';
-        const badge = isNew ? '<span class="badge badge-blue">Nouveau produit</span>' : '<span class="badge badge-orange">Modification</span>';
-        const imgUrl = p.image_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%234A5568' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%23fff' font-size='12' font-family='sans-serif'%3EPhoto%3C/text%3E%3C/svg%3E";
-        const detail = p.brand_name + ' · par ' + (p.creator_name || 'Créateur') + (p.category ? ' · ' + p.category : '') + (p.sizes ? '<br>Tailles: ' + p.sizes : '');
+      let pendingCount = 0;
+      items.forEach(p => {
+        const c = p.changes || {};
+        const isNew = p.is_new_product;
+        const typeBadge = isNew ? '<span class="badge badge-blue">Nouveau produit</span>' : '<span class="badge badge-orange">Modification</span>';
+        const imgUrl = c.image_url || p.image_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%234A5568' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%23fff' font-size='12' font-family='sans-serif'%3EPhoto%3C/text%3E%3C/svg%3E";
+        const brandName = p.brands?.name || p.brand_name || '—';
+        const creatorName = p.creator_accounts?.full_name || p.creator_name || 'Créateur';
+        const category = c.category || p.category || '';
+        const sizesStr = c.sizes_stock ? Object.keys(c.sizes_stock).join(', ') : (p.sizes || '');
+        const commissionStr = c.commission_percent ? '<br><span style="color:var(--blue);font-weight:500">Commission: ' + c.commission_percent + '%</span>' : '';
 
-        html += '<div class="pending-card" id="pending-' + p.id + '">' +
+        // Pour les modifications, construire un résumé des changements
+        let changesStr = '';
+        if (!isNew && p.products) {
+          const diffs = [];
+          if (c.price !== undefined && p.products.price !== undefined && parseFloat(c.price) !== parseFloat(p.products.price)) {
+            diffs.push('Prix: €' + p.products.price + ' → €' + c.price);
+          }
+          if (c.name && p.products.name && c.name !== p.products.name) {
+            diffs.push('Nom: ' + p.products.name + ' → ' + c.name);
+          }
+          if (c.category && p.products.category && c.category !== p.products.category) {
+            diffs.push('Catégorie: ' + p.products.category + ' → ' + c.category);
+          }
+          if (c.description && p.products.description && c.description !== p.products.description) {
+            diffs.push('Description modifiée');
+          }
+          if (diffs.length > 0) {
+            changesStr = '<br><span style="color:var(--orange);font-weight:500">' + diffs.join(' · ') + '</span>';
+          }
+        }
+
+        const detail = brandName + ' · par ' + creatorName + (category ? ' · ' + category : '') + (sizesStr ? '<br>Tailles: ' + sizesStr : '') + changesStr + commissionStr;
+        const prodName = c.name || p.products?.name || p.proposed_name || 'Sans nom';
+        const prodPrice = c.price || p.proposed_price || '?';
+
+        let actionHtml = '';
+        if (p.status === 'approved') {
+          actionHtml = '<span class="badge badge-green">Approuvé</span>';
+        } else if (p.status === 'rejected') {
+          actionHtml = '<span class="badge badge-red">Refusé</span>';
+        } else {
+          pendingCount++;
+          actionHtml = '<div class="action-btns"><button class="btn-approve" onclick="askHandlePending(\'' + p.id + '\', \'approve\', \'' + prodName.replace(/'/g, "\\'") + '\')">Approuver</button><button class="btn-reject" onclick="askHandlePending(\'' + p.id + '\', \'reject\', \'' + prodName.replace(/'/g, "\\'") + '\')">Refuser</button></div>';
+        }
+
+        html += '<div class="pending-card" id="pending-' + p.id + '"' + (p.status !== 'pending' ? ' style="opacity:0.7"' : '') + '>' +
           '<img class="pending-img" src="' + imgUrl + '" onclick="openLightbox(this.src)" alt="Photo produit" />' +
           '<div class="pending-info">' +
-            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span class="pending-name">' + p.proposed_name + ' — €' + p.proposed_price + '</span>' + badge + '</div>' +
-            '<div class="pending-detail">' + detail + '</div>' +
-            '<div class="pending-bottom"><span class="pending-date">' + formatDate(p.created_at) + '</span>' +
-              '<div class="action-btns"><button class="btn-approve" onclick="askHandlePending(\'' + p.id + '\', \'approve\', \'' + String(p.name || 'ce produit').replace(/\\/g, '\\\\').replace(/'/g, "\\'") + '\')">Approuver</button><button class="btn-reject" onclick="askHandlePending(\'' + p.id + '\', \'reject\', \'' + String(p.name || 'ce produit').replace(/\\/g, '\\\\').replace(/'/g, "\\'") + '\')">Refuser</button></div>' +
-            '</div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span class="pending-name">' + prodName + (isNew ? ' — €' + prodPrice : '') + '</span>' + typeBadge + '</div>' +
+          '<div class="pending-detail">' + detail + '</div>' +
+          '<div class="pending-bottom"><span class="pending-date">' + formatDate(p.created_at) + '</span>' +
+          actionHtml +
+          '</div>' +
           '</div></div>';
       });
-      document.getElementById('pending-list').innerHTML = html || '<div style="text-align:center;padding:32px;color:var(--gray-400)">Rien en attente</div>';
-      document.getElementById('pendingCount').textContent = pending.length;
-      document.getElementById('stat-pending').textContent = pending.length;
+      document.getElementById('pending-list').innerHTML = html || '<div style="text-align:center;padding:32px;color:var(--gray-400)">Aucune demande</div>';
+      document.getElementById('pendingCount').textContent = pendingCount > 0 ? pendingCount : '';
+      document.getElementById('stat-pending').textContent = pendingCount;
     } catch (err) {
       console.error('Error loading pending:', err);
     }
