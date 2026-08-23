@@ -590,7 +590,9 @@
         const c = p.changes || {};
         const isNew = p.is_new_product;
         const typeBadge = isNew ? '<span class="badge badge-blue">Nouveau produit</span>' : '<span class="badge badge-orange">Modification</span>';
-        const imgUrl = c.image_url || p.image_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%234A5568' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%23fff' font-size='12' font-family='sans-serif'%3EPhoto%3C/text%3E%3C/svg%3E";
+        const hasPhoto = !!(c.image_url || p.image_url);
+      const photoWarn = hasPhoto ? '' : '<br><span style="color:var(--red);font-weight:500">Aucune photo fournie par le créateur</span>';
+      const imgUrl = c.image_url || p.image_url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%234A5568' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%23fff' font-size='11' font-family='sans-serif'%3EAucune photo%3C/text%3E%3C/svg%3E";
         const brandName = p.brands?.name || p.brand_name || '—';
         const creatorName = p.creator_accounts?.full_name || p.creator_name || 'Créateur';
         const category = c.category || p.category || '';
@@ -618,7 +620,7 @@
           }
         }
 
-        const detail = brandName + ' · par ' + creatorName + (category ? ' · ' + category : '') + (sizesStr ? '<br>Tailles: ' + sizesStr : '') + changesStr + commissionStr;
+        const detail = brandName + ' · par ' + creatorName + (category ? ' · ' + category : '') + (sizesStr ? '<br>Tailles: ' + sizesStr : '') + changesStr + commissionStr + photoWarn;
         const prodName = c.name || p.products?.name || p.proposed_name || 'Sans nom';
         const prodPrice = c.price || p.proposed_price || '?';
 

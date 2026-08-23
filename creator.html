@@ -351,6 +351,18 @@
   </div>
 </div>
 
+<!-- DIALOGUE GENERIQUE -->
+<div class="confirm-bg" id="askBg">
+  <div class="confirm-box">
+    <h3 id="askTitle">Confirmer ?</h3>
+    <p id="askMsg"></p>
+    <div class="confirm-btns">
+      <button class="btn-cancel" onclick="closeAsk()">Annuler</button>
+      <button class="btn-submit" id="askOk">Continuer</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL -->
 <div class="modal-bg" id="productModal">
   <div class="modal">
@@ -683,6 +695,20 @@
     }
   }
 
+  // --- DIALOGUE GENERIQUE ---
+  function ask(title, msg, okLabel, callback) {
+    document.getElementById('askTitle').textContent = title;
+    document.getElementById('askMsg').textContent = msg;
+    const btn = document.getElementById('askOk');
+    btn.textContent = okLabel;
+    btn.onclick = () => { closeAsk(); callback(); };
+    document.getElementById('askBg').classList.add('show');
+  }
+
+  function closeAsk() {
+    document.getElementById('askBg').classList.remove('show');
+  }
+
   // --- PRODUCT MODAL ---
   function openAddModal() {
     isEditMode = false;
@@ -751,7 +777,22 @@
     });
   }
 
+  // Envoi reel du produit. submitProduct sert de garde-fou avant d'y arriver.
   async function submitProduct() {
+    const fileInput = document.getElementById('f-file');
+    const hasFile = !!(fileInput && fileInput.files && fileInput.files[0]);
+    const hasUrl = !!document.getElementById('f-img').value.trim();
+    if (!isEditMode && !hasFile && !hasUrl) {
+      ask('Aucune photo sélectionnée',
+          "Ce produit sera soumis sans image et s'affichera sans photo sur le site. Tu peux annuler et en ajouter une maintenant.",
+          'Soumettre sans photo',
+          doSubmitProduct);
+      return;
+    }
+    return doSubmitProduct();
+  }
+
+  async function doSubmitProduct() {
     const name = document.getElementById('f-name').value;
     const price = document.getElementById('f-price').value;
     const category = document.getElementById('f-cat').value;
