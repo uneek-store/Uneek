@@ -606,6 +606,13 @@
     document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
     document.getElementById('sec-' + id).classList.add('active');
     if (el) el.classList.add('active');
+    // Les listes n'etaient chargees qu'a la connexion : une demande soumise
+    // depuis n'apparaissait pas tant qu'on ne rechargeait pas toute la page.
+    if (!currentBrand) return;
+    if (id === 'edits') loadEdits();
+    else if (id === 'products') loadProducts();
+    else if (id === 'orders') loadOrders();
+    else if (id === 'overview') { loadProducts(); loadOrders(); }
   }
 
   // --- LOAD DATA ---

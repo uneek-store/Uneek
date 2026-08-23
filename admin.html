@@ -554,6 +554,13 @@
     document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
     document.getElementById('sec-' + id).classList.add('active');
     if (el) el.classList.add('active');
+    // Idem cote admin : les listes ne se rafraichissaient qu'a la connexion.
+    if (!authToken) return;
+    if (id === 'pending') loadPending();
+    else if (id === 'products') loadProducts();
+    else if (id === 'orders') loadOrders();
+    else if (id === 'brands') loadBrands();
+    else if (id === 'applications') loadApplications();
   }
 
   // --- LOAD DATA ---
