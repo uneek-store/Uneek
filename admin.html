@@ -256,11 +256,12 @@
     <!-- PRODUITS -->
     <div id="sec-products" class="section">
       <div class="page-title">Produits</div>
-      <div class="page-sub">Tous les produits publi&eacute;s</div>
+      <div class="page-sub">Tous les produits, publi&eacute;s ou non</div>
+      <div id="unpublishedWarn" style="display:none;background:var(--red-bg);color:var(--red);border:1px solid var(--red);border-radius:10px;padding:12px 16px;font-size:13px;margin-bottom:16px"></div>
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Produit</th><th>Marque</th><th>Prix</th><th>Commission</th><th>Stock</th><th>Statut</th></tr></thead>
+            <thead><tr><th>Produit</th><th>Marque</th><th>Prix</th><th>Commission</th><th>Stock</th><th>Statut</th><th></th></tr></thead>
             <tbody id="products-table"></tbody>
           </table>
         </div>
@@ -499,16 +500,64 @@
 
   async function loadProducts() {
     try {
-      const res = await fetch(API_BASE + '/products');
+      // On passe par l'endpoint admin : /api/products filtre is_published = true,
+      // les produits non publies n'apparaissaient donc nulle part.
+      const res = await fetch(API_BASE + '/admin/pending?type=products', { headers: { 'Authorization': 'Bearer ' + authToken } });
       const data = await res.json();
       const products = data.products || data || [];
       let html = '';
+      let unpublished = 0;
       products.forEach(p => {
-        html += '<tr><td class="bold">' + p.name + '</td><td class="sec">' + (p.brand_name || p.brands?.name || '') + '</td><td>€' + p.price + '</td><td>' + (p.commission_percent || 12) + '%</td><td>' + (p.stock_quantity || 0) + '</td><td><span class="badge badge-green">Publié</span></td></tr>';
+        const published = p.is_published !== false;
+        if (!published) unpublished++;
+        const badge = published
+          ? '<span class="badge badge-green">Publié</span>'
+          : '<span class="badge badge-red">Non publié</span>';
+        const stock = (p.stock !== undefined && p.stock !== null) ? p.stock : (p.stock_quantity || 0);
+        const safeName = String(p.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const action = published
+          ? '<button class="btn-delete-brand" onclick="askTogglePublish(\'' + p.id + '\', \'' + safeName + '\', false)">Dépublier</button>'
+          : '<button class="btn-approve" onclick="askTogglePublish(\'' + p.id + '\', \'' + safeName + '\', true)">Publier</button>';
+        html += '<tr' + (published ? '' : ' style="opacity:0.75"') + '><td class="bold">' + p.name + '</td><td class="sec">' + (p.brand_name || p.brands?.name || '') + '</td><td>€' + p.price + '</td><td>' + (p.commission_percent || 12) + '%</td><td>' + stock + '</td><td>' + badge + '</td><td>' + action + '</td></tr>';
       });
-      document.getElementById('products-table').innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucun produit</td></tr>';
+      document.getElementById('products-table').innerHTML = html || '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400)">Aucun produit</td></tr>';
+      const warn = document.getElementById('unpublishedWarn');
+      if (warn) {
+        warn.style.display = unpublished > 0 ? 'block' : 'none';
+        warn.textContent = unpublished + ' produit' + (unpublished > 1 ? 's' : '') + ' non publié' + (unpublished > 1 ? 's' : '') + ' — invisible' + (unpublished > 1 ? 's' : '') + ' sur le site tant que tu ne l' + (unpublished > 1 ? 'es' : 'e') + ' publies pas.';
+      }
     } catch (err) {
       console.error('Error loading products:', err);
+    }
+  }
+
+  function askTogglePublish(productId, productName, publish) {
+    showConfirm(
+      publish ? 'Publier ce produit ?' : 'Dépublier ce produit ?',
+      publish
+        ? '"' + productName + '" deviendra visible sur uneek.store.'
+        : '"' + productName + '" disparaîtra du site. Il restera modifiable dans l\'admin et chez le créateur.',
+      publish ? 'green' : 'red',
+      () => togglePublish(productId, publish)
+    );
+  }
+
+  async function togglePublish(productId, publish) {
+    try {
+      const res = await fetch(API_BASE + '/admin/pending', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify({ product_id: productId, action: publish ? 'publish' : 'unpublish' })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast('Erreur: ' + (data.error || 'Échec'), 'red');
+        return;
+      }
+      showToast(publish ? '✓ Produit publié' : '✓ Produit dépublié', publish ? 'green' : 'red');
+      loadProducts();
+    } catch (err) {
+      showToast('Erreur: ' + err.message, 'red');
     }
   }
 

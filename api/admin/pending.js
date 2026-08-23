@@ -15,6 +15,29 @@ export default async function handler(req, res) {
 
   try {
     // --- LISTE DE TOUTES LES MODIFICATIONS ---
+    // --- LISTE DE TOUS LES PRODUITS (publies ou non) ---
+    // /api/products ne renvoie que is_published = true : les produits non
+    // publies etaient invisibles partout, y compris dans l'admin.
+    if (req.method === "GET" && req.query.type === "products") {
+      const { data, error } = await supabaseAdmin
+        .from("products")
+        .select("*, brands(name)")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching all products:", error);
+        return res.status(500).json({ error: "Erreur serveur" });
+      }
+
+      const products = (data || []).map((p) => ({
+        ...p,
+        brand_name: p.brands?.name || "",
+        image_url: (p.image_urls && p.image_urls.length > 0) ? p.image_urls[0] : "",
+      }));
+
+      return res.status(200).json({ products });
+    }
+
     if (req.method === "GET") {
       const { data, error } = await supabaseAdmin
         .from("product_edits")
@@ -31,7 +54,28 @@ export default async function handler(req, res) {
 
     // --- APPROUVER OU REJETER ---
     if (req.method === "POST") {
-      const { edit_id, action, admin_note, commission_percent } = req.body;
+      const { edit_id, action, admin_note, commission_percent, product_id } = req.body;
+
+      // --- PUBLIER / DEPUBLIER UN PRODUIT ---
+      if (action === "publish" || action === "unpublish") {
+        if (!product_id) {
+          return res.status(400).json({ error: "product_id requis" });
+        }
+        const { error: pubError } = await supabaseAdmin
+          .from("products")
+          .update({ is_published: action === "publish" })
+          .eq("id", product_id);
+
+        if (pubError) {
+          console.error("Error updating is_published:", pubError);
+          return res.status(500).json({ error: "Erreur mise à jour" });
+        }
+
+        return res.status(200).json({
+          success: true,
+          message: action === "publish" ? "Produit publié" : "Produit dépublié",
+        });
+      }
 
       if (!edit_id || !["approve", "reject"].includes(action)) {
         return res.status(400).json({ error: "edit_id et action (approve/reject) requis" });
