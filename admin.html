@@ -74,6 +74,9 @@
     td.sec { color: var(--gray-500); }
     .bold { font-weight: 500; }
 
+    /* CODE D'INVITATION */
+    .invite-code { margin-top: 8px; padding: 8px 12px; background: var(--green-bg); border-radius: 8px; font-family: monospace; font-size: 14px; font-weight: 600; color: var(--green); display: inline-block; cursor: pointer; user-select: all; }
+
     /* BADGES */
     .badge { display: inline-block; padding: 3px 10px; border-radius: 50px; font-size: 11px; white-space: nowrap; font-weight: 500; }
     .badge-green { background: var(--green-bg); color: var(--green); }
@@ -459,12 +462,29 @@
       const apps = data.applications || data || [];
       let html = '';
       apps.forEach(a => {
-        const statusBadge = a.status === 'new' ? '<span class="badge badge-blue">Nouveau</span>' : '<span class="badge badge-orange">En review</span>';
-        html += '<div class="cand-card">' +
+        // Les candidatures acceptees / refusees n'etaient pas gerees : le code
+        // d'invitation genere par l'API n'etait donc jamais affiche a l'admin.
+        let statusBadge, actionHtml;
+        if (a.status === 'accepted') {
+          statusBadge = '<span class="badge badge-green">Accepté</span>';
+          actionHtml = a.invite_code
+            ? (a.invite_used
+                ? '<div style="margin-top:8px;color:var(--gray-400);font-size:12px">Code utilisé</div>'
+                : '<div class="invite-code" onclick="copyCode(this,\'' + a.invite_code + '\')" title="Cliquer pour copier">' + a.invite_code + ' <span style="font-size:11px;font-weight:400">copier</span></div>')
+            : '';
+        } else if (a.status === 'rejected') {
+          statusBadge = '<span class="badge badge-red">Refusé</span>';
+          actionHtml = '';
+        } else {
+          statusBadge = a.status === 'new' ? '<span class="badge badge-blue">Nouveau</span>' : '<span class="badge badge-orange">En review</span>';
+          actionHtml = '<div class="action-btns"><button class="btn-approve" onclick="handleApplication(\'' + a.id + '\', \'accept\')">Accepter</button><button class="btn-reject" onclick="handleApplication(\'' + a.id + '\', \'reject\')">Refuser</button></div>';
+        }
+        const faded = ['accepted', 'rejected'].includes(a.status) ? ' style="opacity:0.75"' : '';
+        html += '<div class="cand-card" id="app-' + a.id + '"' + faded + '>' +
           '<div class="cand-top"><span class="cand-name">' + a.brand_name + '</span>' + statusBadge + '</div>' +
           '<div class="cand-meta">' + a.contact_name + ' · ' + a.email + (a.instagram ? ' · ' + a.instagram : '') + (a.website ? ' · ' + a.website : '') + '</div>' +
           (a.message ? '<div class="cand-message">"' + a.message + '"</div>' : '') +
-          '<div class="action-btns"><button class="btn-approve" onclick="handleApplication(' + a.id + ', \'accept\')">Accepter</button><button class="btn-reject" onclick="handleApplication(' + a.id + ', \'reject\')">Refuser</button></div>' +
+          actionHtml +
         '</div>';
       });
       document.getElementById('applications-list').innerHTML = html || '<div style="text-align:center;padding:32px;color:var(--gray-400)">Aucune candidature</div>';
@@ -499,6 +519,17 @@
         body: JSON.stringify({ id, action })
       });
       const data = await res.json();
+      // Afficher tout de suite le code d'invitation renvoye par l'API
+      if (action === 'accept' && data.invite_code) {
+        const card = document.getElementById('app-' + id);
+        const btns = card && card.querySelector('.action-btns');
+        if (btns) {
+          btns.outerHTML = '<div class="invite-code" onclick="copyCode(this,\'' + data.invite_code + '\')" title="Cliquer pour copier">' + data.invite_code + ' <span style="font-size:11px;font-weight:400">copier</span></div>';
+        }
+        showToast('✓ Candidature acceptée — code : ' + data.invite_code, 'green');
+        setTimeout(() => loadApplications(), 6000);
+        return;
+      }
       showToast(action === 'accept' ? '✓ Candidature acceptée' : '✗ Candidature refusée', action === 'accept' ? 'green' : 'red');
       setTimeout(() => loadApplications(), 1500);
     } catch (err) {
@@ -524,6 +555,16 @@
     if (!d) return '';
     const date = new Date(d);
     return date.toLocaleDateString('fr-BE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  function copyCode(el, code) {
+    navigator.clipboard.writeText(code).then(() => {
+      const orig = el.innerHTML;
+      el.innerHTML = '✓ Copié !';
+      el.style.background = 'var(--green)';
+      el.style.color = '#fff';
+      setTimeout(() => { el.innerHTML = orig; el.style.background = 'var(--green-bg)'; el.style.color = 'var(--green)'; }, 1500);
+    }).catch(() => showToast('Copie impossible — sélectionne le code à la main', 'red'));
   }
 
   function openLightbox(src) {
