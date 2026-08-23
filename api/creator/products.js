@@ -37,41 +37,65 @@ export default async function handler(req, res) {
 
     // --- POST: NEW PRODUCT OR MODIFICATION ---
     if (req.method === "POST") {
-      const { product_id, edit_type, name, price, category, description, sizes_stock, image_url } = req.body;
+      const { product_id, edit_type, name, price, category, description, sizes_stock, image_url, variants, commission_percent } = req.body;
 
       // EDIT MODE: update product directly (stock, name, price, etc.)
+      // --- MODIFICATION : soumise a la validation de l'admin ---
+      // Cette branche ecrivait directement dans la table products : aucune
+      // demande n'arrivait dans le panneau admin, alors que le panneau
+      // createur annonce "La modification sera validee par UNEEK". Elle
+      // ignorait aussi variants, commission_percent et image_url, qui
+      // etaient donc perdus a chaque modification.
       if (edit_type === "modification" && product_id) {
-        const updates = {};
-        if (name) updates.name = name;
-        if (price) updates.price = parseFloat(price);
-        if (category) updates.category = category;
-        if (description !== undefined) updates.description = description;
-        if (sizes_stock) {
-          updates.sizes_stock = sizes_stock;
-          // Also update total stock count
-          updates.stock = Object.values(sizes_stock).reduce((s, q) => s + (parseInt(q) || 0), 0);
+        const changes = {};
+        if (name) changes.name = name;
+        if (price !== undefined && price !== null && price !== "") changes.price = parseFloat(price);
+        if (category) changes.category = category;
+        if (description !== undefined) changes.description = description;
+        if (image_url) changes.image_url = image_url;
+        if (Array.isArray(variants)) changes.variants = variants;
+        if (commission_percent !== undefined && commission_percent !== null) {
+          changes.commission_percent = parseFloat(commission_percent);
         }
-        updates.updated_at = new Date().toISOString();
+        if (sizes_stock) changes.sizes_stock = sizes_stock;
 
-        const { data, error } = await supabaseAdmin
-          .from("products")
-          .update(updates)
-          .eq("id", product_id)
-          .eq("brand_id", brand_id)
+        if (Object.keys(changes).length === 0) {
+          return res.status(400).json({ error: "Aucune modification a soumettre" });
+        }
+
+        const { data: edit, error } = await supabaseAdmin
+          .from("product_edits")
+          .insert({
+            product_id,
+            brand_id,
+            is_new_product: false,
+            changes,
+            submitted_by: null,
+            status: "pending",
+          })
           .select()
           .single();
 
         if (error) {
-          console.error("Error updating product:", error);
-          return res.status(500).json({ error: "Erreur mise à jour" });
+          console.error("Error creating product edit:", error);
+          return res.status(500).json({ error: "Erreur soumission" });
         }
 
-        return res.status(200).json({ success: true, message: "Produit mis à jour", product: data });
+        return res.status(200).json({
+          success: true,
+          message: "Modification soumise — en attente de validation par UNEEK",
+          edit_id: edit.id,
+        });
       }
 
       // NEW PRODUCT: submit for approval
       if (edit_type === "new" || !product_id) {
         const product_data = { name, price, category, description, sizes_stock, image_url };
+        // Ces deux champs etaient saisis par le createur puis jetes.
+        if (Array.isArray(variants)) product_data.variants = variants;
+        if (commission_percent !== undefined && commission_percent !== null) {
+          product_data.commission_percent = parseFloat(commission_percent);
+        }
 
         const { data: edit, error } = await supabaseAdmin
           .from("product_edits")
