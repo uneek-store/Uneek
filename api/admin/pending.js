@@ -19,9 +19,12 @@ export default async function handler(req, res) {
     // /api/products ne renvoie que is_published = true : les produits non
     // publies etaient invisibles partout, y compris dans l'admin.
     if (req.method === "GET" && req.query.type === "products") {
+      // Pas de jointure imbriquee ici : embarquer brands(name) agit comme un
+      // INNER JOIN et masquait les produits dont la marque est absente ou
+      // inactive. On fait deux requetes et on associe cote serveur.
       const { data, error } = await supabaseAdmin
         .from("products")
-        .select("*, brands(name)")
+        .select("*")
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -29,13 +32,26 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Erreur serveur" });
       }
 
+      const { data: brandRows } = await supabaseAdmin
+        .from("brands")
+        .select("id, name");
+      const brandMap = {};
+      (brandRows || []).forEach((b) => {
+        brandMap[b.id] = b.name;
+      });
+
       const products = (data || []).map((p) => ({
         ...p,
-        brand_name: p.brands?.name || "",
+        brand_name: brandMap[p.brand_id] || "(marque introuvable)",
         image_url: (p.image_urls && p.image_urls.length > 0) ? p.image_urls[0] : "",
       }));
 
-      return res.status(200).json({ products });
+      return res.status(200).json({
+        products,
+        total: products.length,
+        published: products.filter((p) => p.is_published).length,
+        without_image: products.filter((p) => !p.image_urls || p.image_urls.length === 0).length,
+      });
     }
 
     if (req.method === "GET") {
