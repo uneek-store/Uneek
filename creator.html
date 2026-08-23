@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>UNEEK Créateur</title>
+  <title>UNEEK CrÃ©ateur</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
 
@@ -132,6 +132,53 @@
     .faded { opacity: 0.5; }
     .grp { background: var(--gray-50); }
     .grp-sub td { border-top: none; padding-top: 2px; }
+
+    /* DELETE BUTTON */
+    .btn-delete { padding: 5px 14px; background: transparent; color: var(--red); border: 1px solid var(--red); border-radius: 6px; font-size: 12px; cursor: pointer; font-family: var(--font-body); }
+    .btn-delete:hover { background: #FEF2F2; }
+
+    /* CONFIRM DIALOG */
+    .confirm-bg { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 150; align-items: center; justify-content: center; }
+    .confirm-bg.show { display: flex; }
+    .confirm-box { background: var(--white); border-radius: 16px; padding: 28px; width: 380px; text-align: center; }
+    .confirm-box h3 { font-family: var(--font-display); font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+    .confirm-box p { font-size: 13px; color: var(--gray-500); margin-bottom: 20px; line-height: 1.5; }
+    .confirm-btns { display: flex; gap: 8px; justify-content: center; }
+    .confirm-btns button { padding: 9px 20px; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: var(--font-body); border: none; }
+
+    /* SETTINGS SECTION */
+    .settings-card { background: var(--white); border: 1px solid var(--gray-200); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+    .settings-card label { display: block; font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; margin-top: 14px; }
+    .settings-card label:first-child { margin-top: 0; }
+    .settings-card input { width: 100%; padding: 9px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 13px; font-family: var(--font-body); }
+    .settings-card input:focus { outline: none; border-color: var(--black); }
+    .settings-title { font-family: var(--font-display); font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+    .btn-save { padding: 9px 20px; background: var(--black); color: var(--white); border: none; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: var(--font-body); font-weight: 500; margin-top: 16px; }
+    .btn-save:hover { background: var(--gray-800); }
+
+    /* MOBILE RESPONSIVE */
+    @media (max-width: 768px) {
+      .sidebar { position: fixed; left: 0; top: 0; right: 0; bottom: auto; width: 100%; height: auto; padding: 12px 0 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 0; z-index: 10; }
+      .sidebar-logo { padding: 0 16px 0; font-size: 16px; }
+      .sidebar-brand { padding: 0 8px 0; font-size: 12px; }
+      .sidebar-tag { padding: 0 8px 0; font-size: 9px; margin-right: auto; }
+      .sidebar a { padding: 6px 12px; font-size: 11px; width: auto; white-space: nowrap; border-right: none !important; }
+      .sidebar a.active { background: rgba(255,255,255,0.15); border-radius: 6px; border-right: none !important; }
+      .main { margin-left: 0; margin-top: 80px; padding: 16px; }
+      .stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .stat-card { padding: 12px; }
+      .stat-value { font-size: 20px; }
+      .page-title { font-size: 18px; }
+      .page-sub { font-size: 12px; }
+      .card-header { padding: 10px 14px; font-size: 13px; flex-direction: column; gap: 8px; align-items: flex-start; }
+      td { padding: 8px 10px; font-size: 12px; }
+      th { padding: 6px 10px; font-size: 9px; }
+      .modal { width: 95vw; padding: 20px; max-height: 90vh; }
+      .modal h3 { font-size: 16px; }
+      .size-checks { gap: 6px; }
+      .confirm-box { width: 90vw; }
+      .settings-card { padding: 16px; }
+    }
   </style>
 </head>
 <body>
@@ -140,11 +187,11 @@
 <div class="login-wrap" id="loginScreen">
   <div class="login-box">
     <h1>UNEEK</h1>
-    <p>Espace créateur</p>
+    <p>Espace crÃ©ateur</p>
     <label>Email</label>
     <input type="email" id="loginEmail" placeholder="julien@brouillon.com" />
     <label>Mot de passe</label>
-    <input type="password" id="loginPassword" placeholder="••••••••" />
+    <input type="password" id="loginPassword" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢" />
     <button class="login-btn" onclick="doLogin()">Se connecter</button>
     <div class="login-error" id="loginError">Email ou mot de passe incorrect</div>
   </div>
@@ -154,11 +201,12 @@
 <div class="app" id="app">
   <div class="sidebar">
     <div class="sidebar-logo">UNEEK</div>
-    <div class="sidebar-brand" id="sidebarBrand">—</div>
-    <div class="sidebar-tag">Créateur</div>
+    <div class="sidebar-brand" id="sidebarBrand">â</div>
+    <div class="sidebar-tag">CrÃ©ateur</div>
     <a class="active" onclick="showSection('overview', this)">Vue d'ensemble</a>
     <a onclick="showSection('products', this)">Mes produits</a>
     <a onclick="showSection('orders', this)">Commandes</a>
+    <a onclick="showSection('settings', this)">ParamÃ¨tres</a>
   </div>
 
   <div class="main">
@@ -169,15 +217,15 @@
       <div class="page-sub" id="welcomeSub">Tableau de bord</div>
       <div class="stats">
         <div class="stat-card"><div class="stat-label">Ventes ce mois</div><div class="stat-value" id="stat-sales">0</div></div>
-        <div class="stat-card"><div class="stat-label">Chiffre d'affaires</div><div class="stat-value" id="stat-ca">€0</div></div>
-        <div class="stat-card"><div class="stat-label">Ton revenu</div><div class="stat-value" id="stat-revenue">€0</div></div>
-        <div class="stat-card"><div class="stat-label">À expédier</div><div class="stat-value" id="stat-toship">0</div></div>
+        <div class="stat-card"><div class="stat-label">Chiffre d'affaires</div><div class="stat-value" id="stat-ca">â¬0</div></div>
+        <div class="stat-card"><div class="stat-label">Ton revenu</div><div class="stat-value" id="stat-revenue">â¬0</div></div>
+        <div class="stat-card"><div class="stat-label">Ã expÃ©dier</div><div class="stat-value" id="stat-toship">0</div></div>
       </div>
       <div class="card">
-        <div class="card-header">Commandes récentes</div>
+        <div class="card-header">Commandes rÃ©centes</div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Commande</th><th>Produit(s)</th><th>Qté</th><th>Client</th><th>Statut</th></tr></thead>
+            <thead><tr><th>Commande</th><th>Produit(s)</th><th>QtÃ©</th><th>Client</th><th>Statut</th></tr></thead>
             <tbody id="overview-orders"></tbody>
           </table>
         </div>
@@ -187,7 +235,7 @@
     <!-- MES PRODUITS -->
     <div id="sec-products" class="section">
       <div class="page-title">Mes produits</div>
-      <div class="page-sub">Le stock se met à jour automatiquement à chaque vente</div>
+      <div class="page-sub">Le stock se met Ã  jour automatiquement Ã  chaque vente</div>
       <div class="card">
         <div class="card-header">
           <span id="productCount">0 produits</span>
@@ -195,7 +243,7 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Produit</th><th>Prix</th><th>Catégorie</th><th>Stock restant</th><th>Statut</th><th></th></tr></thead>
+            <thead><tr><th>Produit</th><th>Prix</th><th>CatÃ©gorie</th><th>Stock restant</th><th>Statut</th><th></th></tr></thead>
             <tbody id="products-table"></tbody>
           </table>
         </div>
@@ -204,18 +252,64 @@
 
     <!-- COMMANDES -->
     <div id="sec-orders" class="section">
-      <div class="page-title">Commandes à traiter</div>
-      <div class="page-sub">Les commandes multi-produits sont groupées — les retours sont signalés en rouge</div>
+      <div class="page-title">Commandes Ã  traiter</div>
+      <div class="page-sub">Les commandes multi-produits sont groupÃ©es â les retours sont signalÃ©s en rouge</div>
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Commande</th><th>Produit</th><th>Qté</th><th>Taille</th><th>Client</th><th>Adresse</th><th>Tél</th><th>Statut</th><th></th></tr></thead>
+            <thead><tr><th>Commande</th><th>Produit</th><th>QtÃ©</th><th>Taille</th><th>Client</th><th>Adresse</th><th>TÃ©l</th><th>Statut</th><th></th></tr></thead>
             <tbody id="orders-table"></tbody>
           </table>
         </div>
       </div>
     </div>
 
+    <!-- PARAMÃTRES -->
+    <div id="sec-settings" class="section">
+      <div class="page-title">ParamÃ¨tres</div>
+      <div class="page-sub">GÃ¨re ton compte crÃ©ateur</div>
+
+      <div class="settings-card">
+        <div class="settings-title">Changer l'adresse email</div>
+        <label>Nouvel email</label>
+        <input type="email" id="set-email" placeholder="nouvel@email.com" />
+        <label>Mot de passe actuel (confirmation)</label>
+        <input type="password" id="set-email-pw" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢" />
+        <button class="btn-save" onclick="changeEmail()">Mettre Ã  jour l'email</button>
+        <div id="email-msg" style="font-size:12px;margin-top:8px;display:none"></div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-title">Changer le mot de passe</div>
+        <label>Mot de passe actuel</label>
+        <input type="password" id="set-old-pw" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢" />
+        <label>Nouveau mot de passe</label>
+        <input type="password" id="set-new-pw" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢" />
+        <label>Confirmer le nouveau mot de passe</label>
+        <input type="password" id="set-confirm-pw" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢" />
+        <button class="btn-save" onclick="changePassword()">Mettre Ã  jour le mot de passe</button>
+        <div id="pw-msg" style="font-size:12px;margin-top:8px;display:none"></div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-title">DÃ©connexion</div>
+        <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px">Tu seras redirigÃ© vers la page de connexion.</p>
+        <button class="btn-save" style="background:var(--red)" onclick="doLogout()">Se dÃ©connecter</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- CONFIRM DELETE DIALOG -->
+<div class="confirm-bg" id="confirmDeleteBg">
+  <div class="confirm-box">
+    <h3>Supprimer ce produit ?</h3>
+    <p id="confirmDeleteMsg">Cette action est irrÃ©versible. Le produit sera dÃ©finitivement supprimÃ©.</p>
+    <div class="confirm-btns">
+      <button class="btn-cancel" onclick="closeConfirmDelete()">Annuler</button>
+      <button class="btn-submit" style="background:var(--red)" id="confirmDeleteBtn">Supprimer</button>
+    </div>
   </div>
 </div>
 
@@ -227,10 +321,10 @@
     <label>Nom du produit</label>
     <input id="f-name" placeholder="ex: Hoodie Oversized" />
 
-    <label>Prix (€)</label>
+    <label>Prix (â¬)</label>
     <input id="f-price" type="number" placeholder="65" />
 
-    <label>Catégorie</label>
+    <label>CatÃ©gorie</label>
     <select id="f-cat">
       <option>Tops</option>
       <option>Bottoms</option>
@@ -239,14 +333,14 @@
     </select>
 
     <label>Description</label>
-    <textarea id="f-desc" placeholder="Décris ton produit..."></textarea>
+    <textarea id="f-desc" placeholder="DÃ©cris ton produit..."></textarea>
 
     <label>Commission UNEEK (%)</label>
     <input id="f-commission" type="number" placeholder="12" min="0" max="100" />
-    <p class="modal-note" style="margin-top:2px">Pourcentage prélevé par UNEEK sur chaque vente.</p>
+    <p class="modal-note" style="margin-top:2px">Pourcentage prÃ©levÃ© par UNEEK sur chaque vente.</p>
 
     <label>Variantes (couleurs, etc.)</label>
-    <input id="f-variants" placeholder="ex: Noir, Blanc, Rouge (séparés par des virgules)" />
+    <input id="f-variants" placeholder="ex: Noir, Blanc, Rouge (sÃ©parÃ©s par des virgules)" />
     <p class="modal-note" style="margin-top:2px">Laisse vide si le produit n'a pas de variante.</p>
 
     <!-- IMAGE -->
@@ -312,10 +406,10 @@
       }
       authToken = data.token;
       currentBrand = data.brand;
-      creatorName = data.user.contact_name || 'Créateur';
+      creatorName = data.user.contact_name || 'CrÃ©ateur';
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('app').style.display = 'block';
-      document.getElementById('sidebarBrand').textContent = currentBrand?.name || '—';
+      document.getElementById('sidebarBrand').textContent = currentBrand?.name || 'â';
       document.getElementById('welcomeTitle').textContent = 'Bonjour, ' + creatorName.split(' ')[0];
       document.getElementById('welcomeSub').textContent = 'Tableau de bord ' + (currentBrand?.name || '');
       loadDashboard();
@@ -349,13 +443,13 @@
       let html = '';
       products.forEach(p => {
         const stockStr = p.sizes_stock
-          ? Object.entries(p.sizes_stock).map(([s, q]) => s + ':' + q).join(' · ')
+          ? Object.entries(p.sizes_stock).map(([s, q]) => s + ':' + q).join(' Â· ')
           : (p.stock_quantity || 0);
         const encoded = encodeURIComponent(JSON.stringify({
           id: p.id, name: p.name, price: p.price, category: p.category, description: p.description,
           commission_percent: p.commission_percent, variants: p.variants
         }));
-        html += '<tr><td class="bold">' + p.name + '</td><td>€' + p.price + '</td><td class="sec">' + (p.category || '') + '</td><td class="sec">' + stockStr + '</td><td><span class="badge badge-green">Publié</span></td><td><button class="btn-edit" onclick="openEditModal(\'' + encoded + '\')">Modifier</button></td></tr>';
+        html += '<tr><td class="bold">' + p.name + '</td><td>â¬' + p.price + '</td><td class="sec">' + (p.category || '') + '</td><td class="sec">' + stockStr + '</td><td><span class="badge badge-green">PubliÃ©</span></td><td><button class="btn-edit" onclick="openEditModal(\'' + encoded + '\')">Modifier</button> <button class="btn-delete" onclick="confirmDeleteProduct(\'' + p.id + '\', \'' + p.name.replace(/'/g, "\\'") + '\')">Supprimer</button></td></tr>';
       });
       document.getElementById('products-table').innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucun produit</td></tr>';
       document.getElementById('productCount').textContent = products.length + ' produit' + (products.length > 1 ? 's' : '');
@@ -417,8 +511,8 @@
       document.getElementById('overview-orders').innerHTML = overviewHtml || '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
       document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
       document.getElementById('stat-sales').textContent = totalSales;
-      document.getElementById('stat-ca').textContent = '€' + totalCA.toFixed(0);
-      document.getElementById('stat-revenue').textContent = '€' + totalRevenue.toFixed(0);
+      document.getElementById('stat-ca').textContent = 'â¬' + totalCA.toFixed(0);
+      document.getElementById('stat-revenue').textContent = 'â¬' + totalRevenue.toFixed(0);
       document.getElementById('stat-toship').textContent = toShip;
     } catch (err) {
       console.error('Error loading orders:', err);
@@ -457,7 +551,7 @@
     document.getElementById('f-variants').value = (p.variants || []).join(', ');
     document.getElementById('imgSection').classList.add('show');
     document.getElementById('stockSection').style.display = 'none';
-    document.getElementById('modalNote').textContent = "La modification sera validée par UNEEK.";
+    document.getElementById('modalNote').textContent = "La modification sera validÃ©e par UNEEK.";
     document.getElementById('productModal').classList.add('show');
   }
 
@@ -502,7 +596,7 @@
         body: JSON.stringify(body)
       });
       closeModal();
-      showToast(isEditMode ? '✓ Modification soumise — UNEEK te notifiera' : '✓ Nouveau produit soumis — UNEEK validera avant publication');
+      showToast(isEditMode ? 'â Modification soumise â UNEEK te notifiera' : 'â Nouveau produit soumis â UNEEK validera avant publication');
       setTimeout(() => loadProducts(), 1000);
     } catch (err) {
       showToast('Erreur: ' + err.message);
@@ -530,7 +624,7 @@
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
         body: JSON.stringify({ order_item_id: orderId, action: 'ship' })
       });
-      showToast('✓ Marqué comme expédié — le client est notifié');
+      showToast('â MarquÃ© comme expÃ©diÃ© â le client est notifiÃ©');
       setTimeout(() => loadOrders(), 1000);
     } catch (err) {
       showToast('Erreur: ' + err.message);
@@ -538,23 +632,23 @@
   }
 
   // --- HELPERS ---
-  function shortOrder(num) { return num ? '…' + num.slice(-4) : ''; }
+  function shortOrder(num) { return num ? 'â¦' + num.slice(-4) : ''; }
 
   function getShippingBadge(status) {
     const map = {
-      'pending': '<span class="badge badge-orange">À expédier</span>',
-      'processing': '<span class="badge badge-orange">À expédier</span>',
-      'shipped': '<span class="badge badge-green">Expédié</span>',
-      'delivered': '<span class="badge badge-green">Expédié</span>',
+      'pending': '<span class="badge badge-orange">Ã expÃ©dier</span>',
+      'processing': '<span class="badge badge-orange">Ã expÃ©dier</span>',
+      'shipped': '<span class="badge badge-green">ExpÃ©diÃ©</span>',
+      'delivered': '<span class="badge badge-green">ExpÃ©diÃ©</span>',
       'returned': '<span class="badge badge-red">En retour</span>'
     };
-    return map[status] || '<span class="badge badge-orange">À expédier</span>';
+    return map[status] || '<span class="badge badge-orange">Ã expÃ©dier</span>';
   }
 
   function getActionBtn(order) {
-    if (order.shipping_status === 'returned') return '<span class="return-mark">↩ Retour</span>';
-    if (['shipped', 'delivered'].includes(order.shipping_status)) return '<span class="done-mark">✓</span>';
-    return '<button class="btn-ship" onclick="markShipped(\'' + order.id + '\', this)">Expédié</button>';
+    if (order.shipping_status === 'returned') return '<span class="return-mark">â© Retour</span>';
+    if (['shipped', 'delivered'].includes(order.shipping_status)) return '<span class="done-mark">â</span>';
+    return '<button class="btn-ship" onclick="markShipped(\'' + order.id + '\', this)">ExpÃ©diÃ©</button>';
   }
 
   function showToast(msg) {
@@ -562,6 +656,106 @@
     t.textContent = msg;
     t.className = 'toast show';
     setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // --- DELETE PRODUCT ---
+  let deleteTargetId = null;
+
+  function confirmDeleteProduct(productId, productName) {
+    deleteTargetId = productId;
+    document.getElementById('confirmDeleteMsg').textContent = 'Le produit "' + productName + '" sera dÃ©finitivement supprimÃ©. Cette action est irrÃ©versible.';
+    document.getElementById('confirmDeleteBtn').onclick = () => executeDeleteProduct();
+    document.getElementById('confirmDeleteBg').classList.add('show');
+  }
+
+  function closeConfirmDelete() {
+    document.getElementById('confirmDeleteBg').classList.remove('show');
+    deleteTargetId = null;
+  }
+
+  async function executeDeleteProduct() {
+    if (!deleteTargetId) return;
+    closeConfirmDelete();
+    try {
+      const res = await fetch(API_BASE + '/creator/products', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify({ product_id: deleteTargetId, brand_id: currentBrand.id })
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast('Erreur: ' + (data.error || 'Suppression Ã©chouÃ©e')); return; }
+      showToast('â Produit supprimÃ©');
+      setTimeout(() => loadProducts(), 500);
+    } catch (err) {
+      showToast('Erreur: ' + err.message);
+    }
+  }
+
+  // --- SETTINGS: CHANGE EMAIL ---
+  async function changeEmail() {
+    const newEmail = document.getElementById('set-email').value;
+    const password = document.getElementById('set-email-pw').value;
+    const msgEl = document.getElementById('email-msg');
+    if (!newEmail || !password) { showMsg(msgEl, 'Remplis tous les champs', 'var(--red)'); return; }
+
+    try {
+      const res = await fetch(API_BASE + '/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify({ action: 'change_email', new_email: newEmail, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { showMsg(msgEl, data.error || 'Erreur', 'var(--red)'); return; }
+      showMsg(msgEl, 'â Email mis Ã  jour', 'var(--green)');
+      document.getElementById('set-email').value = '';
+      document.getElementById('set-email-pw').value = '';
+    } catch (err) {
+      showMsg(msgEl, 'Erreur serveur', 'var(--red)');
+    }
+  }
+
+  // --- SETTINGS: CHANGE PASSWORD ---
+  async function changePassword() {
+    const oldPw = document.getElementById('set-old-pw').value;
+    const newPw = document.getElementById('set-new-pw').value;
+    const confirmPw = document.getElementById('set-confirm-pw').value;
+    const msgEl = document.getElementById('pw-msg');
+    if (!oldPw || !newPw || !confirmPw) { showMsg(msgEl, 'Remplis tous les champs', 'var(--red)'); return; }
+    if (newPw !== confirmPw) { showMsg(msgEl, 'Les mots de passe ne correspondent pas', 'var(--red)'); return; }
+    if (newPw.length < 6) { showMsg(msgEl, 'Le mot de passe doit faire au moins 6 caractÃ¨res', 'var(--red)'); return; }
+
+    try {
+      const res = await fetch(API_BASE + '/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify({ action: 'change_password', old_password: oldPw, new_password: newPw })
+      });
+      const data = await res.json();
+      if (!res.ok) { showMsg(msgEl, data.error || 'Erreur', 'var(--red)'); return; }
+      showMsg(msgEl, 'â Mot de passe mis Ã  jour', 'var(--green)');
+      document.getElementById('set-old-pw').value = '';
+      document.getElementById('set-new-pw').value = '';
+      document.getElementById('set-confirm-pw').value = '';
+    } catch (err) {
+      showMsg(msgEl, 'Erreur serveur', 'var(--red)');
+    }
+  }
+
+  function showMsg(el, text, color) {
+    el.textContent = text;
+    el.style.color = color;
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 4000);
+  }
+
+  // --- LOGOUT ---
+  function doLogout() {
+    authToken = null;
+    currentBrand = null;
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('loginScreen').style.display = '';
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPassword').value = '';
   }
 
   // Init
