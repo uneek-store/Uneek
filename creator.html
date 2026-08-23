@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>UNEEK CrÃ©ateur</title>
+  <title>UNEEK Créateur</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
 
@@ -187,11 +187,11 @@
 <div class="login-wrap" id="loginScreen">
   <div class="login-box">
     <h1>UNEEK</h1>
-    <p>Espace crÃ©ateur</p>
+    <p>Espace créateur</p>
     <label>Email</label>
     <input type="email" id="loginEmail" placeholder="julien@brouillon.com" />
     <label>Mot de passe</label>
-    <input type="password" id="loginPassword" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢" />
+    <input type="password" id="loginPassword" placeholder="••••••••" />
     <button class="login-btn" onclick="doLogin()">Se connecter</button>
     <div class="login-error" id="loginError">Email ou mot de passe incorrect</div>
   </div>
@@ -201,12 +201,12 @@
 <div class="app" id="app">
   <div class="sidebar">
     <div class="sidebar-logo">UNEEK</div>
-    <div class="sidebar-brand" id="sidebarBrand">â</div>
-    <div class="sidebar-tag">CrÃ©ateur</div>
+    <div class="sidebar-brand" id="sidebarBrand">—</div>
+    <div class="sidebar-tag">Créateur</div>
     <a class="active" onclick="showSection('overview', this)">Vue d'ensemble</a>
     <a onclick="showSection('products', this)">Mes produits</a>
     <a onclick="showSection('orders', this)">Commandes</a>
-    <a onclick="showSection('settings', this)">ParamÃ¨tres</a>
+    <a onclick="showSection('settings', this)">Paramètres</a>
   </div>
 
   <div class="main">
@@ -217,15 +217,15 @@
       <div class="page-sub" id="welcomeSub">Tableau de bord</div>
       <div class="stats">
         <div class="stat-card"><div class="stat-label">Ventes ce mois</div><div class="stat-value" id="stat-sales">0</div></div>
-        <div class="stat-card"><div class="stat-label">Chiffre d'affaires</div><div class="stat-value" id="stat-ca">â¬0</div></div>
-        <div class="stat-card"><div class="stat-label">Ton revenu</div><div class="stat-value" id="stat-revenue">â¬0</div></div>
-        <div class="stat-card"><div class="stat-label">Ã expÃ©dier</div><div class="stat-value" id="stat-toship">0</div></div>
+        <div class="stat-card"><div class="stat-label">Chiffre d'affaires</div><div class="stat-value" id="stat-ca">€0</div></div>
+        <div class="stat-card"><div class="stat-label">Ton revenu</div><div class="stat-value" id="stat-revenue">€0</div></div>
+        <div class="stat-card"><div class="stat-label">À expédier</div><div class="stat-value" id="stat-toship">0</div></div>
       </div>
       <div class="card">
-        <div class="card-header">Commandes rÃ©centes</div>
+        <div class="card-header">Commandes récentes</div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Commande</th><th>Produit(s)</th><th>QtÃ©</th><th>Client</th><th>Statut</th></tr></thead>
+            <thead><tr><th>Commande</th><th>Produit(s)</th><th>Qté</th><th>Client</th><th>Statut</th></tr></thead>
             <tbody id="overview-orders"></tbody>
           </table>
         </div>
@@ -235,7 +235,7 @@
     <!-- MES PRODUITS -->
     <div id="sec-products" class="section">
       <div class="page-title">Mes produits</div>
-      <div class="page-sub">Le stock se met Ã  jour automatiquement Ã  chaque vente</div>
+      <div class="page-sub">Le stock se met à jour automatiquement à chaque vente</div>
       <div class="card">
         <div class="card-header">
           <span id="productCount">0 produits</span>
@@ -243,7 +243,7 @@
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Produit</th><th>Prix</th><th>CatÃ©gorie</th><th>Stock restant</th><th>Statut</th><th></th></tr></thead>
+            <thead><tr><th>Produit</th><th>Prix</th><th>Catégorie</th><th>Stock restant</th><th>Statut</th><th></th></tr></thead>
             <tbody id="products-table"></tbody>
           </table>
         </div>
@@ -252,49 +252,49 @@
 
     <!-- COMMANDES -->
     <div id="sec-orders" class="section">
-      <div class="page-title">Commandes Ã  traiter</div>
-      <div class="page-sub">Les commandes multi-produits sont groupÃ©es â les retours sont signalÃ©s en rouge</div>
+      <div class="page-title">Commandes à traiter</div>
+      <div class="page-sub">Les commandes multi-produits sont groupées — les retours sont signalés en rouge</div>
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Commande</th><th>Produit</th><th>QtÃ©</th><th>Taille</th><th>Client</th><th>Adresse</th><th>TÃ©l</th><th>Statut</th><th></th></tr></thead>
+            <thead><tr><th>Commande</th><th>Produit</th><th>Qté</th><th>Taille</th><th>Client</th><th>Adresse</th><th>Tél</th><th>Statut</th><th></th></tr></thead>
             <tbody id="orders-table"></tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- PARAMÃTRES -->
+    <!-- PARAMÈTRES -->
     <div id="sec-settings" class="section">
-      <div class="page-title">ParamÃ¨tres</div>
-      <div class="page-sub">GÃ¨re ton compte crÃ©ateur</div>
+      <div class="page-title">Paramètres</div>
+      <div class="page-sub">Gère ton compte créateur</div>
 
       <div class="settings-card">
         <div class="settings-title">Changer l'adresse email</div>
         <label>Nouvel email</label>
         <input type="email" id="set-email" placeholder="nouvel@email.com" />
         <label>Mot de passe actuel (confirmation)</label>
-        <input type="password" id="set-email-pw" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢" />
-        <button class="btn-save" onclick="changeEmail()">Mettre Ã  jour l'email</button>
+        <input type="password" id="set-email-pw" placeholder="••••••••" />
+        <button class="btn-save" onclick="changeEmail()">Mettre à jour l'email</button>
         <div id="email-msg" style="font-size:12px;margin-top:8px;display:none"></div>
       </div>
 
       <div class="settings-card">
         <div class="settings-title">Changer le mot de passe</div>
         <label>Mot de passe actuel</label>
-        <input type="password" id="set-old-pw" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢" />
+        <input type="password" id="set-old-pw" placeholder="••••••••" />
         <label>Nouveau mot de passe</label>
-        <input type="password" id="set-new-pw" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢" />
+        <input type="password" id="set-new-pw" placeholder="••••••••" />
         <label>Confirmer le nouveau mot de passe</label>
-        <input type="password" id="set-confirm-pw" placeholder="â¢â¢â¢â¢â¢â¢â¢â¢" />
-        <button class="btn-save" onclick="changePassword()">Mettre Ã  jour le mot de passe</button>
+        <input type="password" id="set-confirm-pw" placeholder="••••••••" />
+        <button class="btn-save" onclick="changePassword()">Mettre à jour le mot de passe</button>
         <div id="pw-msg" style="font-size:12px;margin-top:8px;display:none"></div>
       </div>
 
       <div class="settings-card">
-        <div class="settings-title">DÃ©connexion</div>
-        <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px">Tu seras redirigÃ© vers la page de connexion.</p>
-        <button class="btn-save" style="background:var(--red)" onclick="doLogout()">Se dÃ©connecter</button>
+        <div class="settings-title">Déconnexion</div>
+        <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px">Tu seras redirigé vers la page de connexion.</p>
+        <button class="btn-save" style="background:var(--red)" onclick="doLogout()">Se déconnecter</button>
       </div>
     </div>
 
@@ -305,7 +305,7 @@
 <div class="confirm-bg" id="confirmDeleteBg">
   <div class="confirm-box">
     <h3>Supprimer ce produit ?</h3>
-    <p id="confirmDeleteMsg">Cette action est irrÃ©versible. Le produit sera dÃ©finitivement supprimÃ©.</p>
+    <p id="confirmDeleteMsg">Cette action est irréversible. Le produit sera définitivement supprimé.</p>
     <div class="confirm-btns">
       <button class="btn-cancel" onclick="closeConfirmDelete()">Annuler</button>
       <button class="btn-submit" style="background:var(--red)" id="confirmDeleteBtn">Supprimer</button>
@@ -321,10 +321,10 @@
     <label>Nom du produit</label>
     <input id="f-name" placeholder="ex: Hoodie Oversized" />
 
-    <label>Prix (â¬)</label>
+    <label>Prix (€)</label>
     <input id="f-price" type="number" placeholder="65" />
 
-    <label>CatÃ©gorie</label>
+    <label>Catégorie</label>
     <select id="f-cat">
       <option>Tops</option>
       <option>Bottoms</option>
@@ -333,14 +333,14 @@
     </select>
 
     <label>Description</label>
-    <textarea id="f-desc" placeholder="DÃ©cris ton produit..."></textarea>
+    <textarea id="f-desc" placeholder="Décris ton produit..."></textarea>
 
     <label>Commission UNEEK (%)</label>
     <input id="f-commission" type="number" placeholder="12" min="0" max="100" />
-    <p class="modal-note" style="margin-top:2px">Pourcentage prÃ©levÃ© par UNEEK sur chaque vente.</p>
+    <p class="modal-note" style="margin-top:2px">Pourcentage prélevé par UNEEK sur chaque vente.</p>
 
     <label>Variantes (couleurs, etc.)</label>
-    <input id="f-variants" placeholder="ex: Noir, Blanc, Rouge (sÃ©parÃ©s par des virgules)" />
+    <input id="f-variants" placeholder="ex: Noir, Blanc, Rouge (séparés par des virgules)" />
     <p class="modal-note" style="margin-top:2px">Laisse vide si le produit n'a pas de variante.</p>
 
     <!-- IMAGE -->
@@ -384,6 +384,14 @@
   let creatorName = '';
   let isEditMode = false;
   let editProductId = null;
+  let loadedProducts = [];
+
+  // Echappe le HTML : un nom de produit contenant " < > & ' cassait la ligne du tableau
+  function esc(v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
 
   // --- LOGIN ---
   async function doLogin() {
@@ -404,12 +412,18 @@
         errorEl.style.display = 'block';
         return;
       }
+      // L'API renvoie la marque DANS user : { user: { name, is_admin, brand } }
+      currentBrand = data.user.brand || data.brand || null;
+      if (!currentBrand) {
+        errorEl.textContent = "Ce compte n'est associé à aucune marque créateur.";
+        errorEl.style.display = 'block';
+        return;
+      }
       authToken = data.token;
-      currentBrand = data.brand;
-      creatorName = data.user.contact_name || 'CrÃ©ateur';
+      creatorName = data.user.name || data.user.contact_name || 'Créateur';
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('app').style.display = 'block';
-      document.getElementById('sidebarBrand').textContent = currentBrand?.name || 'â';
+      document.getElementById('sidebarBrand').textContent = currentBrand?.name || '—';
       document.getElementById('welcomeTitle').textContent = 'Bonjour, ' + creatorName.split(' ')[0];
       document.getElementById('welcomeSub').textContent = 'Tableau de bord ' + (currentBrand?.name || '');
       loadDashboard();
@@ -440,16 +454,23 @@
       });
       const data = await res.json();
       const products = data.products || data || [];
+      loadedProducts = products;
       let html = '';
       products.forEach(p => {
         const stockStr = p.sizes_stock
-          ? Object.entries(p.sizes_stock).map(([s, q]) => s + ':' + q).join(' Â· ')
+          ? Object.entries(p.sizes_stock).map(([s, q]) => s + ':' + q).join(' · ')
           : (p.stock_quantity || 0);
         const encoded = encodeURIComponent(JSON.stringify({
           id: p.id, name: p.name, price: p.price, category: p.category, description: p.description,
           commission_percent: p.commission_percent, variants: p.variants
         }));
-        html += '<tr><td class="bold">' + p.name + '</td><td>â¬' + p.price + '</td><td class="sec">' + (p.category || '') + '</td><td class="sec">' + stockStr + '</td><td><span class="badge badge-green">PubliÃ©</span></td><td><button class="btn-edit" onclick="openEditModal(\'' + encoded + '\')">Modifier</button> <button class="btn-delete" onclick="confirmDeleteProduct(\'' + p.id + '\', \'' + p.name.replace(/'/g, "\\'") + '\')">Supprimer</button></td></tr>';
+        // Le statut etait code en dur sur "Publie" : un produit en attente
+        // de validation s'affichait comme publie chez le createur.
+        var badge;
+        if (p.is_pending_review) badge = '<span class="badge badge-orange">Modif. en validation</span>';
+        else if (p.is_published === false) badge = '<span class="badge badge-red">Non publié</span>';
+        else badge = '<span class="badge badge-green">Publié</span>';
+        html += '<tr><td class="bold">' + esc(p.name) + '</td><td>€' + esc(p.price) + '</td><td class="sec">' + esc(p.category || '') + '</td><td class="sec">' + esc(stockStr) + '</td><td>' + badge + '</td><td><button class="btn-edit" onclick="openEditModal(\'' + encoded + '\')">Modifier</button> <button class="btn-delete" onclick="confirmDeleteProduct(\'' + esc(p.id) + '\')">Supprimer</button></td></tr>';
       });
       document.getElementById('products-table').innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucun produit</td></tr>';
       document.getElementById('productCount').textContent = products.length + ' produit' + (products.length > 1 ? 's' : '');
@@ -491,28 +512,28 @@
         totalRevenue += orderPayout;
         if (['pending', 'processing'].includes(order.shipping_status)) toShip++;
 
-        overviewHtml += '<tr' + fadedAttr + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + productStr + '</td><td>' + totalQty + '</td><td class="sec">' + (order.customer_name || '') + '</td><td>' + statusBadge + '</td></tr>';
+        overviewHtml += '<tr' + fadedAttr + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + esc(productStr) + '</td><td>' + totalQty + '</td><td class="sec">' + esc(order.customer_name || '') + '</td><td>' + statusBadge + '</td></tr>';
 
         if (items.length > 1) {
           items.forEach((item, idx) => {
             const rowCls = isFaded ? 'faded grp' : 'grp';
             if (idx === 0) {
-              ordersHtml += '<tr class="' + rowCls + '"><td class="bold" rowspan="' + items.length + '">' + shortOrder(order.order_number) + '</td><td class="sec">' + (item.product_name || item.name) + '</td><td>' + (item.quantity || 1) + '</td><td>' + (item.size || '') + '</td><td class="sec" rowspan="' + items.length + '">' + (order.customer_name || '') + '</td><td class="sec" rowspan="' + items.length + '">' + (order.shipping_address || '') + '</td><td class="sec" rowspan="' + items.length + '">' + (order.customer_phone || '') + '</td><td rowspan="' + items.length + '">' + statusBadge + '</td><td rowspan="' + items.length + '">' + getActionBtn(order) + '</td></tr>';
+              ordersHtml += '<tr class="' + rowCls + '"><td class="bold" rowspan="' + items.length + '">' + shortOrder(order.order_number) + '</td><td class="sec">' + esc(item.product_name || item.name) + '</td><td>' + (item.quantity || 1) + '</td><td>' + (item.size || '') + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.customer_name || '') + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.shipping_address || '') + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.customer_phone || '') + '</td><td rowspan="' + items.length + '">' + statusBadge + '</td><td rowspan="' + items.length + '">' + getActionBtn(order) + '</td></tr>';
             } else {
-              ordersHtml += '<tr class="' + rowCls + ' grp-sub"><td class="sec">' + (item.product_name || item.name) + '</td><td>' + (item.quantity || 1) + '</td><td>' + (item.size || '') + '</td></tr>';
+              ordersHtml += '<tr class="' + rowCls + ' grp-sub"><td class="sec">' + esc(item.product_name || item.name) + '</td><td>' + (item.quantity || 1) + '</td><td>' + (item.size || '') + '</td></tr>';
             }
           });
         } else {
           const item = items[0];
-          ordersHtml += '<tr' + fadedAttr + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + (item.product_name || item.name || '') + '</td><td>' + (item.quantity || 1) + '</td><td>' + (item.size || '') + '</td><td class="sec">' + (order.customer_name || '') + '</td><td class="sec">' + (order.shipping_address || '') + '</td><td class="sec">' + (order.customer_phone || '') + '</td><td>' + statusBadge + '</td><td>' + getActionBtn(order) + '</td></tr>';
+          ordersHtml += '<tr' + fadedAttr + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + esc(item.product_name || item.name || '') + '</td><td>' + (item.quantity || 1) + '</td><td>' + (item.size || '') + '</td><td class="sec">' + esc(order.customer_name || '') + '</td><td class="sec">' + esc(order.shipping_address || '') + '</td><td class="sec">' + esc(order.customer_phone || '') + '</td><td>' + statusBadge + '</td><td>' + getActionBtn(order) + '</td></tr>';
         }
       });
 
       document.getElementById('overview-orders').innerHTML = overviewHtml || '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
       document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
       document.getElementById('stat-sales').textContent = totalSales;
-      document.getElementById('stat-ca').textContent = 'â¬' + totalCA.toFixed(0);
-      document.getElementById('stat-revenue').textContent = 'â¬' + totalRevenue.toFixed(0);
+      document.getElementById('stat-ca').textContent = '€' + totalCA.toFixed(0);
+      document.getElementById('stat-revenue').textContent = '€' + totalRevenue.toFixed(0);
       document.getElementById('stat-toship').textContent = toShip;
     } catch (err) {
       console.error('Error loading orders:', err);
@@ -528,6 +549,7 @@
     document.getElementById('f-price').value = '';
     document.getElementById('f-desc').value = '';
     document.getElementById('f-img').value = '';
+    document.getElementById('f-file').value = '';
     document.getElementById('f-commission').value = '';
     document.getElementById('f-variants').value = '';
     document.getElementById('imgSection').classList.add('show');
@@ -549,9 +571,12 @@
     document.getElementById('f-desc').value = p.description || '';
     document.getElementById('f-commission').value = p.commission_percent || '';
     document.getElementById('f-variants').value = (p.variants || []).join(', ');
+    // Ces deux champs gardaient l'image du produit precedemment ouvert.
+    document.getElementById('f-img').value = '';
+    document.getElementById('f-file').value = '';
     document.getElementById('imgSection').classList.add('show');
     document.getElementById('stockSection').style.display = 'none';
-    document.getElementById('modalNote').textContent = "La modification sera validÃ©e par UNEEK.";
+    document.getElementById('modalNote').textContent = "La modification sera validée par UNEEK.";
     document.getElementById('productModal').classList.add('show');
   }
 
@@ -596,7 +621,7 @@
         body: JSON.stringify(body)
       });
       closeModal();
-      showToast(isEditMode ? 'â Modification soumise â UNEEK te notifiera' : 'â Nouveau produit soumis â UNEEK validera avant publication');
+      showToast(isEditMode ? '✓ Modification soumise — UNEEK te notifiera' : '✓ Nouveau produit soumis — UNEEK validera avant publication');
       setTimeout(() => loadProducts(), 1000);
     } catch (err) {
       showToast('Erreur: ' + err.message);
@@ -624,7 +649,7 @@
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
         body: JSON.stringify({ order_item_id: orderId, action: 'ship' })
       });
-      showToast('â MarquÃ© comme expÃ©diÃ© â le client est notifiÃ©');
+      showToast('✓ Marqué comme expédié — le client est notifié');
       setTimeout(() => loadOrders(), 1000);
     } catch (err) {
       showToast('Erreur: ' + err.message);
@@ -632,23 +657,23 @@
   }
 
   // --- HELPERS ---
-  function shortOrder(num) { return num ? 'â¦' + num.slice(-4) : ''; }
+  function shortOrder(num) { return num ? '…' + num.slice(-4) : ''; }
 
   function getShippingBadge(status) {
     const map = {
-      'pending': '<span class="badge badge-orange">Ã expÃ©dier</span>',
-      'processing': '<span class="badge badge-orange">Ã expÃ©dier</span>',
-      'shipped': '<span class="badge badge-green">ExpÃ©diÃ©</span>',
-      'delivered': '<span class="badge badge-green">ExpÃ©diÃ©</span>',
+      'pending': '<span class="badge badge-orange">À expédier</span>',
+      'processing': '<span class="badge badge-orange">À expédier</span>',
+      'shipped': '<span class="badge badge-green">Expédié</span>',
+      'delivered': '<span class="badge badge-green">Expédié</span>',
       'returned': '<span class="badge badge-red">En retour</span>'
     };
-    return map[status] || '<span class="badge badge-orange">Ã expÃ©dier</span>';
+    return map[status] || '<span class="badge badge-orange">À expédier</span>';
   }
 
   function getActionBtn(order) {
-    if (order.shipping_status === 'returned') return '<span class="return-mark">â© Retour</span>';
-    if (['shipped', 'delivered'].includes(order.shipping_status)) return '<span class="done-mark">â</span>';
-    return '<button class="btn-ship" onclick="markShipped(\'' + order.id + '\', this)">ExpÃ©diÃ©</button>';
+    if (order.shipping_status === 'returned') return '<span class="return-mark">↩ Retour</span>';
+    if (['shipped', 'delivered'].includes(order.shipping_status)) return '<span class="done-mark">✓</span>';
+    return '<button class="btn-ship" onclick="markShipped(\'' + order.id + '\', this)">Expédié</button>';
   }
 
   function showToast(msg) {
@@ -663,7 +688,11 @@
 
   function confirmDeleteProduct(productId, productName) {
     deleteTargetId = productId;
-    document.getElementById('confirmDeleteMsg').textContent = 'Le produit "' + productName + '" sera dÃ©finitivement supprimÃ©. Cette action est irrÃ©versible.';
+    if (!productName) {
+      const found = loadedProducts.find(p => String(p.id) === String(productId));
+      productName = found ? found.name : 'ce produit';
+    }
+    document.getElementById('confirmDeleteMsg').textContent = 'Le produit "' + productName + '" sera définitivement supprimé. Cette action est irréversible.';
     document.getElementById('confirmDeleteBtn').onclick = () => executeDeleteProduct();
     document.getElementById('confirmDeleteBg').classList.add('show');
   }
@@ -683,8 +712,8 @@
         body: JSON.stringify({ product_id: deleteTargetId, brand_id: currentBrand.id })
       });
       const data = await res.json();
-      if (!res.ok) { showToast('Erreur: ' + (data.error || 'Suppression Ã©chouÃ©e')); return; }
-      showToast('â Produit supprimÃ©');
+      if (!res.ok) { showToast('Erreur: ' + (data.error || 'Suppression échouée')); return; }
+      showToast('✓ Produit supprimé');
       setTimeout(() => loadProducts(), 500);
     } catch (err) {
       showToast('Erreur: ' + err.message);
@@ -706,7 +735,7 @@
       });
       const data = await res.json();
       if (!res.ok) { showMsg(msgEl, data.error || 'Erreur', 'var(--red)'); return; }
-      showMsg(msgEl, 'â Email mis Ã  jour', 'var(--green)');
+      showMsg(msgEl, '✓ Email mis à jour', 'var(--green)');
       document.getElementById('set-email').value = '';
       document.getElementById('set-email-pw').value = '';
     } catch (err) {
@@ -722,7 +751,7 @@
     const msgEl = document.getElementById('pw-msg');
     if (!oldPw || !newPw || !confirmPw) { showMsg(msgEl, 'Remplis tous les champs', 'var(--red)'); return; }
     if (newPw !== confirmPw) { showMsg(msgEl, 'Les mots de passe ne correspondent pas', 'var(--red)'); return; }
-    if (newPw.length < 6) { showMsg(msgEl, 'Le mot de passe doit faire au moins 6 caractÃ¨res', 'var(--red)'); return; }
+    if (newPw.length < 6) { showMsg(msgEl, 'Le mot de passe doit faire au moins 6 caractères', 'var(--red)'); return; }
 
     try {
       const res = await fetch(API_BASE + '/auth', {
@@ -732,7 +761,7 @@
       });
       const data = await res.json();
       if (!res.ok) { showMsg(msgEl, data.error || 'Erreur', 'var(--red)'); return; }
-      showMsg(msgEl, 'â Mot de passe mis Ã  jour', 'var(--green)');
+      showMsg(msgEl, '✓ Mot de passe mis à jour', 'var(--green)');
       document.getElementById('set-old-pw').value = '';
       document.getElementById('set-new-pw').value = '';
       document.getElementById('set-confirm-pw').value = '';

@@ -1,6 +1,6 @@
 // API : /api/creator/products
-// GET  â liste les produits du crÃ©ateur connectÃ©
-// POST â soumettre un nouveau produit ou modifier stock directement
+// GET  → liste les produits du créateur connecté
+// POST → soumettre un nouveau produit ou modifier stock directement
 
 import { supabaseAdmin } from "../lib/supabase.js";
 
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "brand_id requis" });
     }
 
-    // --- LISTE DES PRODUITS DU CRÃATEUR ---
+    // --- LISTE DES PRODUITS DU CRÉATEUR ---
     if (req.method === "GET") {
       const { data, error } = await supabaseAdmin
         .from("products")
@@ -62,10 +62,10 @@ export default async function handler(req, res) {
 
         if (error) {
           console.error("Error updating product:", error);
-          return res.status(500).json({ error: "Erreur mise Ã  jour" });
+          return res.status(500).json({ error: "Erreur mise à jour" });
         }
 
-        return res.status(200).json({ success: true, message: "Produit mis Ã  jour", product: data });
+        return res.status(200).json({ success: true, message: "Produit mis à jour", product: data });
       }
 
       // NEW PRODUCT: submit for approval
@@ -92,7 +92,7 @@ export default async function handler(req, res) {
 
         return res.status(201).json({
           success: true,
-          message: "Nouveau produit soumis â en attente de validation par UNEEK",
+          message: "Nouveau produit soumis — en attente de validation par UNEEK",
           edit_id: edit.id,
         });
       }
