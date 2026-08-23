@@ -70,6 +70,7 @@ export default async function handler(req, res) {
           id: order.id,
           order_number: order.order_number,
           customer_name: order.customer_name,
+          customer_nickname: order.customer_nickname || null,
           customer_email: order.customer_email,
           shipping_address: order.shipping_address,
           total_amount: order.total_amount,

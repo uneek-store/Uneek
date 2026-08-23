@@ -95,6 +95,9 @@
     .stale-banner { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 9999; background: var(--red); color: #fff; padding: 10px 16px; font-size: 13px; text-align: center; font-family: var(--font-body); }
     .stale-banner button { margin-left: 10px; padding: 4px 12px; border: none; border-radius: 6px; background: #fff; color: var(--red); font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--font-body); }
 
+    .nickname { display: inline-block; padding: 3px 10px; border-radius: 6px; background: var(--black); color: var(--white); font-weight: 600; font-size: 12px; white-space: nowrap; }
+    .nickname.vide { background: var(--gray-100); color: var(--gray-400); font-weight: 400; font-style: italic; }
+
     /* STOCK PAR TAILLE */
     .stock-sizes { display: flex; flex-wrap: wrap; gap: 4px; }
     .size-chip { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; background: var(--gray-100); color: var(--gray-600); white-space: nowrap; }
@@ -260,7 +263,7 @@
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Commande</th><th>Client</th><th>Produit</th><th>Qt&eacute;</th><th>Marque</th><th>Total</th><th>Commission</th><th>Statut</th></tr></thead>
+            <thead><tr><th>Commande</th><th>Client</th><th>Surnom emballage</th><th>Produit</th><th>Qt&eacute;</th><th>Marque</th><th>Total</th><th>Commission</th><th>Statut</th></tr></thead>
             <tbody id="orders-table"></tbody>
           </table>
         </div>
@@ -389,7 +392,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-08-23-surnom-7';
+  const APP_VERSION = '2026-08-23-total-tel-8';
 
   async function checkAppVersion() {
     try {
@@ -563,6 +566,14 @@
     else if (id === 'applications') loadApplications();
   }
 
+  // Surnom a inscrire sur l'emballage, tel que le client l'a demande.
+  function surnomHtml(order) {
+    const v = (order.customer_nickname || '').trim();
+    return v
+      ? '<span class="nickname">' + esc(v) + '</span>'
+      : '<span class="nickname vide">non renseigné</span>';
+  }
+
   // --- LOAD DATA ---
   async function loadDashboard() {
     await Promise.all([loadOrders(), loadProducts(), loadBrands(), loadPending(), loadApplications()]);
@@ -589,12 +600,15 @@
 
         items.forEach(item => {
           const prodLabel = item.product_name + (item.size ? ' (' + item.size + ')' : '');
-          const itemTotal = (parseFloat(item.product_price) || 0) * (item.quantity || 1);
+          // L'API renvoie le prix sous le nom "price" ; admin.html lisait
+          // "product_price", inexistant : chaque ligne affichait 0 EUR.
+          const unitPrice = parseFloat(item.price !== undefined ? item.price : item.product_price) || 0;
+          const itemTotal = unitPrice * (item.quantity || 1);
           const itemCommission = parseFloat(item.commission_amount) || 0;
 
           overviewHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + order.customer_name + '</td><td class="sec">' + prodLabel + '</td><td>' + (item.quantity || 1) + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
 
-          ordersHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + order.customer_name + '</td><td class="sec">' + prodLabel + '</td><td>' + (item.quantity || 1) + '</td><td class="sec">' + (item.brand_name || '') + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>€' + itemCommission.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
+          ordersHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + esc(order.customer_name) + '</td><td>' + surnomHtml(order) + '</td><td class="sec">' + esc(prodLabel) + '</td><td>' + (item.quantity || 1) + '</td><td class="sec">' + (item.brand_name || '') + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>€' + itemCommission.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
 
           totalCommission += itemCommission;
         });
@@ -603,7 +617,7 @@
       });
 
       document.getElementById('overview-orders').innerHTML = overviewHtml || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
-      document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
+      document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
       document.getElementById('stat-orders').textContent = orders.length;
       document.getElementById('stat-revenue').textContent = '€' + totalCommission.toFixed(0);
       document.getElementById('fin-revenue').textContent = '€' + totalCommission.toFixed(0);

@@ -319,7 +319,7 @@
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Commande</th><th>Produit</th><th>Qté</th><th>Taille</th><th>Client</th><th>Surnom emballage</th><th>Adresse</th><th>Tél</th><th>Statut</th><th></th></tr></thead>
+            <thead><tr><th>Commande</th><th>Produit</th><th>Qté</th><th>Taille</th><th>Client</th><th>Surnom emballage</th><th>Adresse</th><th>Statut</th><th></th></tr></thead>
             <tbody id="orders-table"></tbody>
           </table>
         </div>
@@ -477,7 +477,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-08-23-surnom-7';
+  const APP_VERSION = '2026-08-23-total-tel-8';
 
   async function checkAppVersion() {
     try {
@@ -710,19 +710,19 @@
           items.forEach((item, idx) => {
             const rowCls = isFaded ? 'faded grp' : 'grp';
             if (idx === 0) {
-              ordersHtml += '<tr class="' + rowCls + '"><td class="bold" rowspan="' + items.length + '">' + shortOrder(order.order_number) + '</td><td class="sec">' + esc(item.product_name || item.name) + '</td><td>' + (item.quantity || 1) + '</td><td>' + (item.size || '') + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.customer_name || '') + '</td><td rowspan="' + items.length + '">' + surnomHtml(order) + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.shipping_address || '') + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.customer_phone || '') + '</td><td rowspan="' + items.length + '">' + statusBadge + '</td><td rowspan="' + items.length + '">' + getActionBtn(order) + '</td></tr>';
+              ordersHtml += '<tr class="' + rowCls + '"><td class="bold" rowspan="' + items.length + '">' + shortOrder(order.order_number) + '</td><td class="sec">' + esc(item.product_name || item.name) + '</td><td>' + (item.quantity || 1) + '</td><td>' + (item.size || '') + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.customer_name || '') + '</td><td rowspan="' + items.length + '">' + surnomHtml(order) + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.shipping_address || '') + '</td><td rowspan="' + items.length + '">' + statusBadge + '</td><td rowspan="' + items.length + '">' + getActionBtn(order) + '</td></tr>';
             } else {
               ordersHtml += '<tr class="' + rowCls + ' grp-sub"><td class="sec">' + esc(item.product_name || item.name) + '</td><td>' + (item.quantity || 1) + '</td><td>' + (item.size || '') + '</td></tr>';
             }
           });
         } else {
           const item = items[0];
-          ordersHtml += '<tr' + fadedAttr + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + esc(item.product_name || item.name || '') + '</td><td>' + (item.quantity || 1) + '</td><td>' + (item.size || '') + '</td><td class="sec">' + esc(order.customer_name || '') + '</td><td>' + surnomHtml(order) + '</td><td class="sec">' + esc(order.shipping_address || '') + '</td><td class="sec">' + esc(order.customer_phone || '') + '</td><td>' + statusBadge + '</td><td>' + getActionBtn(order) + '</td></tr>';
+          ordersHtml += '<tr' + fadedAttr + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + esc(item.product_name || item.name || '') + '</td><td>' + (item.quantity || 1) + '</td><td>' + (item.size || '') + '</td><td class="sec">' + esc(order.customer_name || '') + '</td><td>' + surnomHtml(order) + '</td><td class="sec">' + esc(order.shipping_address || '') + '</td><td>' + statusBadge + '</td><td>' + getActionBtn(order) + '</td></tr>';
         }
       });
 
       document.getElementById('overview-orders').innerHTML = overviewHtml || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
-      document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
+      document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
       document.getElementById('stat-sales').textContent = totalSales;
       document.getElementById('stat-ca').textContent = '€' + totalCA.toFixed(0);
       document.getElementById('stat-revenue').textContent = '€' + totalRevenue.toFixed(0);
