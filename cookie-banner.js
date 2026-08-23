@@ -1,6 +1,6 @@
 // UNEEK Cookie Consent Banner
 // Ajoute <script src="/cookie-banner.js"></script> dans index.html (avant </body>)
-// StylÃ©, GDPR-compliant, se souvient du choix via localStorage
+// Stylé, GDPR-compliant, se souvient du choix via localStorage
 
 (function () {
   if (localStorage.getItem("uneek_cookies") !== null) return;
@@ -23,7 +23,7 @@
   var banner = document.createElement("div");
   banner.id = "ck-banner";
   banner.innerHTML =
-    '<span>Ce site utilise des cookies pour amÃ©liorer ton expÃ©rience. ' +
+    '<span>Ce site utilise des cookies pour améliorer ton expérience. ' +
     '<a href="/privacy" target="_blank">En savoir plus</a></span>' +
     '<div class="ck-btns">' +
     '<button class="ck-btn ck-refuse" id="ck-refuse">Refuser</button>' +
