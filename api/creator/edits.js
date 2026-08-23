@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   try {
     const { data, error } = await supabaseAdmin
       .from("product_edits")
-            .select("*, products(name, price, category, description, variants, commission_percent, image_urls, sizes_stock)")
+            .select("*, products(*)")
       .eq("brand_id", brand_id)
       .order("created_at", { ascending: false });
 
