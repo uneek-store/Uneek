@@ -124,6 +124,9 @@
     .stale-banner { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 9999; background: var(--red); color: #fff; padding: 10px 16px; font-size: 13px; text-align: center; font-family: var(--font-body); }
     .stale-banner button { margin-left: 10px; padding: 4px 12px; border: none; border-radius: 6px; background: #fff; color: var(--red); font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--font-body); }
 
+    .nickname { display: inline-block; padding: 3px 10px; border-radius: 6px; background: var(--black); color: var(--white); font-weight: 600; font-size: 12px; letter-spacing: 0.3px; white-space: nowrap; }
+    .nickname.vide { background: var(--gray-100); color: var(--gray-400); font-weight: 400; font-style: italic; }
+
     .stock-sizes { display: flex; flex-wrap: wrap; gap: 4px; }
     .size-chip { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; background: var(--gray-100); color: var(--gray-600); white-space: nowrap; }
     .size-chip .sz-label { color: var(--gray-400); font-weight: 400; }
@@ -270,7 +273,7 @@
         <div class="card-header">Commandes récentes</div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Commande</th><th>Produit(s)</th><th>Qté</th><th>Client</th><th>Statut</th></tr></thead>
+            <thead><tr><th>Commande</th><th>Produit(s)</th><th>Qté</th><th>Client</th><th>Surnom emballage</th><th>Statut</th></tr></thead>
             <tbody id="overview-orders"></tbody>
           </table>
         </div>
@@ -316,7 +319,7 @@
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Commande</th><th>Produit</th><th>Qté</th><th>Taille</th><th>Client</th><th>Adresse</th><th>Tél</th><th>Statut</th><th></th></tr></thead>
+            <thead><tr><th>Commande</th><th>Produit</th><th>Qté</th><th>Taille</th><th>Client</th><th>Surnom emballage</th><th>Adresse</th><th>Tél</th><th>Statut</th><th></th></tr></thead>
             <tbody id="orders-table"></tbody>
           </table>
         </div>
@@ -474,7 +477,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-08-23-diff-reel-6';
+  const APP_VERSION = '2026-08-23-surnom-7';
 
   async function checkAppVersion() {
     try {
@@ -616,6 +619,15 @@
     else if (id === 'overview') { loadProducts(); loadOrders(); }
   }
 
+  // Surnom a inscrire sur l'emballage. Mis en evidence : c'est l'information
+  // que le createur doit recopier a la main.
+  function surnomHtml(order) {
+    const v = (order.customer_nickname || '').trim();
+    return v
+      ? '<span class="nickname">' + esc(v) + '</span>'
+      : '<span class="nickname vide">non renseigné</span>';
+  }
+
   // --- LOAD DATA ---
   async function loadDashboard() {
     if (!currentBrand) return;
@@ -692,25 +704,25 @@
         totalRevenue += orderPayout;
         if (['pending', 'processing'].includes(order.shipping_status)) toShip++;
 
-        overviewHtml += '<tr' + fadedAttr + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + esc(productStr) + '</td><td>' + totalQty + '</td><td class="sec">' + esc(order.customer_name || '') + '</td><td>' + statusBadge + '</td></tr>';
+        overviewHtml += '<tr' + fadedAttr + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + esc(productStr) + '</td><td>' + totalQty + '</td><td class="sec">' + esc(order.customer_name || '') + '</td><td>' + surnomHtml(order) + '</td><td>' + statusBadge + '</td></tr>';
 
         if (items.length > 1) {
           items.forEach((item, idx) => {
             const rowCls = isFaded ? 'faded grp' : 'grp';
             if (idx === 0) {
-              ordersHtml += '<tr class="' + rowCls + '"><td class="bold" rowspan="' + items.length + '">' + shortOrder(order.order_number) + '</td><td class="sec">' + esc(item.product_name || item.name) + '</td><td>' + (item.quantity || 1) + '</td><td>' + (item.size || '') + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.customer_name || '') + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.shipping_address || '') + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.customer_phone || '') + '</td><td rowspan="' + items.length + '">' + statusBadge + '</td><td rowspan="' + items.length + '">' + getActionBtn(order) + '</td></tr>';
+              ordersHtml += '<tr class="' + rowCls + '"><td class="bold" rowspan="' + items.length + '">' + shortOrder(order.order_number) + '</td><td class="sec">' + esc(item.product_name || item.name) + '</td><td>' + (item.quantity || 1) + '</td><td>' + (item.size || '') + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.customer_name || '') + '</td><td rowspan="' + items.length + '">' + surnomHtml(order) + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.shipping_address || '') + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.customer_phone || '') + '</td><td rowspan="' + items.length + '">' + statusBadge + '</td><td rowspan="' + items.length + '">' + getActionBtn(order) + '</td></tr>';
             } else {
               ordersHtml += '<tr class="' + rowCls + ' grp-sub"><td class="sec">' + esc(item.product_name || item.name) + '</td><td>' + (item.quantity || 1) + '</td><td>' + (item.size || '') + '</td></tr>';
             }
           });
         } else {
           const item = items[0];
-          ordersHtml += '<tr' + fadedAttr + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + esc(item.product_name || item.name || '') + '</td><td>' + (item.quantity || 1) + '</td><td>' + (item.size || '') + '</td><td class="sec">' + esc(order.customer_name || '') + '</td><td class="sec">' + esc(order.shipping_address || '') + '</td><td class="sec">' + esc(order.customer_phone || '') + '</td><td>' + statusBadge + '</td><td>' + getActionBtn(order) + '</td></tr>';
+          ordersHtml += '<tr' + fadedAttr + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + esc(item.product_name || item.name || '') + '</td><td>' + (item.quantity || 1) + '</td><td>' + (item.size || '') + '</td><td class="sec">' + esc(order.customer_name || '') + '</td><td>' + surnomHtml(order) + '</td><td class="sec">' + esc(order.shipping_address || '') + '</td><td class="sec">' + esc(order.customer_phone || '') + '</td><td>' + statusBadge + '</td><td>' + getActionBtn(order) + '</td></tr>';
         }
       });
 
-      document.getElementById('overview-orders').innerHTML = overviewHtml || '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
-      document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
+      document.getElementById('overview-orders').innerHTML = overviewHtml || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
+      document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
       document.getElementById('stat-sales').textContent = totalSales;
       document.getElementById('stat-ca').textContent = '€' + totalCA.toFixed(0);
       document.getElementById('stat-revenue').textContent = '€' + totalRevenue.toFixed(0);

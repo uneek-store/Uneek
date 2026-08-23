@@ -885,7 +885,7 @@ function checkoutPage() {
             <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Nom</label><input id="co-nom" type="text" placeholder="Doe" value="${user?.last_name || ''}" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
           </div>
           <div style="margin-bottom:16px"><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Email</label><input id="co-email" type="email" placeholder="john@exemple.com" value="${user?.email || ''}" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
-          <div style="margin-bottom:16px"><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Surnom (pour l'emballage)</label><input id="co-nickname" type="text" placeholder="Ton petit nom" value="${user?.nickname || ''}" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
+          <div style="margin-bottom:16px"><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Surnom &mdash; &eacute;crit &agrave; la main sur ton colis *</label><input id="co-nickname" type="text" placeholder="Ton petit nom" maxlength="24" value="${user?.nickname || ''}" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
           <div style="margin-bottom:16px"><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Adresse</label><input id="co-addr" type="text" placeholder="Rue de la Mode 42" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
           <div class="co-form-grid-3" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:40px">
             <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Ville</label><input id="co-ville" type="text" placeholder="Bruxelles" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
@@ -932,6 +932,13 @@ async function confirmOrder() {
   const pays = document.getElementById('co-pays')?.value || 'Belgique';
   const nickname = document.getElementById('co-nickname')?.value;
   if (!p || !n || !e || !a || !v || !c) { showToast('Remplis tous les champs'); return; }
+  // Le surnom est ecrit a la main sur l'emballage : sans lui, le createur ne
+  // sait pas quoi inscrire.
+  if (!nickname || !nickname.trim()) {
+    showToast('Ajoute un surnom — il sera écrit sur ton colis');
+    document.getElementById('co-nickname')?.focus();
+    return;
+  }
 
   const btn = document.getElementById('co-btn');
   btn.textContent = 'Traitement...'; btn.disabled = true; btn.style.opacity = '0.5';
@@ -941,7 +948,7 @@ async function confirmOrder() {
       customer: {
         email: e,
         name: `${p} ${n}`,
-        nickname: nickname || null,
+        nickname: nickname.trim(),
         address: `${a}, ${c} ${v}, ${pays}`
       },
       items: cart.map(item => ({
