@@ -121,6 +121,18 @@
     .size-item span { font-size: 11px; color: var(--gray-500); font-weight: 500; }
     .size-item input { width: 54px; text-align: center; padding: 7px 4px; }
 
+    .stale-banner { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 9999; background: var(--red); color: #fff; padding: 10px 16px; font-size: 13px; text-align: center; font-family: var(--font-body); }
+    .stale-banner button { margin-left: 10px; padding: 4px 12px; border: none; border-radius: 6px; background: #fff; color: var(--red); font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--font-body); }
+
+    .stock-sizes { display: flex; flex-wrap: wrap; gap: 4px; }
+    .size-chip { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; background: var(--gray-100); color: var(--gray-600); white-space: nowrap; }
+    .size-chip .sz-label { color: var(--gray-400); font-weight: 400; }
+    .size-chip .sz-qty { font-weight: 600; color: var(--black); }
+    .size-chip.low { background: var(--red-bg); }
+    .size-chip.low .sz-qty { color: var(--red); }
+    .size-chip.out { background: var(--red-bg); }
+    .size-chip.out .sz-qty { color: var(--red); text-decoration: line-through; }
+
     .img-thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
     .img-thumb { position: relative; width: 68px; height: 88px; border-radius: 8px; overflow: hidden; border: 1px solid var(--gray-200); background: var(--gray-100); }
     .img-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -360,6 +372,11 @@
   </div>
 </div>
 
+<div class="stale-banner" id="staleBanner">
+  Cette page n'est plus à jour — une nouvelle version du panneau est en ligne.
+  <button onclick="location.reload(true)">Recharger maintenant</button>
+</div>
+
 <!-- DIALOGUE GENERIQUE -->
 <div class="confirm-bg" id="askBg">
   <div class="confirm-box">
@@ -406,7 +423,7 @@
     <div class="img-section" id="imgSection">
       <label>Photos du produit</label>
       <input type="file" id="f-file" accept="image/*" multiple onchange="onFilesChosen(this)" style="padding:6px" />
-      <div class="img-count" id="imgCount">0 / 7</div>
+      <div class="img-count" id="imgCount">0 / 5</div>
       <div class="img-thumbs" id="imgPreviews"></div>
       <p class="modal-note" style="margin-top:8px">La première photo est celle affichée sur la boutique. Clique sur ✕ pour en retirer une.</p>
       <p class="modal-note" style="margin-top:8px">ou ajoute une photo par lien :</p>
@@ -429,6 +446,8 @@
       </div>
       <label>Stock initial par taille</label>
       <div class="size-grid" id="sizeGrid"></div>
+      <p class="modal-note" style="margin-top:6px">Minimum 3 pièces par taille proposée — c'est dans les règles UNEEK.</p>
+      <p id="stockError" style="display:none;color:var(--red);font-size:12px;margin-top:6px;font-weight:500"></p>
     </div>
 
     <div class="modal-btns">
@@ -450,6 +469,24 @@
   let isEditMode = false;
   let editProductId = null;
   let loadedProducts = [];
+
+  // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
+  // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
+  // On compare la version du fichier en ligne a celle chargee ici.
+  const APP_VERSION = '2026-08-23-stock-photos-5';
+
+  async function checkAppVersion() {
+    try {
+      const r = await fetch(location.pathname + '?_v=' + Date.now(), { cache: 'no-store' });
+      const t = await r.text();
+      const m = t.match(/APP_VERSION = '([^']+)'/);
+      if (m && m[1] !== APP_VERSION) {
+        document.getElementById('staleBanner').style.display = 'block';
+        return false;
+      }
+    } catch (e) { /* hors ligne : on ne bloque rien */ }
+    return true;
+  }
 
   // Echappe le HTML : un nom de produit contenant " < > & ' cassait la ligne du tableau
   function esc(v) {
@@ -556,6 +593,7 @@
       document.getElementById('welcomeTitle').textContent = 'Bonjour, ' + creatorName.split(' ')[0];
       document.getElementById('welcomeSub').textContent = 'Tableau de bord ' + (currentBrand?.name || '');
       loadDashboard();
+      checkAppVersion();
     } catch (err) {
       errorEl.textContent = 'Erreur de connexion au serveur';
       errorEl.style.display = 'block';
@@ -586,9 +624,14 @@
       loadedProducts = products;
       let html = '';
       products.forEach(p => {
-        const stockStr = p.sizes_stock
-          ? Object.entries(p.sizes_stock).map(([s, q]) => s + ':' + q).join(' · ')
-          : (p.stock_quantity || 0);
+        // Stock par taille : rouge des qu'une taille passe sous 3 (regle UNEEK).
+        const stockStr = (p.sizes_stock && Object.keys(p.sizes_stock).length)
+          ? Object.keys(p.sizes_stock).map(t => {
+              const q = parseInt(p.sizes_stock[t]) || 0;
+              const cls = q === 0 ? 'size-chip out' : (q < 3 ? 'size-chip low' : 'size-chip');
+              return '<span class="' + cls + '"><span class="sz-label">' + esc(t) + '</span><span class="sz-qty">' + q + '</span></span>';
+            }).join('')
+          : '<span style="color:var(--gray-400)">' + (p.stock || p.stock_quantity || 0) + '</span>';
         const encoded = encodeURIComponent(JSON.stringify({
           id: p.id, name: p.name, price: p.price, category: p.category, description: p.description,
           commission_percent: p.commission_percent, variants: p.colors || p.variants || [], sizes_stock: p.sizes_stock, image_urls: p.image_urls || []
@@ -599,7 +642,7 @@
         if (p.is_pending_review) badge = '<span class="badge badge-orange">Modif. en validation</span>';
         else if (p.is_published === false) badge = '<span class="badge badge-red">Non publié</span>';
         else badge = '<span class="badge badge-green">Publié</span>';
-        html += '<tr><td class="bold">' + esc(p.name) + '</td><td>€' + esc(p.price) + '</td><td class="sec">' + esc(p.category || '') + '</td><td class="sec">' + esc(stockStr) + '</td><td>' + badge + '</td><td><button class="btn-edit" onclick="openEditModal(\'' + encoded + '\')">Modifier</button> <button class="btn-delete" onclick="confirmDeleteProduct(\'' + esc(p.id) + '\')">Supprimer</button></td></tr>';
+        html += '<tr><td class="bold">' + esc(p.name) + '</td><td>€' + esc(p.price) + '</td><td class="sec">' + esc(p.category || '') + '</td><td class="sec"><div class="stock-sizes">' + stockStr + '</div></td><td>' + badge + '</td><td><button class="btn-edit" onclick="openEditModal(\'' + encoded + '\')">Modifier</button> <button class="btn-delete" onclick="confirmDeleteProduct(\'' + esc(p.id) + '\')">Supprimer</button></td></tr>';
       });
       document.getElementById('products-table').innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucun produit</td></tr>';
       document.getElementById('productCount').textContent = products.length + ' produit' + (products.length > 1 ? 's' : '');
@@ -795,7 +838,7 @@
   }
 
   // --- PHOTOS DU PRODUIT ---
-  const MAX_IMAGES = 7;
+  const MAX_IMAGES = 5;
   let selectedImages = [];
 
   function renderImagePreviews() {
@@ -854,6 +897,8 @@
     document.getElementById('f-file').value = '';
     selectedImages = [];
     renderImagePreviews();
+    const errEl = document.getElementById('stockError');
+    if (errEl) errEl.style.display = 'none';
     document.getElementById('f-commission').value = '';
     document.getElementById('f-variants').value = '';
     document.getElementById('imgSection').classList.add('show');
@@ -934,6 +979,11 @@
 
   // Envoi reel du produit. submitProduct sert de garde-fou avant d'y arriver.
   async function submitProduct() {
+    // Si la page est perimee, ce code n'est pas celui du serveur : on previent.
+    if (!(await checkAppVersion())) {
+      showToast('Page périmée — recharge avant de soumettre');
+      return;
+    }
     // Poids total : les photos partent en base64, Vercel refuse au-dela de 4,5 Mo.
     const poids = selectedImages.reduce((n, s) => n + s.length, 0);
     if (poids > 3500000) {
@@ -942,7 +992,7 @@
     }
     if (!isEditMode && selectedImages.length === 0) {
       ask('Aucune photo sélectionnée',
-          "Ce produit sera soumis sans image et s'affichera sans photo sur le site. Tu peux annuler et en ajouter jusqu'à 7 maintenant.",
+          "Ce produit sera soumis sans image et s'affichera sans photo sur le site. Tu peux annuler et en ajouter jusqu'à 5 maintenant.",
           'Soumettre sans photo',
           doSubmitProduct);
       return;
@@ -980,6 +1030,20 @@
     } else {
       body.edit_type = 'new';
       attachImages(body);
+      // Regle UNEEK : au moins 3 pieces par taille proposee.
+      const fautives = [];
+      document.querySelectorAll('#sizeGrid .size-item').forEach(item => {
+        const taille = item.querySelector('span').textContent;
+        const q = parseInt(item.querySelector('input').value) || 0;
+        if (q > 0 && q < 3) fautives.push(taille + ' (' + q + ')');
+      });
+      const err = document.getElementById('stockError');
+      if (fautives.length > 0) {
+        err.textContent = 'Minimum 3 pièces par taille — à corriger : ' + fautives.join(', ');
+        err.style.display = 'block';
+        return;
+      }
+      err.style.display = 'none';
       const sizes = {};
       document.querySelectorAll('#sizeGrid .size-item').forEach(item => {
         const size = item.querySelector('span').textContent;

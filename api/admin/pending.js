@@ -83,6 +83,29 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Erreur serveur" });
       }
 
+
+      // ?summary=1 : metadonnees seules, sans les images base64. Une reponse
+      // complete pese plusieurs Mo, ce qui rend tout diagnostic impossible.
+      if (req.query.summary) {
+        return res.status(200).json({
+          total: (data || []).length,
+          items: (data || []).map((e) => ({
+            id: e.id,
+            created_at: e.created_at,
+            brand_id: e.brand_id,
+            brand_name: e.brands?.name,
+            is_new_product: e.is_new_product,
+            status: e.status,
+            name: e.changes?.name,
+            price: e.changes?.price,
+            variants: e.changes?.variants,
+            photos: Array.isArray(e.changes?.image_urls)
+              ? e.changes.image_urls.length
+              : (e.changes?.image_url ? 1 : 0),
+          })),
+        });
+      }
+
       return res.status(200).json(data || []);
     }
 

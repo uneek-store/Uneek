@@ -92,6 +92,20 @@
     .btn-delete-brand { padding: 4px 12px; background: transparent; color: var(--red); border: 1px solid var(--gray-200); border-radius: 6px; font-size: 12px; cursor: pointer; font-family: var(--font-body); }
     .btn-delete-brand:hover { background: var(--red-bg); border-color: var(--red); }
 
+    .stale-banner { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 9999; background: var(--red); color: #fff; padding: 10px 16px; font-size: 13px; text-align: center; font-family: var(--font-body); }
+    .stale-banner button { margin-left: 10px; padding: 4px 12px; border: none; border-radius: 6px; background: #fff; color: var(--red); font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--font-body); }
+
+    /* STOCK PAR TAILLE */
+    .stock-sizes { display: flex; flex-wrap: wrap; gap: 4px; }
+    .size-chip { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; background: var(--gray-100); color: var(--gray-600); white-space: nowrap; }
+    .size-chip .sz-label { color: var(--gray-400); font-weight: 400; }
+    .size-chip .sz-qty { font-weight: 600; color: var(--black); }
+    .size-chip.low { background: var(--red-bg); }
+    .size-chip.low .sz-qty { color: var(--red); }
+    .size-chip.out { background: var(--red-bg); }
+    .size-chip.out .sz-qty { color: var(--red); text-decoration: line-through; }
+    .stock-total { font-size: 11px; color: var(--gray-400); margin-top: 3px; }
+
     /* CODE D'INVITATION */
     .invite-code { margin-top: 8px; padding: 8px 12px; background: var(--green-bg); border-radius: 8px; font-family: monospace; font-size: 14px; font-weight: 600; color: var(--green); display: inline-block; cursor: pointer; user-select: all; }
 
@@ -312,6 +326,11 @@
   </div>
 </div>
 
+<div class="stale-banner" id="staleBanner">
+  Cette page n'est plus à jour — une nouvelle version du panneau est en ligne.
+  <button onclick="location.reload(true)">Recharger maintenant</button>
+</div>
+
 <!-- DIALOGUE DE CONFIRMATION -->
 <div class="confirm-overlay" id="confirmModal">
   <div class="confirm-box">
@@ -360,10 +379,29 @@
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('app').style.display = 'block';
       loadDashboard();
+      checkAppVersion();
     } catch (err) {
       errorEl.textContent = 'Erreur de connexion au serveur';
       errorEl.style.display = 'block';
     }
+  }
+
+  // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
+  // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
+  // On compare la version du fichier en ligne a celle chargee ici.
+  const APP_VERSION = '2026-08-23-stock-photos-5';
+
+  async function checkAppVersion() {
+    try {
+      const r = await fetch(location.pathname + '?_v=' + Date.now(), { cache: 'no-store' });
+      const t = await r.text();
+      const m = t.match(/APP_VERSION = '([^']+)'/);
+      if (m && m[1] !== APP_VERSION) {
+        document.getElementById('staleBanner').style.display = 'block';
+        return false;
+      }
+    } catch (e) { /* hors ligne : on ne bloque rien */ }
+    return true;
   }
 
   function esc(v) {
@@ -584,7 +622,21 @@
         const badge = published
           ? '<span class="badge badge-green">Publié</span>'
           : '<span class="badge badge-red">Non publié</span>';
-        const stock = (p.stock !== undefined && p.stock !== null) ? p.stock : (p.stock_quantity || 0);
+        // Stock detaille par taille : rouge des qu'une taille passe sous 3.
+        const ss = p.sizes_stock;
+        let stock;
+        if (ss && typeof ss === 'object' && Object.keys(ss).length > 0) {
+          const chips = Object.keys(ss).map(t => {
+            const q = parseInt(ss[t]) || 0;
+            const cls = q === 0 ? 'size-chip out' : (q < 3 ? 'size-chip low' : 'size-chip');
+            return '<span class="' + cls + '"><span class="sz-label">' + esc(t) + '</span><span class="sz-qty">' + q + '</span></span>';
+          }).join('');
+          const total = Object.keys(ss).reduce((n, t) => n + (parseInt(ss[t]) || 0), 0);
+          stock = '<div class="stock-sizes">' + chips + '</div><div class="stock-total">Total : ' + total + '</div>';
+        } else {
+          stock = '<span style="color:var(--gray-400)">'
+            + ((p.stock !== undefined && p.stock !== null) ? p.stock : (p.stock_quantity || 0)) + '</span>';
+        }
         const safeName = String(p.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const action = published
           ? '<button class="btn-delete-brand" onclick="askTogglePublish(\'' + p.id + '\', \'' + safeName + '\', false)">Dépublier</button>'
