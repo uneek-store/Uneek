@@ -577,15 +577,110 @@ function footerHTML() {
 }
 
 // NAVIGATE
-function navigate(page, data = null) {
+// ==========================================
+// ROUTAGE — chaque page a son adresse
+// ==========================================
+// Sans cela : impossible de partager un produit, le bouton Retour du
+// navigateur sort du site, un rafraichissement renvoie a l'accueil, et
+// aucun moteur de recherche ne peut indexer une page.
+const ROUTES = {
+  home: '',
+  shop: 'shop',
+  brands: 'marques',
+  brand: 'marque',
+  product: 'produit',
+  manifesto: 'manifesto',
+  partner: 'devenir-partenaire',
+  checkout: 'checkout',
+  login: 'connexion',
+  register: 'inscription',
+  profile: 'profil',
+  cgv: 'cgv',
+  privacy: 'confidentialite',
+  legal: 'mentions-legales'
+};
+
+// Reserves par vercel.json : on ne les produit jamais et on ne les interprete pas.
+const CHEMINS_RESERVES = ['admin', 'creator', 'api'];
+
+// Un produit est designe par son slug quand il en a un, sinon par son id.
+function trouverProduit(ref) {
+  if (!ref) return null;
+  return PRODUCTS.find(x => x.id === ref || x.slug === ref) || null;
+}
+
+function cheminDeRoute(page, data) {
+  if (page === 'product') {
+    const p = trouverProduit(data);
+    const ref = (p && p.slug) ? p.slug : (p ? p.id : data);
+    return ref ? '/produit/' + encodeURIComponent(ref) : '/shop';
+  }
+  if (page === 'brand') {
+    return data ? '/marque/' + encodeURIComponent(data) : '/marques';
+  }
+  const base = ROUTES[page];
+  return (base === undefined || base === '') ? '/' : '/' + base;
+}
+
+function routeDeChemin(chemin) {
+  let parts;
+  try {
+    parts = (chemin || '/').split('/').filter(Boolean).map(decodeURIComponent);
+  } catch (e) {
+    return { page: 'home', data: null };
+  }
+  if (!parts.length) return { page: 'home', data: null };
+  if (CHEMINS_RESERVES.indexOf(parts[0]) !== -1) return null;
+  if (parts[0] === 'produit') return { page: 'product', data: parts[1] || null };
+  if (parts[0] === 'marque') return { page: 'brand', data: parts[1] || null };
+  const trouve = Object.keys(ROUTES).filter(k => ROUTES[k] === parts[0]);
+  return trouve.length ? { page: trouve[0], data: null } : { page: 'home', data: null };
+}
+
+// Le titre de l'onglet suit la page : utile pour l'historique et les favoris.
+function majTitre(page, data) {
+  let t = 'UNEEK — Independent Fashion';
+  if (page === 'product') {
+    const p = trouverProduit(data);
+    if (p) t = p.name + ' — UNEEK';
+  } else if (page === 'brand') {
+    const b = getBrandBySlug(data);
+    if (b) t = b.name + ' — UNEEK';
+  } else {
+    const noms = {
+      shop: 'Shop', brands: 'Les Marques', manifesto: 'Manifesto',
+      partner: 'Devenir Partenaire', checkout: 'Commande', login: 'Connexion',
+      register: 'Inscription', profile: 'Mon profil', cgv: 'CGV',
+      privacy: 'Confidentialité', legal: 'Mentions légales'
+    };
+    if (noms[page]) t = noms[page] + ' — UNEEK';
+  }
+  document.title = t;
+}
+
+// sansHistorique : utilise par le bouton Retour, qui a deja change l'adresse.
+function navigate(page, data = null, sansHistorique = false) {
   currentPage = page; pageData = data;
   closeMobileMenu();
+  if (!sansHistorique) {
+    const chemin = cheminDeRoute(page, data);
+    if (chemin !== location.pathname) {
+      history.pushState({ page: page, data: data }, '', chemin);
+    }
+  }
+  majTitre(page, data);
   window.scrollTo({ top: 0, behavior: 'instant' });
   renderPage();
   document.querySelectorAll('.nav-link').forEach(el => {
     el.classList.toggle('active', el.getAttribute('onclick') === `navigate('${page}')`);
   });
 }
+
+// Bouton Retour / Suivant du navigateur.
+window.addEventListener('popstate', function () {
+  const r = routeDeChemin(location.pathname);
+  if (r) navigate(r.page, r.data, true);
+});
 
 // ==========================================
 // PAGES
@@ -732,7 +827,7 @@ function pdTouchEnd(e) {
 }
 
 function productPage() {
-  const p = PRODUCTS.find(x => x.id === pageData);
+  const p = trouverProduit(pageData);
   if (!p) return '<div style="padding:120px 24px;text-align:center"><h2>Produit introuvable</h2></div>';
   const b = getBrand(p);
   const isFav = favorites.includes(p.id);
@@ -1390,9 +1485,16 @@ function renderPage() {
 
 // INIT
 async function init() {
+  // L'adresse fait foi des le depart : /produit/xxx ouvre la fiche produit,
+  // pas l'accueil. Les donnees ne sont pas encore la, on affiche le
+  // chargement puis on redessine.
+  const r = routeDeChemin(location.pathname);
+  if (r) { currentPage = r.page; pageData = r.data; }
+  history.replaceState({ page: currentPage, data: pageData }, '', location.pathname + location.search);
   renderPage(); // show loading
   await loadData();
   renderPage(); // show real content
+  majTitre(currentPage, pageData);
   renderCart();
 }
 
