@@ -371,7 +371,7 @@ function renderCart() {
   } else {
     const total = cart.reduce((s, i) => s + (i.price || 0), 0);
     body.innerHTML = cart.map(item => {
-      return `<div class="cart-item"><div class="cart-item-img"><img src="${item.image_url || PLACEHOLDER_IMG}" alt="${item.name}"></div><div class="cart-item-info"><div><div class="cart-item-brand">${item._brand_name || ''}</div><div class="cart-item-name">${item.name}</div><div class="cart-item-meta">Taille: ${item.selectedSize}</div></div><div class="cart-item-bottom"><span class="cart-item-price">${item.price} &euro;</span><button class="cart-item-remove" onclick="removeFromCart('${item.cartId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Retirer</button></div></div></div>`;
+      return `<div class="cart-item"><div class="cart-item-img"><img src="${item.image_url || PLACEHOLDER_IMG}" alt="${item.name}"></div><div class="cart-item-info"><div><div class="cart-item-brand">${item._brand_name || ''}</div><div class="cart-item-name">${item.name}</div><div class="cart-item-meta">Taille: ${item.selectedSize}${item.selectedColor ? ' &middot; ' + item.selectedColor : ''}</div></div><div class="cart-item-bottom"><span class="cart-item-price">${item.price} &euro;</span><button class="cart-item-remove" onclick="removeFromCart('${item.cartId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Retirer</button></div></div></div>`;
     }).join('');
     document.getElementById('cart-total-amount').textContent = total + ' €';
     footer.style.display = 'block';
@@ -427,7 +427,7 @@ function toggleFav(id) {
   updateFavIcon();
 }
 
-function addToCart(product, size) {
+function addToCart(product, size, couleur) {
   const b = getBrand(product);
   cart.push({
     id: product.id,
@@ -437,6 +437,7 @@ function addToCart(product, size) {
     _brand_name: b?.name || '',
     brand_id: product.brand_id,
     selectedSize: size,
+    selectedColor: couleur || null,
     cartId: Date.now().toString()
   });
   saveCart();
@@ -470,12 +471,71 @@ function tilt(e, el) {
 }
 function tiltReset(el) { el.querySelector('img').style.transform = ''; }
 
-// SIZES from sizes_stock
-function getAvailableSizes(product) {
-  if (product.sizes_stock && typeof product.sizes_stock === 'object') {
-    return Object.entries(product.sizes_stock).filter(([size, stock]) => parseInt(stock) > 0).map(([size, stock]) => ({ size, stock }));
+// ---------------------------------------------------------------------
+// STOCK : deux formes possibles dans la meme colonne sizes_stock
+//   plate        { "S": 3, "M": 5 }                    produit sans couleur
+//   par couleur  { "Rouge": { "S": 1 }, "Blanc": {} }  produit a variantes
+// Detectee a la lecture : aucun ancien produit n'est touche.
+// ---------------------------------------------------------------------
+function stockParCouleur(ss) {
+  if (!ss || typeof ss !== 'object') return false;
+  const vals = Object.keys(ss).map(k => ss[k]);
+  if (!vals.length) return false;
+  return vals[0] !== null && typeof vals[0] === 'object' && !Array.isArray(vals[0]);
+}
+
+// Liste a plat : [{ couleur|null, taille, qte }]
+function stockLignes(ss) {
+  if (!ss || typeof ss !== 'object') return [];
+  const out = [];
+  if (stockParCouleur(ss)) {
+    Object.keys(ss).forEach(c => {
+      const tailles = ss[c] || {};
+      Object.keys(tailles).forEach(t => {
+        out.push({ couleur: c, taille: t, qte: parseInt(tailles[t]) || 0 });
+      });
+    });
+  } else {
+    Object.keys(ss).forEach(t => {
+      out.push({ couleur: null, taille: t, qte: parseInt(ss[t]) || 0 });
+    });
   }
-  return [];
+  return out;
+}
+
+function stockTotal(ss) {
+  return stockLignes(ss).reduce((n, l) => n + l.qte, 0);
+}
+
+// Toutes les tailles citees, sans doublon (pour la colonne "sizes")
+function stockTailles(ss) {
+  const vues = [];
+  stockLignes(ss).forEach(l => { if (vues.indexOf(l.taille) === -1) vues.push(l.taille); });
+  return vues;
+}
+
+// SIZES from sizes_stock
+function getAvailableSizes(product, couleur) {
+  const lignes = stockLignes(product.sizes_stock)
+    .filter(l => l.qte > 0)
+    .filter(l => couleur === undefined || couleur === null || l.couleur === couleur);
+  const vues = {};
+  const out = [];
+  lignes.forEach(l => {
+    if (vues[l.taille] === undefined) { vues[l.taille] = out.length; out.push({ size: l.taille, stock: l.qte }); }
+    else { out[vues[l.taille]].stock += l.qte; }
+  });
+  return out;
+}
+
+// Couleurs qui ont au moins une piece en stock.
+function getAvailableColors(product) {
+  if (!stockParCouleur(product.sizes_stock)) return [];
+  const out = [];
+  stockLignes(product.sizes_stock).forEach(l => {
+    if (l.qte > 0 && out.indexOf(l.couleur) === -1) out.push(l.couleur);
+  });
+  return out;
 }
 
 // FOOTER
@@ -677,8 +737,10 @@ function productPage() {
   const b = getBrand(p);
   const isFav = favorites.includes(p.id);
   const related = PRODUCTS.filter(x => x.brand_id === p.brand_id && x.id !== p.id);
-  const sizes = getAvailableSizes(p);
-  const hasStock = sizes.length > 0;
+  const colors = getAvailableColors(p);
+  selectedColor = colors.length ? colors[0] : null;
+  const sizes = getAvailableSizes(p, selectedColor);
+  const hasStock = sizes.length > 0 || colors.length > 0;
 
   return `<div>
     <section class="section" style="padding-top:96px">
@@ -702,6 +764,12 @@ function productPage() {
           <div style="font-size:12px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px;cursor:pointer" onclick="navigate('brand','${b?.slug}')">${b?.name || ''} &rarr;</div>
           <h1 style="font-family:var(--font-display);font-size:clamp(28px,3vw,40px);font-weight:700;letter-spacing:-1px;margin-bottom:8px">${p.name}</h1>
           <div style="font-size:20px;color:var(--gray-600);margin-bottom:32px;font-weight:300">${p.price} &euro;</div>
+
+          ${colors.length ? `
+          <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px">Couleur &mdash; <span id="color-label" style="color:var(--black)">${colors[0]}</span></div>
+          <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap" id="color-btns">
+            ${colors.map((c, i) => `<button class="pd-size ${i === 0 ? 'selected' : ''}" style="width:auto;padding:0 16px" onclick="selectColor(this,'${String(c).replace(/'/g, "\\'")}','${p.id}')">${c}</button>`).join('')}
+          </div>` : ''}
 
           ${hasStock ? `
           <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px">Taille</div>
@@ -730,6 +798,33 @@ function productPage() {
 }
 
 let selectedSize = null;
+let selectedColor = null;
+// Changer de couleur recalcule les tailles reellement disponibles dans
+// cette couleur, et remet le choix de taille a zero.
+function selectColor(btn, couleur, productId) {
+  selectedColor = couleur;
+  selectedSize = null;
+  document.querySelectorAll('#color-btns .pd-size').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const lab = document.getElementById('color-label');
+  if (lab) lab.textContent = couleur;
+
+  const p = PRODUCTS.find(x => x.id === productId);
+  const zone = document.getElementById('size-btns');
+  if (p && zone) {
+    const dispo = getAvailableSizes(p, couleur);
+    zone.innerHTML = dispo.length
+      ? dispo.map(s => '<button class="pd-size" onclick="selectSize(this,\'' + s.size + '\')">' + s.size + '</button>').join('')
+      : '<span style="font-size:14px;color:var(--gray-400)">Aucune taille disponible dans cette couleur</span>';
+  }
+  const addBtn = document.getElementById('add-btn');
+  if (addBtn) {
+    addBtn.textContent = 'Sélectionne une taille';
+    addBtn.style.opacity = '0.4';
+    addBtn.disabled = true;
+  }
+}
+
 function selectSize(btn, size) {
   selectedSize = size;
   document.querySelectorAll('.pd-size').forEach(b => b.classList.remove('selected'));
@@ -741,7 +836,7 @@ function selectSize(btn, size) {
 function doAddToCart(productId) {
   if (!selectedSize) return;
   const p = PRODUCTS.find(x => x.id === productId);
-  if (p) addToCart(p, selectedSize);
+  if (p) addToCart(p, selectedSize, selectedColor);
 }
 
 function brandsPage() {
@@ -946,7 +1041,7 @@ function checkoutPage() {
           ${cart.map(item => {
             return `<div style="display:flex;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--gray-200)">
               <div style="width:56px;height:72px;overflow:hidden;background:var(--gray-200);border-radius:8px"><img src="${item.image_url || PLACEHOLDER_IMG}" style="width:100%;height:100%;object-fit:cover"></div>
-              <div style="flex:1"><div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400)">${item._brand_name || ''}</div><div style="font-family:var(--font-display);font-size:13px;font-weight:600">${item.name}</div><div style="font-size:12px;color:var(--gray-500)">Taille : ${item.selectedSize}</div></div>
+              <div style="flex:1"><div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400)">${item._brand_name || ''}</div><div style="font-family:var(--font-display);font-size:13px;font-weight:600">${item.name}</div><div style="font-size:12px;color:var(--gray-500)">Taille : ${item.selectedSize}${item.selectedColor ? ' &middot; ' + item.selectedColor : ''}</div></div>
               <div style="font-size:14px;font-weight:500">${item.price} &euro;</div>
             </div>`;
           }).join('')}
@@ -993,7 +1088,8 @@ async function confirmOrder() {
       items: cart.map(item => ({
         product_id: item.id,
         quantity: 1,
-        size: item.selectedSize
+        size: item.selectedSize,
+        color: item.selectedColor || null
       }))
     };
 
@@ -1268,6 +1364,7 @@ function legalPage(type) {
 function renderPage() {
   const app = document.getElementById('app');
   selectedSize = null;
+  selectedColor = null;
   if (!dataLoaded) {
     app.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center"><div style="text-align:center"><div style="font-family:var(--font-display);font-size:24px;font-weight:700;margin-bottom:8px">UNEEK</div><div style="color:var(--gray-400);font-size:14px">Chargement...</div></div></div>';
     return;

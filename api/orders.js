@@ -24,6 +24,37 @@ function parseToken(token) {
   }
 }
 
+
+// sizes_stock a deux formes : plate { S: 3 } ou par couleur { Rouge: { S: 3 } }.
+// Ces deux fonctions lisent et ecrivent indifferemment dans l'une ou l'autre.
+function stockParCouleur(ss) {
+  if (!ss || typeof ss !== "object") return false;
+  const vals = Object.keys(ss).map((k) => ss[k]);
+  if (!vals.length) return false;
+  return vals[0] !== null && typeof vals[0] === "object" && !Array.isArray(vals[0]);
+}
+
+function lireStock(ss, taille, couleur) {
+  if (!ss || !taille) return null;
+  if (stockParCouleur(ss)) {
+    if (!couleur) {
+      // Pas de couleur precisee : on additionne toutes les couleurs.
+      return Object.keys(ss).reduce((n, c) => n + (parseInt((ss[c] || {})[taille]) || 0), 0);
+    }
+    if (!ss[couleur]) return null;
+    return parseInt(ss[couleur][taille]) || 0;
+  }
+  return parseInt(ss[taille]) || 0;
+}
+
+function ecrireStock(ss, taille, couleur, valeur) {
+  if (stockParCouleur(ss)) {
+    if (!couleur || !ss[couleur]) return ss;
+    return { ...ss, [couleur]: { ...ss[couleur], [taille]: valeur } };
+  }
+  return { ...ss, [taille]: valeur };
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -121,10 +152,21 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: `Produit introuvable` });
         }
         if (item.size && product.sizes_stock) {
-          const available = product.sizes_stock[item.size] || 0;
-          if (available < (item.quantity || 1)) {
+          if (stockParCouleur(product.sizes_stock) && !item.color) {
             return res.status(400).json({
-              error: `Stock insuffisant pour ${product.name} taille ${item.size} (${available} restant(s))`,
+              error: `Couleur requise pour ${product.name}`,
+            });
+          }
+          const available = lireStock(product.sizes_stock, item.size, item.color);
+          if (available === null) {
+            return res.status(400).json({
+              error: `Combinaison indisponible pour ${product.name} (${item.color || ""} ${item.size})`,
+            });
+          }
+          if (available < (item.quantity || 1)) {
+            const quoi = (item.color ? item.color + " " : "") + item.size;
+            return res.status(400).json({
+              error: `Stock insuffisant pour ${product.name} ${quoi} (${available} restant(s))`,
             });
           }
         }
@@ -201,9 +243,11 @@ export default async function handler(req, res) {
       for (const item of items) {
         const product = products.find((p) => p.id === item.product_id);
         if (item.size && product?.sizes_stock) {
-          const currentStock = product.sizes_stock[item.size] || 0;
+          // Decrement cible : la bonne couleur si le produit en a.
+          const currentStock = lireStock(product.sizes_stock, item.size, item.color) || 0;
           const newStock = Math.max(0, currentStock - (item.quantity || 1));
-          const updatedSizesStock = { ...product.sizes_stock, [item.size]: newStock };
+          const updatedSizesStock = ecrireStock(
+            product.sizes_stock, item.size, item.color, newStock);
 
           await supabaseAdmin
             .from("products")

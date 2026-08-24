@@ -136,6 +136,15 @@
     .size-chip.out { background: var(--red-bg); }
     .size-chip.out .sz-qty { color: var(--red); text-decoration: line-through; }
 
+    .stock-matrix { margin-top: 6px; }
+    .stock-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+    .stock-row .couleur { min-width: 78px; font-size: 12px; font-weight: 600; color: var(--black); }
+    .stock-row .cellules { display: flex; gap: 6px; flex-wrap: wrap; }
+    .stock-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .stock-cell span { font-size: 10px; color: var(--gray-500); font-weight: 500; }
+    .stock-cell input { width: 46px; text-align: center; padding: 6px 2px; border: 1px solid var(--gray-200); border-radius: 6px; font-size: 13px; font-family: var(--font-body); }
+    .stock-cell input:focus { outline: none; border-color: var(--black); }
+
     .img-thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
     .img-thumb { position: relative; width: 68px; height: 88px; border-radius: 8px; overflow: hidden; border: 1px solid var(--gray-200); background: var(--gray-100); }
     .img-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -419,7 +428,7 @@
     <p class="modal-note" style="margin-top:2px">Pourcentage prélevé par UNEEK sur chaque vente.</p>
 
     <label>Variantes (couleurs, etc.)</label>
-    <input id="f-variants" placeholder="ex: Noir, Blanc, Rouge (séparés par des virgules)" />
+    <input id="f-variants" placeholder="ex: Noir, Blanc, Rouge (séparés par des virgules)" oninput="updateSizeGrid()" />
     <p class="modal-note" style="margin-top:2px">Laisse vide si le produit n'a pas de variante.</p>
 
     <!-- IMAGE -->
@@ -447,9 +456,9 @@
         <label class="size-cb"><input type="checkbox" value="XL" checked onchange="updateSizeGrid()"> XL</label>
         <label class="size-cb"><input type="checkbox" value="XXL" onchange="updateSizeGrid()"> XXL</label>
       </div>
-      <label>Stock initial par taille</label>
+      <label id="stockLabel">Stock initial par taille</label>
       <div class="size-grid" id="sizeGrid"></div>
-      <p class="modal-note" style="margin-top:6px">Minimum 3 pièces par taille proposée — c'est dans les règles UNEEK.</p>
+      <p class="modal-note" style="margin-top:6px">Minimum 3 pièces par taille proposée — c'est dans les règles UNEEK. Laisse 0 pour une taille que tu ne proposes pas.</p>
       <p id="stockError" style="display:none;color:var(--red);font-size:12px;margin-top:6px;font-weight:500"></p>
     </div>
 
@@ -477,7 +486,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-08-24-marque-manuelle-9';
+  const APP_VERSION = '2026-08-24-variantes-10';
 
   async function checkAppVersion() {
     try {
@@ -628,6 +637,49 @@
       : '<span class="nickname vide">non renseigné</span>';
   }
 
+  // ---------------------------------------------------------------------
+  // STOCK : deux formes possibles dans la meme colonne sizes_stock
+  //   plate        { "S": 3, "M": 5 }                    produit sans couleur
+  //   par couleur  { "Rouge": { "S": 1 }, "Blanc": {} }  produit a variantes
+  // Detectee a la lecture : aucun ancien produit n'est touche.
+  // ---------------------------------------------------------------------
+  function stockParCouleur(ss) {
+    if (!ss || typeof ss !== 'object') return false;
+    const vals = Object.keys(ss).map(k => ss[k]);
+    if (!vals.length) return false;
+    return vals[0] !== null && typeof vals[0] === 'object' && !Array.isArray(vals[0]);
+  }
+
+  // Liste a plat : [{ couleur|null, taille, qte }]
+  function stockLignes(ss) {
+    if (!ss || typeof ss !== 'object') return [];
+    const out = [];
+    if (stockParCouleur(ss)) {
+      Object.keys(ss).forEach(c => {
+        const tailles = ss[c] || {};
+        Object.keys(tailles).forEach(t => {
+          out.push({ couleur: c, taille: t, qte: parseInt(tailles[t]) || 0 });
+        });
+      });
+    } else {
+      Object.keys(ss).forEach(t => {
+        out.push({ couleur: null, taille: t, qte: parseInt(ss[t]) || 0 });
+      });
+    }
+    return out;
+  }
+
+  function stockTotal(ss) {
+    return stockLignes(ss).reduce((n, l) => n + l.qte, 0);
+  }
+
+  // Toutes les tailles citees, sans doublon (pour la colonne "sizes")
+  function stockTailles(ss) {
+    const vues = [];
+    stockLignes(ss).forEach(l => { if (vues.indexOf(l.taille) === -1) vues.push(l.taille); });
+    return vues;
+  }
+
   // --- LOAD DATA ---
   async function loadDashboard() {
     if (!currentBrand) return;
@@ -644,14 +696,30 @@
       loadedProducts = products;
       let html = '';
       products.forEach(p => {
-        // Stock par taille : rouge des qu'une taille passe sous 3 (regle UNEEK).
-        const stockStr = (p.sizes_stock && Object.keys(p.sizes_stock).length)
-          ? Object.keys(p.sizes_stock).map(t => {
-              const q = parseInt(p.sizes_stock[t]) || 0;
-              const cls = q === 0 ? 'size-chip out' : (q <= 3 ? 'size-chip low' : 'size-chip');
-              return '<span class="' + cls + '"><span class="sz-label">' + esc(t) + '</span><span class="sz-qty">' + q + '</span></span>';
-            }).join('')
-          : '<span style="color:var(--gray-400)">' + (p.stock || p.stock_quantity || 0) + '</span>';
+        // Stock detaille : rouge des qu'une combinaison passe a 3 ou moins.
+        // Avec variantes, une ligne par couleur ; sans variante, une seule ligne.
+        const lignes = stockLignes(p.sizes_stock);
+        let stockStr;
+        if (!lignes.length) {
+          stockStr = '<span style="color:var(--gray-400)">' + (p.stock || p.stock_quantity || 0) + '</span>';
+        } else if (stockParCouleur(p.sizes_stock)) {
+          const parC = {};
+          lignes.forEach(l => { (parC[l.couleur] = parC[l.couleur] || []).push(l); });
+          stockStr = Object.keys(parC).map(c =>
+            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'
+            + '<span style="font-size:11px;font-weight:600;min-width:56px">' + esc(c) + '</span>'
+            + '<span style="display:flex;gap:3px;flex-wrap:wrap">'
+            + parC[c].map(l => {
+                const cls = l.qte === 0 ? 'size-chip out' : (l.qte <= 3 ? 'size-chip low' : 'size-chip');
+                return '<span class="' + cls + '"><span class="sz-label">' + esc(l.taille) + '</span><span class="sz-qty">' + l.qte + '</span></span>';
+              }).join('')
+            + '</span></div>').join('');
+        } else {
+          stockStr = lignes.map(l => {
+            const cls = l.qte === 0 ? 'size-chip out' : (l.qte <= 3 ? 'size-chip low' : 'size-chip');
+            return '<span class="' + cls + '"><span class="sz-label">' + esc(l.taille) + '</span><span class="sz-qty">' + l.qte + '</span></span>';
+          }).join('');
+        }
         const encoded = encodeURIComponent(JSON.stringify({
           id: p.id, name: p.name, price: p.price, category: p.category, description: p.description,
           commission_percent: p.commission_percent, variants: p.colors || p.variants || [], sizes_stock: p.sizes_stock, image_urls: p.image_urls || []
@@ -786,8 +854,12 @@
     const out = [];
     const money = v => (v === undefined || v === null || v === '') ? '—' : v + ' €';
     const list = v => (Array.isArray(v) && v.length) ? v.join(', ') : 'aucune';
-    const stock = v => (v && Object.keys(v).length)
-      ? Object.keys(v).map(k => k + ':' + v[k]).join(' · ') : '—';
+    const stock = v => {
+      const l = stockLignes(v);
+      return l.length
+        ? l.map(x => (x.couleur ? x.couleur + ' ' : '') + x.taille + ':' + x.qte).join(' · ')
+        : '—';
+    };
 
     if (c.name !== undefined && c.name !== b.name) {
       out.push('Nom : ' + (b.name || '—') + ' → ' + c.name);
@@ -962,8 +1034,11 @@
     // s'applique immediatement, sans validation.
     document.getElementById('stockSection').style.display = '';
     const stock = p.sizes_stock || {};
+    // Avec des variantes, les cles de premier niveau sont des couleurs :
+    // on passe par stockTailles() qui renvoie les tailles dans les deux cas.
+    const taillesDuProduit = stockTailles(stock);
     document.querySelectorAll('#sizeChecks input').forEach(cb => {
-      cb.checked = Object.prototype.hasOwnProperty.call(stock, cb.value);
+      cb.checked = taillesDuProduit.indexOf(cb.value) !== -1;
     });
     updateSizeGrid(stock);
     document.getElementById('modalNote').innerHTML =
@@ -1075,22 +1150,13 @@
       if (String(commissionVal) === String(o.commission)) delete body.commission_percent;
       if (variants.join(', ') === o.variants) delete body.variants;
       attachImages(body, true);
-      const editSizes = {};
-      document.querySelectorAll('#sizeGrid .size-item').forEach(item => {
-        editSizes[item.querySelector('span').textContent] =
-          parseInt(item.querySelector('input').value) || 0;
-      });
+      const editSizes = lireStockSaisi();
       if (Object.keys(editSizes).length > 0) body.sizes_stock = editSizes;
     } else {
       body.edit_type = 'new';
       attachImages(body, false);
-      // Regle UNEEK : au moins 3 pieces par taille proposee.
-      const fautives = [];
-      document.querySelectorAll('#sizeGrid .size-item').forEach(item => {
-        const taille = item.querySelector('span').textContent;
-        const q = parseInt(item.querySelector('input').value) || 0;
-        if (q > 0 && q < 3) fautives.push(taille + ' (' + q + ')');
-      });
+      // Regle UNEEK : au moins 3 pieces par combinaison proposee.
+      const fautives = tropPeuDeStock();
       const err = document.getElementById('stockError');
       if (fautives.length > 0) {
         err.textContent = 'Minimum 3 pièces par taille — à corriger : ' + fautives.join(', ');
@@ -1098,13 +1164,7 @@
         return;
       }
       err.style.display = 'none';
-      const sizes = {};
-      document.querySelectorAll('#sizeGrid .size-item').forEach(item => {
-        const size = item.querySelector('span').textContent;
-        const qty = parseInt(item.querySelector('input').value) || 0;
-        sizes[size] = qty;
-      });
-      body.sizes_stock = sizes;
+      body.sizes_stock = lireStockSaisi();
     }
 
     try {
@@ -1131,24 +1191,101 @@
     }
   }
 
+  // Couleurs saisies dans le champ Variantes, nettoyees.
+  function couleursSaisies() {
+    const brut = document.getElementById('f-variants').value;
+    return brut ? brut.split(',').map(v => v.trim()).filter(v => v) : [];
+  }
+
+  // Grille de stock. Sans variante : une case par taille, comme avant.
+  // Avec variantes : une ligne par couleur, une case par taille.
   function updateSizeGrid(values) {
     const grid = document.getElementById('sizeGrid');
-    // On conserve ce qui est deja saisi pour ne pas le perdre en cochant une taille
-    const existing = {};
-    grid.querySelectorAll('.size-item').forEach(it => {
-      existing[it.querySelector('span').textContent] = it.querySelector('input').value;
+    const label = document.getElementById('stockLabel');
+    const couleurs = couleursSaisies();
+
+    // On garde la saisie en cours pour ne rien perdre en cochant une taille
+    const deja = {};
+    grid.querySelectorAll('.stock-cell input').forEach(inp => {
+      deja[(inp.dataset.couleur || '') + '|' + inp.dataset.taille] = inp.value;
     });
-    const checked = [];
-    document.querySelectorAll('#sizeChecks input:checked').forEach(cb => checked.push(cb.value));
+
+    const tailles = [];
+    document.querySelectorAll('#sizeChecks input:checked').forEach(cb => tailles.push(cb.value));
+
+    label.textContent = couleurs.length
+      ? 'Stock initial par couleur et par taille'
+      : 'Stock initial par taille';
+
+    grid.className = couleurs.length ? 'stock-matrix' : 'size-grid';
     grid.innerHTML = '';
-    checked.forEach(sz => {
-      const div = document.createElement('div'); div.className = 'size-item';
-      const span = document.createElement('span'); span.textContent = sz;
-      const input = document.createElement('input'); input.type = 'number'; input.placeholder = '0'; input.min = '0';
-      if (values && values[sz] !== undefined) input.value = values[sz];
-      else if (existing[sz] !== undefined) input.value = existing[sz];
-      div.appendChild(span); div.appendChild(input); grid.appendChild(div);
+
+    const lignes = couleurs.length ? couleurs : [null];
+    lignes.forEach(couleur => {
+      const ligne = document.createElement('div');
+      ligne.className = couleur === null ? 'stock-row sans-couleur' : 'stock-row';
+      if (couleur !== null) {
+        const nom = document.createElement('div');
+        nom.className = 'couleur';
+        nom.textContent = couleur;
+        ligne.appendChild(nom);
+      }
+      const cellules = document.createElement('div');
+      cellules.className = 'cellules';
+      tailles.forEach(t => {
+        const cell = document.createElement('div');
+        cell.className = 'stock-cell';
+        const span = document.createElement('span');
+        span.textContent = t;
+        const input = document.createElement('input');
+        input.type = 'number'; input.min = '0'; input.placeholder = '0';
+        input.dataset.taille = t;
+        if (couleur !== null) input.dataset.couleur = couleur;
+        const cle = (couleur || '') + '|' + t;
+        if (values) {
+          const v = couleur === null ? values[t] : (values[couleur] || {})[t];
+          if (v !== undefined) input.value = v;
+        } else if (deja[cle] !== undefined) {
+          input.value = deja[cle];
+        }
+        cell.appendChild(span); cell.appendChild(input); cellules.appendChild(cell);
+      });
+      ligne.appendChild(cellules);
+      grid.appendChild(ligne);
     });
+  }
+
+  // Lit la grille et renvoie la forme adaptee : plate ou par couleur.
+  function lireStockSaisi() {
+    const couleurs = couleursSaisies();
+    const out = {};
+    if (couleurs.length) {
+      couleurs.forEach(c => { out[c] = {}; });
+      document.querySelectorAll('#sizeGrid .stock-cell input').forEach(inp => {
+        const c = inp.dataset.couleur;
+        if (c === undefined) return;
+        if (!out[c]) out[c] = {};
+        out[c][inp.dataset.taille] = parseInt(inp.value) || 0;
+      });
+    } else {
+      document.querySelectorAll('#sizeGrid .stock-cell input').forEach(inp => {
+        out[inp.dataset.taille] = parseInt(inp.value) || 0;
+      });
+    }
+    return out;
+  }
+
+  // Regle UNEEK : au moins 3 pieces des qu'une combinaison est proposee.
+  function tropPeuDeStock() {
+    const fautives = [];
+    document.querySelectorAll('#sizeGrid .stock-cell input').forEach(inp => {
+      const q = parseInt(inp.value) || 0;
+      if (q > 0 && q < 3) {
+        const c = inp.dataset.couleur;
+        fautives.push((c ? c + ' ' : '') + inp.dataset.taille + ' (' + q + ')');
+      }
+    });
+    return fautives;
   }
 
   // --- SHIP ORDER ---

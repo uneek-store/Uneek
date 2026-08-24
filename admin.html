@@ -453,7 +453,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-08-24-marque-manuelle-9';
+  const APP_VERSION = '2026-08-24-variantes-10';
 
   async function checkAppVersion() {
     try {
@@ -482,8 +482,12 @@
     const out = [];
     const money = v => (v === undefined || v === null || v === '') ? '—' : v + ' €';
     const list = v => (Array.isArray(v) && v.length) ? v.join(', ') : 'aucune';
-    const stock = v => (v && Object.keys(v).length)
-      ? Object.keys(v).map(k => k + ':' + v[k]).join(' · ') : '—';
+    const stock = v => {
+      const l = stockLignes(v);
+      return l.length
+        ? l.map(x => (x.couleur ? x.couleur + ' ' : '') + x.taille + ':' + x.qte).join(' · ')
+        : '—';
+    };
 
     if (c.name !== undefined && c.name !== b.name) {
       out.push('Nom : ' + (b.name || '—') + ' → ' + c.name);
@@ -702,6 +706,49 @@
       : '<span class="nickname vide">non renseigné</span>';
   }
 
+  // ---------------------------------------------------------------------
+  // STOCK : deux formes possibles dans la meme colonne sizes_stock
+  //   plate        { "S": 3, "M": 5 }                    produit sans couleur
+  //   par couleur  { "Rouge": { "S": 1 }, "Blanc": {} }  produit a variantes
+  // Detectee a la lecture : aucun ancien produit n'est touche.
+  // ---------------------------------------------------------------------
+  function stockParCouleur(ss) {
+    if (!ss || typeof ss !== 'object') return false;
+    const vals = Object.keys(ss).map(k => ss[k]);
+    if (!vals.length) return false;
+    return vals[0] !== null && typeof vals[0] === 'object' && !Array.isArray(vals[0]);
+  }
+
+  // Liste a plat : [{ couleur|null, taille, qte }]
+  function stockLignes(ss) {
+    if (!ss || typeof ss !== 'object') return [];
+    const out = [];
+    if (stockParCouleur(ss)) {
+      Object.keys(ss).forEach(c => {
+        const tailles = ss[c] || {};
+        Object.keys(tailles).forEach(t => {
+          out.push({ couleur: c, taille: t, qte: parseInt(tailles[t]) || 0 });
+        });
+      });
+    } else {
+      Object.keys(ss).forEach(t => {
+        out.push({ couleur: null, taille: t, qte: parseInt(ss[t]) || 0 });
+      });
+    }
+    return out;
+  }
+
+  function stockTotal(ss) {
+    return stockLignes(ss).reduce((n, l) => n + l.qte, 0);
+  }
+
+  // Toutes les tailles citees, sans doublon (pour la colonne "sizes")
+  function stockTailles(ss) {
+    const vues = [];
+    stockLignes(ss).forEach(l => { if (vues.indexOf(l.taille) === -1) vues.push(l.taille); });
+    return vues;
+  }
+
   // --- LOAD DATA ---
   async function loadDashboard() {
     await Promise.all([loadOrders(), loadProducts(), loadBrands(), loadPending(), loadApplications()]);
@@ -773,15 +820,26 @@
           : '<span class="badge badge-red">Non publié</span>';
         // Stock detaille par taille : rouge des qu'une taille passe sous 3.
         const ss = p.sizes_stock;
+        const lignes = stockLignes(ss);
         let stock;
-        if (ss && typeof ss === 'object' && Object.keys(ss).length > 0) {
-          const chips = Object.keys(ss).map(t => {
-            const q = parseInt(ss[t]) || 0;
-            const cls = q === 0 ? 'size-chip out' : (q <= 3 ? 'size-chip low' : 'size-chip');
-            return '<span class="' + cls + '"><span class="sz-label">' + esc(t) + '</span><span class="sz-qty">' + q + '</span></span>';
-          }).join('');
-          const total = Object.keys(ss).reduce((n, t) => n + (parseInt(ss[t]) || 0), 0);
-          stock = '<div class="stock-sizes">' + chips + '</div><div class="stock-total">Total : ' + total + '</div>';
+        if (lignes.length) {
+          const puce = l => {
+            const cls = l.qte === 0 ? 'size-chip out' : (l.qte <= 3 ? 'size-chip low' : 'size-chip');
+            return '<span class="' + cls + '"><span class="sz-label">' + esc(l.taille) + '</span><span class="sz-qty">' + l.qte + '</span></span>';
+          };
+          let corps;
+          if (stockParCouleur(ss)) {
+            const parC = {};
+            lignes.forEach(l => { (parC[l.couleur] = parC[l.couleur] || []).push(l); });
+            corps = Object.keys(parC).map(c =>
+              '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'
+              + '<span style="font-size:11px;font-weight:600;min-width:56px">' + esc(c) + '</span>'
+              + '<span style="display:flex;gap:3px;flex-wrap:wrap">' + parC[c].map(puce).join('') + '</span>'
+              + '</div>').join('');
+          } else {
+            corps = '<div class="stock-sizes">' + lignes.map(puce).join('') + '</div>';
+          }
+          stock = corps + '<div class="stock-total">Total : ' + stockTotal(ss) + '</div>';
         } else {
           stock = '<span style="color:var(--gray-400)">'
             + ((p.stock !== undefined && p.stock !== null) ? p.stock : (p.stock_quantity || 0)) + '</span>';
@@ -875,7 +933,7 @@
         const brandName = p.brands?.name || p.brand_name || '—';
         const creatorName = p.creator_accounts?.full_name || p.creator_name || 'Créateur';
         const category = c.category || p.category || '';
-        const sizesStr = c.sizes_stock ? Object.keys(c.sizes_stock).join(', ') : (p.sizes || '');
+        const sizesStr = c.sizes_stock ? stockTailles(c.sizes_stock).join(', ') : (p.sizes || '');
         const commissionStr = c.commission_percent ? '<br><span style="color:var(--blue);font-weight:500">Commission: ' + c.commission_percent + '%</span>' : '';
 
         // Pour les modifications, construire un résumé des changements

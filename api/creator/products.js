@@ -67,13 +67,35 @@ export default async function handler(req, res) {
         // suite, sans validation. Tout le reste passe par l'admin.
         let stockApplied = false;
         if (sizes_stock && Object.keys(sizes_stock).length > 0) {
-          const totalStock = Object.values(sizes_stock).reduce(
-            (s, q) => s + (parseInt(q) || 0), 0);
+          // sizes_stock a deux formes : plate { S: 3 } ou par couleur
+          // { Rouge: { S: 3 } }. On aplatit pour recalculer sizes et stock.
+          const vals = Object.keys(sizes_stock).map((k) => sizes_stock[k]);
+          const parCouleur = vals.length && vals[0] !== null
+            && typeof vals[0] === "object" && !Array.isArray(vals[0]);
+          const lignes = [];
+          if (parCouleur) {
+            Object.keys(sizes_stock).forEach((coul) => {
+              const t = sizes_stock[coul] || {};
+              Object.keys(t).forEach((taille) => {
+                lignes.push({ taille, qte: parseInt(t[taille]) || 0 });
+              });
+            });
+          } else {
+            Object.keys(sizes_stock).forEach((taille) => {
+              lignes.push({ taille, qte: parseInt(sizes_stock[taille]) || 0 });
+            });
+          }
+          const taillesDispo = [];
+          lignes.forEach((l) => {
+            if (l.qte > 0 && taillesDispo.indexOf(l.taille) === -1) taillesDispo.push(l.taille);
+          });
+          const totalStock = lignes.reduce((n, l) => n + l.qte, 0);
+
           const { error: stockError } = await supabaseAdmin
             .from("products")
             .update({
               sizes_stock,
-              sizes: Object.keys(sizes_stock),
+              sizes: taillesDispo,
               stock: totalStock,
               updated_at: new Date().toISOString(),
             })

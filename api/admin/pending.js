@@ -167,9 +167,31 @@ export default async function handler(req, res) {
         // Ecrire dans variants faisait echouer toute l'approbation.
         if (Array.isArray(c.variants)) productData.colors = c.variants;
         if (c.sizes_stock) {
-                    productData.sizes_stock = c.sizes_stock;
-          productData.sizes = Object.keys(c.sizes_stock);
-          productData.stock = Object.values(c.sizes_stock).reduce((sum, qty) => sum + (parseInt(qty) || 0), 0);
+          // sizes_stock a deux formes : plate { S: 3 } ou par couleur
+          // { Rouge: { S: 3 } }. On aplatit pour calculer sizes et stock.
+          const lignes = [];
+          const vals = Object.keys(c.sizes_stock).map(k => c.sizes_stock[k]);
+          const parCouleur = vals.length && vals[0] !== null
+            && typeof vals[0] === "object" && !Array.isArray(vals[0]);
+          if (parCouleur) {
+            Object.keys(c.sizes_stock).forEach((coul) => {
+              const t = c.sizes_stock[coul] || {};
+              Object.keys(t).forEach((taille) => {
+                lignes.push({ taille, qte: parseInt(t[taille]) || 0 });
+              });
+            });
+          } else {
+            Object.keys(c.sizes_stock).forEach((taille) => {
+              lignes.push({ taille, qte: parseInt(c.sizes_stock[taille]) || 0 });
+            });
+          }
+          const tailles = [];
+          lignes.forEach((l) => {
+            if (l.qte > 0 && tailles.indexOf(l.taille) === -1) tailles.push(l.taille);
+          });
+          productData.sizes_stock = c.sizes_stock;
+          productData.sizes = tailles;
+          productData.stock = lignes.reduce((s, l) => s + l.qte, 0);
         }
         if (c.stock_quantity) productData.stock = c.stock_quantity;
 
