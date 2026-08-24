@@ -5,6 +5,38 @@
 
 import { supabaseAdmin } from "../lib/supabase.js";
 
+// sizes_stock a deux formes : plate { S: 3 } ou par couleur { Rouge: { S: 3 } }.
+function aplatirStock(ss) {
+  if (!ss || typeof ss !== "object") return [];
+  const vals = Object.keys(ss).map((k) => ss[k]);
+  const parCouleur = vals.length && vals[0] !== null
+    && typeof vals[0] === "object" && !Array.isArray(vals[0]);
+  const lignes = [];
+  if (parCouleur) {
+    Object.keys(ss).forEach((coul) => {
+      const t = ss[coul] || {};
+      Object.keys(t).forEach((taille) => {
+        lignes.push({ couleur: coul, taille, qte: parseInt(t[taille]) || 0 });
+      });
+    });
+  } else {
+    Object.keys(ss).forEach((taille) => {
+      lignes.push({ couleur: null, taille, qte: parseInt(ss[taille]) || 0 });
+    });
+  }
+  return lignes;
+}
+
+// Regle UNEEK : au moins 3 pieces des qu'une combinaison est proposee.
+// Verifiee ICI, cote serveur : le controle du navigateur peut etre contourne,
+// et il ne couvrait que la creation, jamais la modification.
+const STOCK_MINIMUM = 3;
+function combinaisonsSousLeMinimum(ss) {
+  return aplatirStock(ss)
+    .filter((l) => l.qte > 0 && l.qte < STOCK_MINIMUM)
+    .map((l) => (l.couleur ? l.couleur + " " : "") + l.taille + " (" + l.qte + ")");
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
@@ -67,6 +99,13 @@ export default async function handler(req, res) {
         // suite, sans validation. Tout le reste passe par l'admin.
         let stockApplied = false;
         if (sizes_stock && Object.keys(sizes_stock).length > 0) {
+          const fautives = combinaisonsSousLeMinimum(sizes_stock);
+          if (fautives.length > 0) {
+            return res.status(400).json({
+              error: "Minimum " + STOCK_MINIMUM
+                + " pièces par taille proposée — à corriger : " + fautives.join(", "),
+            });
+          }
           // sizes_stock a deux formes : plate { S: 3 } ou par couleur
           // { Rouge: { S: 3 } }. On aplatit pour recalculer sizes et stock.
           const vals = Object.keys(sizes_stock).map((k) => sizes_stock[k]);
@@ -151,6 +190,15 @@ export default async function handler(req, res) {
 
       // NEW PRODUCT: submit for approval
       if (edit_type === "new" || !product_id) {
+        if (sizes_stock) {
+          const fautives = combinaisonsSousLeMinimum(sizes_stock);
+          if (fautives.length > 0) {
+            return res.status(400).json({
+              error: "Minimum " + STOCK_MINIMUM
+                + " pièces par taille proposée — à corriger : " + fautives.join(", "),
+            });
+          }
+        }
         const product_data = { name, price, category, description, sizes_stock, image_url };
         if (Array.isArray(image_urls) && image_urls.length > 0) {
           product_data.image_urls = image_urls;

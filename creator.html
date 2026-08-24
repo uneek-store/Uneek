@@ -486,7 +486,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-08-24-variantes-10';
+  const APP_VERSION = '2026-08-24-regle-stock-11';
 
   async function checkAppVersion() {
     try {
@@ -1150,6 +1150,16 @@
       if (String(commissionVal) === String(o.commission)) delete body.commission_percent;
       if (variants.join(', ') === o.variants) delete body.variants;
       attachImages(body, true);
+      // La regle du minimum 3 ne s'appliquait qu'a la creation : une
+      // modification passait au travers. Elle vaut desormais dans les deux cas.
+      const fautivesEdit = tropPeuDeStock();
+      const errEdit = document.getElementById('stockError');
+      if (fautivesEdit.length > 0) {
+        errEdit.textContent = 'Minimum 3 pièces par taille proposée — à corriger : ' + fautivesEdit.join(', ');
+        errEdit.style.display = 'block';
+        return;
+      }
+      errEdit.style.display = 'none';
       const editSizes = lireStockSaisi();
       if (Object.keys(editSizes).length > 0) body.sizes_stock = editSizes;
     } else {
@@ -1174,7 +1184,16 @@
         body: JSON.stringify(body)
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) { showToast(data.error || 'Erreur lors de l\'envoi'); return; }
+      if (!res.ok) {
+        // Le serveur a le dernier mot : s'il refuse, on montre sa raison.
+        const err = document.getElementById('stockError');
+        if (err && data.error && data.error.indexOf('Minimum') === 0) {
+          err.textContent = data.error;
+          err.style.display = 'block';
+        }
+        showToast(data.error || 'Erreur lors de l\'envoi');
+        return;
+      }
       closeModal();
       if (!isEditMode) {
         showToast('✓ Nouveau produit soumis — UNEEK validera avant publication');
