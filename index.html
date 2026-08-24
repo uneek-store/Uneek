@@ -138,6 +138,13 @@ a{text-decoration:none;}
 /* PD SIZE BTNS */
 .pd-size{width:48px;height:48px;display:flex;align-items:center;justify-content:center;border:1px solid var(--gray-200);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s;font-family:var(--font-body);background:transparent;color:var(--black);border-radius:var(--radius-sm);}
 .pd-size:hover{border-color:var(--black);}
+.pd-arrow{position:absolute;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;border:none;background:rgba(255,255,255,0.9);color:var(--black);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;box-shadow:0 2px 12px rgba(0,0,0,0.15);opacity:0;transition:opacity .2s,background .15s;}
+.pd-imgwrap:hover .pd-arrow{opacity:1;}
+.pd-arrow:hover{background:#fff;}
+.pd-arrow.prev{left:12px;}
+.pd-arrow.next{right:12px;}
+.pd-counter{position:absolute;bottom:12px;right:12px;z-index:2;background:rgba(0,0,0,0.6);color:#fff;font-size:11px;padding:3px 10px;border-radius:20px;letter-spacing:0.5px;}
+@media(hover:none){.pd-arrow{opacity:1;}}
 .pd-size.selected{background:var(--black);color:var(--white);border-color:var(--black);}
 /* ANIMATIONS */
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
@@ -624,17 +631,44 @@ function renderShopGrid() {
   grid.innerHTML = filtered.length > 0 ? filtered.map(p => productCardHTML(p)).join('') : '<div style="grid-column:1/-1;text-align:center;padding:80px 0;color:var(--gray-400);font-size:14px">Aucun produit trouvé.</div>';
 }
 
-// Bascule la grande photo de la fiche produit quand on clique une miniature.
+// Affiche la photo d'indice i et met la bande de miniatures a jour.
+function applyProductImage(i) {
+  const main = document.getElementById('pd-main-img');
+  const strip = document.getElementById('pd-thumbs');
+  if (!main || !strip) return;
+  const thumbs = Array.from(strip.querySelectorAll('img'));
+  if (!thumbs.length) return;
+  if (i < 0) i = thumbs.length - 1;
+  if (i >= thumbs.length) i = 0;
+  main.src = thumbs[i].src;
+  main.dataset.i = i;
+  thumbs.forEach(t => { t.style.border = '2px solid transparent'; t.style.opacity = '0.6'; });
+  thumbs[i].style.border = '2px solid var(--black)';
+  thumbs[i].style.opacity = '1';
+  const c = document.getElementById('pd-counter');
+  if (c) c.textContent = (i + 1) + ' / ' + thumbs.length;
+}
+
+// Bascule la grande photo quand on clique une miniature.
 function switchProductImage(el) {
+  applyProductImage(parseInt(el.dataset.i || '0', 10));
+}
+
+// Fleches gauche / droite. Boucle : apres la derniere on revient a la premiere.
+function stepProductImage(dir) {
   const main = document.getElementById('pd-main-img');
   if (!main) return;
-  main.src = el.src;
-  el.parentElement.querySelectorAll('img').forEach(t => {
-    t.style.border = '2px solid transparent';
-    t.style.opacity = '0.6';
-  });
-  el.style.border = '2px solid var(--black)';
-  el.style.opacity = '1';
+  applyProductImage(parseInt(main.dataset.i || '0', 10) + dir);
+}
+
+// Balayage au doigt sur mobile.
+let pdTouchX = null;
+function pdTouchStart(e) { pdTouchX = e.changedTouches[0].clientX; }
+function pdTouchEnd(e) {
+  if (pdTouchX === null) return;
+  const d = e.changedTouches[0].clientX - pdTouchX;
+  pdTouchX = null;
+  if (Math.abs(d) > 40) stepProductImage(d < 0 ? 1 : -1);
 }
 
 function productPage() {
@@ -650,12 +684,17 @@ function productPage() {
     <section class="section" style="padding-top:96px">
       <div class="pd-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start">
         <div class="pd-sticky" style="position:sticky;top:96px">
-          <div style="aspect-ratio:3/4;overflow:hidden;background:var(--gray-100);border-radius:var(--radius-lg)"
-               onmousemove="tilt(event,this)" onmouseleave="tiltReset(this)">
-            <img id="pd-main-img" src="${(p.image_urls && p.image_urls[0]) || p.image_url || PLACEHOLDER_IMG}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease-out">
+          <div class="pd-imgwrap" style="position:relative;aspect-ratio:3/4;overflow:hidden;background:var(--gray-100);border-radius:var(--radius-lg)"
+               onmousemove="tilt(event,this)" onmouseleave="tiltReset(this)"
+               ontouchstart="pdTouchStart(event)" ontouchend="pdTouchEnd(event)">
+            <img id="pd-main-img" data-i="0" src="${(p.image_urls && p.image_urls[0]) || p.image_url || PLACEHOLDER_IMG}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease-out">
+            ${(p.image_urls && p.image_urls.length > 1) ? `
+            <button class="pd-arrow prev" aria-label="Photo précédente" onclick="stepProductImage(-1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+            <button class="pd-arrow next" aria-label="Photo suivante" onclick="stepProductImage(1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+            <span class="pd-counter" id="pd-counter">1 / ${p.image_urls.length}</span>` : ''}
           </div>
           ${(p.image_urls && p.image_urls.length > 1) ? `
-          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <div id="pd-thumbs" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
             ${p.image_urls.map((u, i) => `<img src="${u}" alt="${p.name} ${i + 1}" onclick="switchProductImage(this,'${i}')" data-i="${i}" style="width:64px;height:84px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid ${i === 0 ? 'var(--black)' : 'transparent'};opacity:${i === 0 ? '1' : '0.6'};transition:all .15s">`).join('')}
           </div>` : ''}
         </div>

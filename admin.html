@@ -98,6 +98,18 @@
     .nickname { display: inline-block; padding: 3px 10px; border-radius: 6px; background: var(--black); color: var(--white); font-weight: 600; font-size: 12px; white-space: nowrap; }
     .nickname.vide { background: var(--gray-100); color: var(--gray-400); font-weight: 400; font-style: italic; }
 
+    /* FORMULAIRE D'AJOUT DE MARQUE */
+    .form-box { background: var(--white); border-radius: 16px; padding: 28px; max-width: 460px; width: 92%; max-height: 88vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    .form-box h3 { font-family: var(--font-display); font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+    .form-box .sub { font-size: 12px; color: var(--gray-500); margin-bottom: 18px; }
+    .form-box label { display: block; font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; margin-top: 14px; }
+    .form-box input, .form-box textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 13px; font-family: var(--font-body); background: var(--white); color: var(--black); }
+    .form-box input:focus, .form-box textarea:focus { outline: none; border-color: var(--black); }
+    .form-box textarea { height: 60px; resize: vertical; }
+    .form-err { color: var(--red); font-size: 12px; margin-top: 12px; display: none; }
+    .form-done { display: none; text-align: center; padding: 8px 0; }
+    .form-done .code { display: inline-block; margin: 12px 0; padding: 12px 22px; background: var(--green-bg); color: var(--green); border-radius: 10px; font-family: monospace; font-size: 20px; font-weight: 600; letter-spacing: 2px; cursor: pointer; user-select: all; }
+
     /* STOCK PAR TAILLE */
     .stock-sizes { display: flex; flex-wrap: wrap; gap: 4px; }
     .size-chip { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; background: var(--gray-100); color: var(--gray-600); white-space: nowrap; }
@@ -323,6 +335,10 @@
     <div id="sec-applications" class="section">
       <div class="page-title">Candidatures</div>
       <div class="page-sub">Demandes "Devenir Partenaire" depuis le site</div>
+      <div style="margin-bottom:16px">
+        <button class="btn-add" onclick="openAddBrand()">+ Ajouter une marque manuellement</button>
+        <span style="font-size:12px;color:var(--gray-500);margin-left:10px">Pour une marque que tu connais, qui n'est pas passée par le formulaire du site</span>
+      </div>
       <div class="card" id="applications-list"></div>
     </div>
 
@@ -332,6 +348,51 @@
 <div class="stale-banner" id="staleBanner">
   Cette page n'est plus à jour — une nouvelle version du panneau est en ligne.
   <button onclick="location.reload(true)">Recharger maintenant</button>
+</div>
+
+<!-- AJOUT MANUEL D'UNE MARQUE -->
+<div class="confirm-overlay" id="addBrandModal">
+  <div class="form-box">
+    <div id="addBrandForm">
+      <h3>Ajouter une marque</h3>
+      <div class="sub">Un code d'invitation sera généré. Transmets-le au créateur pour qu'il crée son compte.</div>
+
+      <label>Nom de la marque *</label>
+      <input id="ab-brand" placeholder="ex : RHODES" />
+
+      <label>Prénom et nom du créateur *</label>
+      <input id="ab-contact" placeholder="ex : Louis Borne" />
+
+      <label>Email du créateur *</label>
+      <input id="ab-email" type="email" placeholder="louis@rhodes.be" />
+
+      <label>Instagram</label>
+      <input id="ab-insta" placeholder="@rhodes.store" />
+
+      <label>Site web</label>
+      <input id="ab-site" placeholder="https://rhodes.be" />
+
+      <label>Note interne</label>
+      <textarea id="ab-note" placeholder="Rencontré au salon, collection capsule prévue en octobre…"></textarea>
+
+      <div class="form-err" id="ab-err"></div>
+
+      <div class="confirm-btns" style="margin-top:20px">
+        <button class="confirm-cancel" onclick="closeAddBrand()">Annuler</button>
+        <button class="confirm-ok green" id="ab-submit" onclick="submitAddBrand()">Créer la marque</button>
+      </div>
+    </div>
+
+    <div class="form-done" id="addBrandDone">
+      <h3>Marque ajoutée</h3>
+      <div class="sub" id="ab-done-sub"></div>
+      <div class="code" id="ab-code" onclick="copyCode(this, this.textContent.trim())" title="Cliquer pour copier"></div>
+      <div class="sub">Clique sur le code pour le copier, puis transmets-le au créateur.<br>Il s'en servira sur <strong>uneek.store/creator</strong> → « Créer un compte avec mon code ».</div>
+      <div class="confirm-btns" style="margin-top:16px">
+        <button class="confirm-ok green" onclick="closeAddBrand()">Terminé</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- DIALOGUE DE CONFIRMATION -->
@@ -392,7 +453,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-08-23-total-tel-8';
+  const APP_VERSION = '2026-08-24-marque-manuelle-9';
 
   async function checkAppVersion() {
     try {
@@ -476,6 +537,73 @@
     if (c.commission_percent !== undefined) parts.push('commission');
     if (c.sizes_stock) parts.push('stock');
     return parts.length ? 'Modif ' + parts.join(', ') : 'Modification';
+  }
+
+  // --- AJOUT MANUEL D'UNE MARQUE ---
+  function openAddBrand() {
+    ['ab-brand', 'ab-contact', 'ab-email', 'ab-insta', 'ab-site', 'ab-note'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('ab-err').style.display = 'none';
+    document.getElementById('addBrandForm').style.display = 'block';
+    document.getElementById('addBrandDone').style.display = 'none';
+    document.getElementById('addBrandModal').classList.add('show');
+    document.getElementById('ab-brand').focus();
+  }
+
+  function closeAddBrand() {
+    document.getElementById('addBrandModal').classList.remove('show');
+  }
+
+  async function submitAddBrand() {
+    const brand_name = document.getElementById('ab-brand').value.trim();
+    const contact_name = document.getElementById('ab-contact').value.trim();
+    const email = document.getElementById('ab-email').value.trim();
+    const err = document.getElementById('ab-err');
+    err.style.display = 'none';
+
+    if (!brand_name || !contact_name || !email) {
+      err.textContent = 'Nom de la marque, créateur et email sont obligatoires.';
+      err.style.display = 'block';
+      return;
+    }
+
+    const btn = document.getElementById('ab-submit');
+    btn.disabled = true;
+    btn.textContent = 'Création…';
+
+    try {
+      const res = await fetch(API_BASE + '/admin/applications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify({
+          action: 'create_manual',
+          brand_name,
+          contact_name,
+          email,
+          instagram: document.getElementById('ab-insta').value.trim() || null,
+          website: document.getElementById('ab-site').value.trim() || null,
+          message: document.getElementById('ab-note').value.trim() || null,
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        err.textContent = data.error || 'Erreur lors de la création.';
+        err.style.display = 'block';
+        return;
+      }
+      document.getElementById('ab-done-sub').textContent = brand_name + ' — ' + contact_name;
+      document.getElementById('ab-code').textContent = data.invite_code;
+      document.getElementById('addBrandForm').style.display = 'none';
+      document.getElementById('addBrandDone').style.display = 'block';
+      loadApplications();
+    } catch (e) {
+      err.textContent = 'Erreur de connexion au serveur.';
+      err.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Créer la marque';
+    }
   }
 
   // --- DIALOGUE DE CONFIRMATION ---
