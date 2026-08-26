@@ -82,6 +82,7 @@ export default async function handler(req, res) {
           brand_name: item.brands?.name || "",
           quantity: item.quantity,
           size: item.size,
+          color: item.color || null,
           price: item.product_price,
           commission_amount: item.commission_amount || 0,
           creator_payout: item.creator_payout || 0,

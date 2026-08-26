@@ -24,7 +24,7 @@
   banner.id = "ck-banner";
   banner.innerHTML =
     '<span>Ce site utilise des cookies pour améliorer ton expérience. ' +
-    '<a href="/privacy" target="_blank">En savoir plus</a></span>' +
+    '<a href="/confidentialite" target="_blank">En savoir plus</a></span>' +
     '<div class="ck-btns">' +
     '<button class="ck-btn ck-refuse" id="ck-refuse">Refuser</button>' +
     '<button class="ck-btn ck-accept" id="ck-accept">Accepter</button>' +

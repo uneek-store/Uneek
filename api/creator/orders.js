@@ -23,7 +23,7 @@ export default async function handler(req, res) {
       // Récupérer les order_items de cette marque avec les infos de commande
       const { data, error } = await supabaseAdmin
         .from("order_items")
-        .select("*, orders(order_number, customer_name, customer_nickname, customer_email, shipping_address, status), products(name)")
+        .select("*, orders(order_number, customer_name, customer_nickname, customer_email, shipping_address, status, created_at), products(name)")
         .eq("brand_id", brand_id)
         ;
 
@@ -36,6 +36,7 @@ export default async function handler(req, res) {
       const orders = (data || []).map(item => ({
         id: item.id,
         order_number: item.orders?.order_number,
+        created_at: item.orders?.created_at || item.created_at || null,
         customer_name: item.orders?.customer_name,
         // Surnom a inscrire sur l'emballage : c'est ce que le client a demande.
         customer_nickname: item.orders?.customer_nickname || null,
@@ -44,6 +45,9 @@ export default async function handler(req, res) {
         product_name: item.products?.name || item.product_name,
         quantity: item.quantity,
         size: item.size,
+        // La couleur etait enregistree en base mais jamais renvoyee :
+        // le createur ne savait pas quelle variante expedier.
+        color: item.color || null,
         price: item.product_price,
         shipping_status: item.fulfillment_status || "pending",
         total_amount: item.product_price * item.quantity,
@@ -52,6 +56,7 @@ export default async function handler(req, res) {
           product_name: item.products?.name || item.product_name,
           quantity: item.quantity,
           size: item.size,
+          color: item.color || null,
           price: item.product_price,
         }],
       }));

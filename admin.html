@@ -453,7 +453,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-08-24-regle-stock-11';
+  const APP_VERSION = '2026-08-25-couleur-commandes-12';
 
   async function checkAppVersion() {
     try {
@@ -749,6 +749,16 @@
     return vues;
   }
 
+  // Date et heure de la commande, format belge : 24/08 à 14h32.
+  // formatDate() existe deja mais ne donne que le jour.
+  function dateCommande(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    const p = n => String(n).padStart(2, '0');
+    return p(d.getDate()) + '/' + p(d.getMonth() + 1) + ' à ' + p(d.getHours()) + 'h' + p(d.getMinutes());
+  }
+
   // --- LOAD DATA ---
   async function loadDashboard() {
     await Promise.all([loadOrders(), loadProducts(), loadBrands(), loadPending(), loadApplications()]);
@@ -774,16 +784,21 @@
         const faded = ['shipped', 'delivered', 'returned'].includes(order.shipping_status) ? ' class="faded"' : '';
 
         items.forEach(item => {
-          const prodLabel = item.product_name + (item.size ? ' (' + item.size + ')' : '');
+          // La couleur etait enregistree mais jamais affichee : impossible de
+          // savoir quelle variante avait ete commandee.
+          const det = [];
+          if (item.size) det.push(item.size);
+          if (item.color) det.push(item.color);
+          const prodLabel = item.product_name + (det.length ? ' (' + det.join(' · ') + ')' : '');
           // L'API renvoie le prix sous le nom "price" ; admin.html lisait
           // "product_price", inexistant : chaque ligne affichait 0 EUR.
           const unitPrice = parseFloat(item.price !== undefined ? item.price : item.product_price) || 0;
           const itemTotal = unitPrice * (item.quantity || 1);
           const itemCommission = parseFloat(item.commission_amount) || 0;
 
-          overviewHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + order.customer_name + '</td><td class="sec">' + prodLabel + '</td><td>' + (item.quantity || 1) + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
+          overviewHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div></td><td class="sec">' + order.customer_name + '</td><td class="sec">' + prodLabel + '</td><td>' + (item.quantity || 1) + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
 
-          ordersHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + esc(order.customer_name) + '</td><td>' + surnomHtml(order) + '</td><td class="sec">' + esc(prodLabel) + '</td><td>' + (item.quantity || 1) + '</td><td class="sec">' + (item.brand_name || '') + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>€' + itemCommission.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
+          ordersHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div></td><td class="sec">' + esc(order.customer_name) + '</td><td>' + surnomHtml(order) + '</td><td class="sec">' + esc(prodLabel) + '</td><td>' + (item.quantity || 1) + '</td><td class="sec">' + (item.brand_name || '') + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>€' + itemCommission.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
 
           totalCommission += itemCommission;
         });

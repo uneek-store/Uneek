@@ -53,6 +53,8 @@
     .sidebar-tag { padding: 0 20px 24px; font-size: 11px; color: var(--gray-500); letter-spacing: 1px; text-transform: uppercase; }
     .sidebar a { display: flex; align-items: center; gap: 10px; padding: 10px 20px; font-size: 13px; color: var(--gray-400); cursor: pointer; text-decoration: none; transition: all 0.15s; border: none; background: none; width: 100%; font-family: var(--font-body); }
     .sidebar a:hover { color: var(--white); background: rgba(255,255,255,0.05); }
+    .sidebar .badge-count { background: var(--red); color: var(--white); font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-left: auto; font-weight: 600; }
+
     .sidebar a.active { color: var(--white); background: rgba(255,255,255,0.08); border-right: 2px solid var(--white); }
     .main { margin-left: 200px; padding: 28px; }
     .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--black); }
@@ -262,7 +264,7 @@
     <a class="active" onclick="showSection('overview', this)">Vue d'ensemble</a>
     <a onclick="showSection('products', this)">Mes produits</a>
     <a onclick="showSection('edits', this)">Mes demandes</a>
-    <a onclick="showSection('orders', this)">Commandes</a>
+    <a onclick="showSection('orders', this)">Commandes <span class="badge-count" id="ordersCount" style="display:none">0</span></a>
     <a onclick="showSection('settings', this)">Paramètres</a>
   </div>
 
@@ -328,7 +330,7 @@
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Commande</th><th>Produit</th><th>Qté</th><th>Taille</th><th>Client</th><th>Surnom emballage</th><th>Adresse</th><th>Statut</th><th></th></tr></thead>
+            <thead><tr><th>Commande</th><th>Produit</th><th>Qté</th><th>Taille / Couleur</th><th>Client</th><th>Surnom emballage</th><th>Adresse</th><th>Statut</th><th></th></tr></thead>
             <tbody id="orders-table"></tbody>
           </table>
         </div>
@@ -486,7 +488,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-08-24-regle-stock-11';
+  const APP_VERSION = '2026-08-25-couleur-commandes-12';
 
   async function checkAppVersion() {
     try {
@@ -680,6 +682,24 @@
     return vues;
   }
 
+  // Date et heure de la commande, format belge : 24/08 à 14h32.
+  function dateCommande(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    const p = n => String(n).padStart(2, '0');
+    return p(d.getDate()) + '/' + p(d.getMonth() + 1) + ' à ' + p(d.getHours()) + 'h' + p(d.getMinutes());
+  }
+
+  // Taille et couleur dans une seule cellule, pour ne pas alourdir le tableau.
+  function tailleEtCouleur(item) {
+    const t = esc(item.size || '');
+    const c = (item.color || '').trim();
+    return c
+      ? t + '<div style="font-size:11px;color:var(--gray-500);margin-top:1px">' + esc(c) + '</div>'
+      : t;
+  }
+
   // --- LOAD DATA ---
   async function loadDashboard() {
     if (!currentBrand) return;
@@ -759,7 +779,11 @@
 
       orders.forEach(order => {
         const items = order.items || [order];
-        const productStr = items.map(i => (i.product_name || i.name) + ' (' + (i.size || '?') + ')').join(' + ');
+        const productStr = items.map(i => {
+          const det = [i.size || '?'];
+          if (i.color) det.push(i.color);
+          return (i.product_name || i.name) + ' (' + det.join(' · ') + ')';
+        }).join(' + ');
         const totalQty = items.reduce((s, i) => s + (i.quantity || 1), 0);
         const statusBadge = getShippingBadge(order.shipping_status);
         const isFaded = ['shipped', 'delivered', 'returned'].includes(order.shipping_status);
@@ -778,14 +802,14 @@
           items.forEach((item, idx) => {
             const rowCls = isFaded ? 'faded grp' : 'grp';
             if (idx === 0) {
-              ordersHtml += '<tr class="' + rowCls + '"><td class="bold" rowspan="' + items.length + '">' + shortOrder(order.order_number) + '</td><td class="sec">' + esc(item.product_name || item.name) + '</td><td>' + (item.quantity || 1) + '</td><td>' + (item.size || '') + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.customer_name || '') + '</td><td rowspan="' + items.length + '">' + surnomHtml(order) + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.shipping_address || '') + '</td><td rowspan="' + items.length + '">' + statusBadge + '</td><td rowspan="' + items.length + '">' + getActionBtn(order) + '</td></tr>';
+              ordersHtml += '<tr class="' + rowCls + '"><td class="bold" rowspan="' + items.length + '">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div></td><td class="sec">' + esc(item.product_name || item.name) + '</td><td>' + (item.quantity || 1) + '</td><td>' + tailleEtCouleur(item) + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.customer_name || '') + '</td><td rowspan="' + items.length + '">' + surnomHtml(order) + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.shipping_address || '') + '</td><td rowspan="' + items.length + '">' + statusBadge + '</td><td rowspan="' + items.length + '">' + getActionBtn(order) + '</td></tr>';
             } else {
-              ordersHtml += '<tr class="' + rowCls + ' grp-sub"><td class="sec">' + esc(item.product_name || item.name) + '</td><td>' + (item.quantity || 1) + '</td><td>' + (item.size || '') + '</td></tr>';
+              ordersHtml += '<tr class="' + rowCls + ' grp-sub"><td class="sec">' + esc(item.product_name || item.name) + '</td><td>' + (item.quantity || 1) + '</td><td>' + tailleEtCouleur(item) + '</td></tr>';
             }
           });
         } else {
           const item = items[0];
-          ordersHtml += '<tr' + fadedAttr + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + esc(item.product_name || item.name || '') + '</td><td>' + (item.quantity || 1) + '</td><td>' + (item.size || '') + '</td><td class="sec">' + esc(order.customer_name || '') + '</td><td>' + surnomHtml(order) + '</td><td class="sec">' + esc(order.shipping_address || '') + '</td><td>' + statusBadge + '</td><td>' + getActionBtn(order) + '</td></tr>';
+          ordersHtml += '<tr' + fadedAttr + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div></td><td class="sec">' + esc(item.product_name || item.name || '') + '</td><td>' + (item.quantity || 1) + '</td><td>' + tailleEtCouleur(item) + '</td><td class="sec">' + esc(order.customer_name || '') + '</td><td>' + surnomHtml(order) + '</td><td class="sec">' + esc(order.shipping_address || '') + '</td><td>' + statusBadge + '</td><td>' + getActionBtn(order) + '</td></tr>';
         }
       });
 
@@ -795,6 +819,12 @@
       document.getElementById('stat-ca').textContent = '€' + totalCA.toFixed(0);
       document.getElementById('stat-revenue').textContent = '€' + totalRevenue.toFixed(0);
       document.getElementById('stat-toship').textContent = toShip;
+      // Meme pastille que "En attente" cote admin : masquee quand il n'y a rien.
+      const pastille = document.getElementById('ordersCount');
+      if (pastille) {
+        pastille.textContent = toShip > 0 ? toShip : '';
+        pastille.style.display = toShip > 0 ? '' : 'none';
+      }
     } catch (err) {
       console.error('Error loading orders:', err);
     }
