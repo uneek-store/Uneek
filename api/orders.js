@@ -4,6 +4,11 @@
 
 import { supabaseAdmin } from "./lib/supabase.js";
 import crypto from "crypto";
+import {
+  confirmationCommande,
+  nouvelleCommandeCreateur,
+  envoyerTous,
+} from "./lib/email.js";
 
 function generateOrderNumber() {
   const date = new Date();
@@ -255,6 +260,46 @@ export default async function handler(req, res) {
             .update({ sizes_stock: updatedSizesStock })
             .eq("id", product.id);
         }
+      }
+
+      // --- Notifications par e-mail ---
+      // Placees APRES la commande et le decrement de stock, et enfermees dans
+      // un try : si Resend est indisponible, la commande reste valide.
+      try {
+        const pourEmail = { ...order, customer_phone: customer.phone || null };
+        const brandIds = [...new Set(orderItems.map((i) => i.brand_id).filter(Boolean))];
+
+        const { data: comptes } = await supabaseAdmin
+          .from("creator_accounts")
+          .select("email, full_name, brand_id")
+          .in("brand_id", brandIds);
+        const { data: marques } = await supabaseAdmin
+          .from("brands")
+          .select("id, name, email")
+          .in("id", brandIds);
+
+        const taches = [confirmationCommande(pourEmail, orderItems)];
+
+        // Un e-mail par marque concernee, ne contenant que ses propres articles.
+        for (const bid of brandIds) {
+          const compte = (comptes || []).find((c) => c.brand_id === bid);
+          const marque = (marques || []).find((m) => m.id === bid);
+          const destinataire = (compte && compte.email) || (marque && marque.email);
+          if (!destinataire) {
+            console.warn("[email] aucune adresse pour la marque", bid);
+            continue;
+          }
+          taches.push(nouvelleCommandeCreateur(
+            destinataire,
+            (compte && compte.full_name) || (marque && marque.name) || "",
+            pourEmail,
+            orderItems.filter((i) => i.brand_id === bid)
+          ));
+        }
+
+        await envoyerTous(taches);
+      } catch (err) {
+        console.error("[email] notifications de commande ignorees :", err && err.message);
       }
 
       return res.status(201).json({

@@ -4,6 +4,7 @@
 
 import { supabaseAdmin } from "../lib/supabase.js";
 import crypto from "crypto";
+import { candidatureAcceptee } from "../lib/email.js";
 
 // Générer un code d'invitation lisible (ex: UNEEK-A3K7)
 function generateInviteCode() {
@@ -97,6 +98,13 @@ export default async function handler(req, res) {
           return res.status(500).json({ error: "Erreur création de la marque" });
         }
 
+        // La marque recoit son code directement, sans transmission manuelle.
+        try {
+          await candidatureAcceptee(email.toLowerCase(), contact_name, brand_name, inviteCode);
+        } catch (err) {
+          console.error("[email] code d'invitation non envoye :", err && err.message);
+        }
+
         return res.status(201).json({
           success: true,
           message: "Marque ajoutée",
@@ -111,6 +119,13 @@ export default async function handler(req, res) {
       }
 
       if (action === "accept") {
+        // Lu AVANT la mise a jour : il faut l'email pour envoyer le code.
+        const { data: candidature } = await supabaseAdmin
+          .from("partner_applications")
+          .select("brand_name, contact_name, email")
+          .eq("id", id)
+          .single();
+
         // Générer un code d'invitation unique
         let inviteCode = generateInviteCode();
         // Vérifier l'unicité (boucle au cas où)
@@ -138,6 +153,16 @@ export default async function handler(req, res) {
         if (error) {
           console.error("Error accepting application:", error);
           return res.status(500).json({ error: "Erreur serveur" });
+        }
+
+        try {
+          if (candidature && candidature.email) {
+            await candidatureAcceptee(
+              candidature.email, candidature.contact_name,
+              candidature.brand_name, inviteCode);
+          }
+        } catch (err) {
+          console.error("[email] code d'invitation non envoye :", err && err.message);
         }
 
         return res.status(200).json({

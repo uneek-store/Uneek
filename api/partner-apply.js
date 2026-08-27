@@ -2,6 +2,7 @@
 // POST → soumettre une candidature "Devenir Partenaire"
 
 import { supabaseAdmin } from "./lib/supabase.js";
+import { alerteAdmin, esc } from "./lib/email.js";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -35,6 +36,17 @@ export default async function handler(req, res) {
     if (error) {
       console.error("Error creating application:", error);
       return res.status(500).json({ error: "Erreur serveur" });
+    }
+
+    try {
+      await alerteAdmin("Nouvelle candidature de marque", [
+        "<strong>" + esc(brand_name) + "</strong>",
+        esc(contact_name) + " — " + esc(email),
+        instagram ? "Instagram : " + esc(instagram) : null,
+        website ? "Site : " + esc(website) : null,
+      ], "Voir la candidature");
+    } catch (err) {
+      console.error("[email] alerte candidature ignoree :", err && err.message);
     }
 
     return res.status(201).json({

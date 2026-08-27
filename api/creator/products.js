@@ -4,6 +4,7 @@
 // DELETE → supprimer un produit (notifie l'admin)
 
 import { supabaseAdmin } from "../lib/supabase.js";
+import { alerteAdmin, esc } from "../lib/email.js";
 
 // sizes_stock a deux formes : plate { S: 3 } ou par couleur { Rouge: { S: 3 } }.
 function aplatirStock(ss) {
@@ -226,6 +227,18 @@ export default async function handler(req, res) {
         if (error) {
           console.error("Error creating product edit:", error);
           return res.status(500).json({ error: "Erreur soumission" });
+        }
+
+        try {
+          const { data: marque } = await supabaseAdmin
+            .from("brands").select("name").eq("id", brand_id).single();
+          await alerteAdmin("Nouveau produit à valider", [
+            "<strong>" + esc(name) + "</strong>",
+            "Marque : " + esc((marque && marque.name) || brand_id),
+            "Prix : " + esc(price) + " €",
+          ], "Voir les produits en attente");
+        } catch (err) {
+          console.error("[email] alerte nouveau produit ignoree :", err && err.message);
         }
 
         return res.status(201).json({
