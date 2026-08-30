@@ -254,7 +254,7 @@
         <div class="card-header">Derni&egrave;res commandes</div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Commande</th><th>Client</th><th>Produit</th><th>Qt&eacute;</th><th>Total</th><th>Exp&eacute;dition</th></tr></thead>
+            <thead><tr><th>Commande</th><th>Client</th><th>Produit</th><th>Marque</th><th>Qt&eacute;</th><th>Total</th><th>Exp&eacute;dition</th></tr></thead>
             <tbody id="overview-orders"></tbody>
           </table>
         </div>
@@ -453,7 +453,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-08-25-couleur-commandes-12';
+  const APP_VERSION = '2026-08-30-marque-vue-ensemble-13';
 
   async function checkAppVersion() {
     try {
@@ -796,7 +796,12 @@
           const itemTotal = unitPrice * (item.quantity || 1);
           const itemCommission = parseFloat(item.commission_amount) || 0;
 
-          overviewHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div></td><td class="sec">' + order.customer_name + '</td><td class="sec">' + prodLabel + '</td><td>' + (item.quantity || 1) + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
+          // Colonne Marque ajoutee : sur la vue d'ensemble on ne savait pas de
+          // quelle marque venait la commande. brand_name est deja renvoye par
+          // /api/orders, il n'etait simplement pas affiche ici.
+          // esc() applique aussi au client et au produit, comme dans le tableau
+          // complet juste en dessous qui le faisait deja.
+          overviewHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div></td><td class="sec">' + esc(order.customer_name) + '</td><td class="sec">' + esc(prodLabel) + '</td><td class="sec">' + esc(item.brand_name || '') + '</td><td>' + (item.quantity || 1) + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
 
           ordersHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div></td><td class="sec">' + esc(order.customer_name) + '</td><td>' + surnomHtml(order) + '</td><td class="sec">' + esc(prodLabel) + '</td><td>' + (item.quantity || 1) + '</td><td class="sec">' + (item.brand_name || '') + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>€' + itemCommission.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
 
@@ -806,7 +811,7 @@
         totalRevenue += parseFloat(order.total_amount || 0);
       });
 
-      document.getElementById('overview-orders').innerHTML = overviewHtml || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
+      document.getElementById('overview-orders').innerHTML = overviewHtml || '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
       document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
       document.getElementById('stat-orders').textContent = orders.length;
       document.getElementById('stat-revenue').textContent = '€' + totalCommission.toFixed(0);
