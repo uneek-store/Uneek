@@ -92,19 +92,29 @@ export default async function handler(req, res) {
       try {
         const { data: ligne } = await supabaseAdmin
           .from("order_items")
-          .select("order_id, product_name, size, color, quantity")
+          .select("order_id, brand_id, product_name, size, color, quantity")
           .eq("id", order_item_id)
           .maybeSingle();
 
         if (ligne && ligne.order_id) {
           const { data: commande } = await supabaseAdmin
             .from("orders")
-            .select("order_number, customer_name, customer_email, shipping_address")
+            .select("order_number, customer_name, customer_nickname, customer_email, shipping_address")
             .eq("id", ligne.order_id)
             .maybeSingle();
 
+          let nomMarque = "";
+          if (ligne.brand_id) {
+            const { data: marque } = await supabaseAdmin
+              .from("brands").select("name").eq("id", ligne.brand_id).maybeSingle();
+            nomMarque = (marque && marque.name) || "";
+          }
+
           if (commande && commande.customer_email) {
-            await commandeExpediee(commande, [ligne]);
+            await commandeExpediee(
+              commande,
+              [nomMarque ? { ...ligne, brand_name: nomMarque } : ligne],
+              nomMarque);
           } else {
             console.warn("[email] pas d'adresse client pour la commande", ligne.order_id);
           }

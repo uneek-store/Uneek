@@ -282,7 +282,14 @@ export default async function handler(req, res) {
           .select("id, name, email")
           .in("id", brandIds);
 
-        const taches = [confirmationCommande(pourEmail, orderItems)];
+        // Le client voit la marque sous chaque article : c'est ce qui fait
+        // comprendre qu'UNEEK reunit des createurs, et non un seul magasin.
+        const articlesClient = orderItems.map((i) => {
+          const marque = (marques || []).find((m) => m.id === i.brand_id);
+          return marque ? { ...i, brand_name: marque.name } : i;
+        });
+
+        const taches = [confirmationCommande(pourEmail, articlesClient)];
 
         // Un e-mail par marque concernee, ne contenant que ses propres articles.
         for (const bid of brandIds) {

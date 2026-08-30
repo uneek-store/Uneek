@@ -93,7 +93,13 @@ export function tableauArticles(items, avecPrix) {
     const total = (parseFloat(item.product_price) || 0) * qte;
     html += '<tr>'
       + '<td style="padding:10px 0;border-bottom:1px solid #eee;font-size:14px">'
-      + ligneArticle(item) + '</td>';
+      + ligneArticle(item)
+      + (item.brand_name
+          ? '<div style="font-size:11px;color:#999;margin-top:4px;'
+            + 'text-transform:uppercase;letter-spacing:1.5px">'
+            + esc(item.brand_name) + '</div>'
+          : '')
+      + '</td>';
     if (avecPrix) {
       html += '<td style="padding:10px 0;border-bottom:1px solid #eee;font-size:14px;'
         + 'text-align:right;white-space:nowrap">' + prix(total) + '</td>';
@@ -225,16 +231,25 @@ export async function envoyerTous(taches) {
 
 // 1. Le client vient de commander.
 export async function confirmationCommande(order, items) {
+  const marques = [...new Set((items || []).map((i) => i.brand_name).filter(Boolean))];
+  const plusieurs = marques.length > 1;
+  const prenom = esc((order.customer_name || "").split(" ")[0]);
+  const surnom = order.customer_nickname ? esc(order.customer_nickname) : "";
+
   const corps =
-    '<p style="margin:0 0 14px">Bonjour ' + esc((order.customer_name || "").split(" ")[0]) + ',</p>'
-    + '<p style="margin:0 0 18px">Merci pour ta commande. Elle est bien enregistrée et les '
-    + 'marques concernées ont été prévenues. Tu recevras un message dès qu\'elle sera expédiée.</p>'
+    '<p style="margin:0 0 14px;font-size:16px">Bonjour ' + prenom + ',</p>'
+    + '<p style="margin:0 0 14px">Merci, et bienvenue chez UNEEK.</p>'
+    + '<p style="margin:0 0 18px">Derrière ta commande, il n\'y a pas un entrepôt. Il y a '
+    + (plusieurs
+        ? 'des créateurs indépendants qui vont préparer tes pièces à la main, chacun dans son atelier.'
+        : 'un créateur indépendant qui va préparer tes pièces à la main, dans son atelier.')
+    + '</p>'
     + bloqueInfo("Commande", [
         '<strong>' + esc(order.order_number) + '</strong>',
         'Passée le ' + dateFr(order.created_at),
       ])
     + '<div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;'
-    + 'color:#888;margin:20px 0 4px">Articles</div>'
+    + 'color:#888;margin:20px 0 4px">Ce que tu as choisi</div>'
     + tableauArticles(items, true)
     + '<table style="width:100%;border-collapse:collapse">'
     + '<tr><td style="font-size:15px;font-weight:600;padding-top:4px">Total</td>'
@@ -243,14 +258,28 @@ export async function confirmationCommande(order, items) {
     + bloqueInfo("Livraison", [
         esc(order.customer_name),
         esc(order.shipping_address),
+        surnom ? 'Ton colis sera marqué <strong>' + surnom + '</strong>, écrit à la main' : null,
       ])
-    + '<p style="margin:20px 0 0;font-size:13px;color:#666">Une question ? Réponds '
-    + 'simplement à cet e-mail.</p>';
+    + '<div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;'
+    + 'color:#888;margin:22px 0 6px">La suite</div>'
+    + '<ul style="margin:0 0 20px;padding-left:18px;font-size:14px;color:#333;line-height:1.7">'
+    + '<li>' + (plusieurs ? 'Les marques préparent' : 'La marque prépare')
+    + ' ta commande dans les prochains jours</li>'
+    + '<li>Tu reçois un e-mail au moment exact où ' + (plusieurs ? 'chaque colis part' : 'le colis part') + '</li>'
+    + (plusieurs
+        ? '<li>Chaque créateur expédie lui-même : tu recevras donc plusieurs colis, pas forcément le même jour</li>'
+        : '')
+    + '</ul>'
+    + '<p style="margin:0 0 18px;font-size:14px">Une question, un doute, une envie ? '
+    + 'Réponds simplement à cet e-mail — c\'est une vraie personne qui te lit.</p>'
+    + '<p style="margin:0"><a href="' + SITE + '/shop" '
+    + 'style="display:inline-block;background:#000;color:#fff;text-decoration:none;'
+    + 'padding:12px 22px;border-radius:6px;font-size:14px">Découvrir les autres marques</a></p>';
 
   return envoyer({
     to: order.customer_email,
-    subject: "Ta commande " + (order.order_number || "") + " est confirmée",
-    html: gabarit("Commande confirmée", corps),
+    subject: "Merci pour ta commande — " + (order.order_number || ""),
+    html: gabarit("C\'est noté, merci !", corps),
   });
 }
 
@@ -282,59 +311,84 @@ export async function nouvelleCommandeCreateur(destinataire, nomCreateur, order,
   });
 }
 
-// 3. La candidature est acceptee : on envoie le code d'invitation.
+// 3. La marque rejoint UNEEK (candidature acceptee ou ajout manuel par l'admin).
+//    Le nom de la fonction est conserve pour ne rien casser cote appelants,
+//    mais le contenu est desormais un e-mail de bienvenue.
 export async function candidatureAcceptee(destinataire, contactName, brandName, inviteCode) {
   const corps =
-    '<p style="margin:0 0 14px">Bonjour ' + esc((contactName || "").split(" ")[0]) + ',</p>'
-    + '<p style="margin:0 0 18px">Bonne nouvelle : <strong>' + esc(brandName) + '</strong> '
-    + 'rejoint UNEEK. Voici ton code d\'invitation pour créer ton compte créateur.</p>'
-    + '<div style="background:#000;color:#fff;border-radius:8px;padding:22px;'
-    + 'text-align:center;margin:20px 0">'
+    '<p style="margin:0 0 14px;font-size:16px">Bonjour '
+    + esc((contactName || "").split(" ")[0]) + ',</p>'
+    + '<p style="margin:0 0 14px"><strong>' + esc(brandName) + '</strong> rejoint UNEEK. '
+    + 'On est vraiment content de t\'avoir avec nous.</p>'
+    + '<p style="margin:0 0 20px">UNEEK, c\'est une sélection de marques indépendantes '
+    + 'réunies au même endroit. Tu gardes la main sur tes pièces, tes prix et tes stocks. '
+    + 'Nous, on s\'occupe de la boutique, des clients et des commandes.</p>'
+    + '<div style="background:#000;color:#fff;border-radius:8px;padding:24px;'
+    + 'text-align:center;margin:0 0 24px">'
     + '<div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;'
-    + 'color:#aaa;margin-bottom:8px">Ton code d\'invitation</div>'
-    + '<div style="font-size:26px;font-weight:700;letter-spacing:3px">'
+    + 'color:#aaa;margin-bottom:10px">Ton code d\'accès</div>'
+    + '<div style="font-size:28px;font-weight:700;letter-spacing:4px">'
     + esc(inviteCode) + '</div></div>'
-    + '<p style="margin:0 0 8px;font-size:14px"><strong>Pour commencer :</strong></p>'
-    + '<ol style="margin:0 0 20px;padding-left:20px;font-size:14px;color:#333">'
-    + '<li style="margin-bottom:6px">Va sur <a href="' + SITE + '/creator" '
-    + 'style="color:#000">uneek.store/creator</a></li>'
-    + '<li style="margin-bottom:6px">Choisis « Créer mon compte » et saisis ton code</li>'
-    + '<li>Ajoute tes premiers produits — ils passent en validation avant publication</li>'
+    + '<div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;'
+    + 'color:#888;margin:0 0 8px">Pour commencer</div>'
+    + '<ol style="margin:0 0 22px;padding-left:20px;font-size:14px;color:#333;line-height:1.8">'
+    + '<li>Va sur <a href="' + SITE + '/creator" style="color:#000">uneek.store/creator</a></li>'
+    + '<li>Choisis « Créer mon compte » et saisis ton code</li>'
+    + '<li>Ajoute tes premières pièces : photos, tailles, stock et prix</li>'
     + '</ol>'
-    + '<p style="margin:0;font-size:13px;color:#666">Ce code est personnel et ne peut '
-    + 'servir qu\'une seule fois. Une question ? Réponds à cet e-mail.</p>';
+    + '<div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;'
+    + 'color:#888;margin:0 0 8px">Comment ça se passe ensuite</div>'
+    + '<ul style="margin:0 0 22px;padding-left:18px;font-size:14px;color:#333;line-height:1.7">'
+    + '<li>On relit chaque produit avant publication — tu es prévenu par e-mail dès que c\'est validé</li>'
+    + '<li>À chaque commande, tu reçois un e-mail avec le détail et l\'adresse de livraison</li>'
+    + '<li>Tu prépares, tu expédies, tu marques la commande comme expédiée</li>'
+    + '<li>Le client est prévenu automatiquement — tu n\'as rien d\'autre à gérer</li>'
+    + '</ul>'
+    + '<p style="margin:0 0 18px"><a href="' + SITE + '/creator" '
+    + 'style="display:inline-block;background:#000;color:#fff;text-decoration:none;'
+    + 'padding:13px 26px;border-radius:6px;font-size:15px">Créer mon compte</a></p>'
+    + '<p style="margin:0;font-size:13px;color:#666">Ce code est personnel et ne fonctionne '
+    + 'qu\'une seule fois. Une question ? Réponds directement à cet e-mail.</p>';
 
   return envoyer({
     to: destinataire,
-    subject: "Bienvenue sur UNEEK — ton code d'invitation",
-    html: gabarit("Ta candidature est acceptée", corps),
+    subject: "Bienvenue chez UNEEK — ton code d\'accès",
+    html: gabarit("Bienvenue chez UNEEK", corps),
   });
 }
 
 // 5. La marque a expedie : on previent le client.
-export async function commandeExpediee(order, articles) {
+export async function commandeExpediee(order, articles, nomMarque) {
+  const prenom = esc((order.customer_name || "").split(" ")[0]);
+  const surnom = order.customer_nickname ? esc(order.customer_nickname) : "";
+  const qui = nomMarque ? esc(nomMarque) : "La marque";
+
   const corps =
-    '<p style="margin:0 0 14px">Bonjour ' + esc((order.customer_name || "").split(" ")[0]) + ',</p>'
-    + '<p style="margin:0 0 18px">Bonne nouvelle : ta commande vient de partir. '
-    + 'Elle est entre les mains du transporteur, tu n\'as plus rien à faire.</p>'
+    '<p style="margin:0 0 14px;font-size:16px">Bonjour ' + prenom + ',</p>'
+    + '<p style="margin:0 0 18px">Ça y est : <strong>' + qui + '</strong> vient de poster '
+    + 'ton colis. Il est en route vers toi.</p>'
     + bloqueInfo("Commande", [
         '<strong>' + esc(order.order_number) + '</strong>',
         'Expédiée le ' + dateFr(new Date()),
       ])
     + '<div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;'
-    + 'color:#888;margin:20px 0 4px">En route</div>'
+    + 'color:#888;margin:20px 0 4px">Ce qui arrive</div>'
     + tableauArticles(articles, false)
     + bloqueInfo("Livraison", [
         esc(order.customer_name),
         esc(order.shipping_address),
+        surnom ? 'Cherche <strong>' + surnom + '</strong> écrit à la main sur le colis' : null,
       ])
-    + '<p style="margin:20px 0 0;font-size:13px;color:#666">Un souci à la réception ? '
-    + 'Réponds simplement à cet e-mail.</p>';
+    + '<p style="margin:20px 0 18px;font-size:14px">Merci de faire vivre les marques '
+    + 'indépendantes. Si ce que tu reçois te plaît, parles-en autour de toi — '
+    + 'pour une petite marque, ça change tout.</p>'
+    + '<p style="margin:0;font-size:13px;color:#666">Un souci à la réception ? '
+    + 'Réponds à cet e-mail, on s\'en occupe.</p>';
 
   return envoyer({
     to: order.customer_email,
-    subject: "Ta commande " + (order.order_number || "") + " est en route",
-    html: gabarit("Commande expédiée", corps),
+    subject: "C\'est parti ! Ta commande " + (order.order_number || "") + " est en route",
+    html: gabarit("Ton colis est parti", corps),
   });
 }
 
