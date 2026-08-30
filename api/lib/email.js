@@ -239,11 +239,9 @@ export async function confirmationCommande(order, items) {
   const corps =
     '<p style="margin:0 0 14px;font-size:16px">Bonjour ' + prenom + ',</p>'
     + '<p style="margin:0 0 14px">Merci, et bienvenue chez UNEEK.</p>'
-    + '<p style="margin:0 0 18px">Derrière ta commande, il n\'y a pas un entrepôt. Il y a '
-    + (plusieurs
-        ? 'des créateurs indépendants qui vont préparer tes pièces à la main, chacun dans son atelier.'
-        : 'un créateur indépendant qui va préparer tes pièces à la main, dans son atelier.')
-    + '</p>'
+    + '<p style="margin:0 0 18px">En commandant ici, tu fais tourner '
+    + (plusieurs ? 'des marques indépendantes' : 'une marque indépendante')
+    + ' — pas une multinationale. Ça compte plus que tu ne crois.</p>'
     + bloqueInfo("Commande", [
         '<strong>' + esc(order.order_number) + '</strong>',
         'Passée le ' + dateFr(order.created_at),
@@ -271,7 +269,7 @@ export async function confirmationCommande(order, items) {
         : '')
     + '</ul>'
     + '<p style="margin:0 0 18px;font-size:14px">Une question, un doute, une envie ? '
-    + 'Réponds simplement à cet e-mail — c\'est une vraie personne qui te lit.</p>'
+    + 'Réponds simplement à cet e-mail.</p>'
     + '<p style="margin:0"><a href="' + SITE + '/shop" '
     + 'style="display:inline-block;background:#000;color:#fff;text-decoration:none;'
     + 'padding:12px 22px;border-radius:6px;font-size:14px">Découvrir les autres marques</a></p>';
@@ -279,7 +277,7 @@ export async function confirmationCommande(order, items) {
   return envoyer({
     to: order.customer_email,
     subject: "Merci pour ta commande — " + (order.order_number || ""),
-    html: gabarit("C\'est noté, merci !", corps),
+    html: gabarit("Confirmation de commande", corps),
   });
 }
 
@@ -320,9 +318,8 @@ export async function candidatureAcceptee(destinataire, contactName, brandName, 
     + esc((contactName || "").split(" ")[0]) + ',</p>'
     + '<p style="margin:0 0 14px"><strong>' + esc(brandName) + '</strong> rejoint UNEEK. '
     + 'On est vraiment content de t\'avoir avec nous.</p>'
-    + '<p style="margin:0 0 20px">UNEEK, c\'est une sélection de marques indépendantes '
-    + 'réunies au même endroit. Tu gardes la main sur tes pièces, tes prix et tes stocks. '
-    + 'Nous, on s\'occupe de la boutique, des clients et des commandes.</p>'
+    + '<p style="margin:0 0 20px">Bienvenue dans le collectif. UNEEK réunit des marques '
+    + 'indépendantes qui ont chacune leur univers — et le tien nous a plu.</p>'
     + '<div style="background:#000;color:#fff;border-radius:8px;padding:24px;'
     + 'text-align:center;margin:0 0 24px">'
     + '<div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;'
@@ -336,14 +333,8 @@ export async function candidatureAcceptee(destinataire, contactName, brandName, 
     + '<li>Choisis « Créer mon compte » et saisis ton code</li>'
     + '<li>Ajoute tes premières pièces : photos, tailles, stock et prix</li>'
     + '</ol>'
-    + '<div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;'
-    + 'color:#888;margin:0 0 8px">Comment ça se passe ensuite</div>'
-    + '<ul style="margin:0 0 22px;padding-left:18px;font-size:14px;color:#333;line-height:1.7">'
-    + '<li>On relit chaque produit avant publication — tu es prévenu par e-mail dès que c\'est validé</li>'
-    + '<li>À chaque commande, tu reçois un e-mail avec le détail et l\'adresse de livraison</li>'
-    + '<li>Tu prépares, tu expédies, tu marques la commande comme expédiée</li>'
-    + '<li>Le client est prévenu automatiquement — tu n\'as rien d\'autre à gérer</li>'
-    + '</ul>'
+    + '<p style="margin:0 0 22px;font-size:14px">Tu trouveras ci-dessous le guide de '
+    + 'démarrage, avec la marche à suivre et toutes les explications.</p>'
     + '<p style="margin:0 0 18px"><a href="' + SITE + '/creator" '
     + 'style="display:inline-block;background:#000;color:#fff;text-decoration:none;'
     + 'padding:13px 26px;border-radius:6px;font-size:15px">Créer mon compte</a></p>'
