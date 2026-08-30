@@ -199,7 +199,7 @@ export async function confirmationCommande(order, items) {
 
   return envoyer({
     to: order.customer_email,
-    subject: "Ta commande UNEEK " + (order.order_number || "") + " est confirmée",
+    subject: "Ta commande " + (order.order_number || "") + " est confirmée",
     html: gabarit("Commande confirmée", corps),
   });
 }
