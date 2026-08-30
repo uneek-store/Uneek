@@ -239,8 +239,9 @@ export async function confirmationCommande(order, items) {
   const corps =
     '<p style="margin:0 0 14px;font-size:16px">Bonjour ' + prenom + ',</p>'
     + '<p style="margin:0 0 10px">Merci, et bienvenue chez UNEEK.</p>'
-    + '<p style="margin:0 0 14px">Ta commande est bien confirmée.</p>'
-    + '<p style="margin:0 0 18px">En commandant ici, tu fais tourner '
+    + '<p style="margin:0 0 16px;font-size:17px;font-weight:600">'
+    + 'Ta commande est bien confirmée.</p>'
+    + '<p style="margin:0 0 18px">En commandant ici, tu fais vivre '
     + (plusieurs ? 'des marques indépendantes' : 'une marque indépendante')
     + '. Ça compte plus que tu ne crois.</p>'
     + bloqueInfo("Commande", [
