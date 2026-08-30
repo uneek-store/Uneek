@@ -238,10 +238,11 @@ export async function confirmationCommande(order, items) {
 
   const corps =
     '<p style="margin:0 0 14px;font-size:16px">Bonjour ' + prenom + ',</p>'
-    + '<p style="margin:0 0 14px">Merci, et bienvenue chez UNEEK.</p>'
+    + '<p style="margin:0 0 14px">Merci, et bienvenue chez UNEEK. '
+    + 'Ta commande est bien confirmée.</p>'
     + '<p style="margin:0 0 18px">En commandant ici, tu fais tourner '
     + (plusieurs ? 'des marques indépendantes' : 'une marque indépendante')
-    + ' — pas une multinationale. Ça compte plus que tu ne crois.</p>'
+    + '. Ça compte plus que tu ne crois.</p>'
     + bloqueInfo("Commande", [
         '<strong>' + esc(order.order_number) + '</strong>',
         'Passée le ' + dateFr(order.created_at),
