@@ -113,6 +113,37 @@ export function bloqueInfo(titre, lignes) {
   return html + '</div>';
 }
 
+// --- mode test : qui a le droit de recevoir ? -----------------------------
+//
+// Les comptes createurs fictifs portent des adresses inventees, qui peuvent
+// tres bien appartenir a de vraies personnes. Tant qu'on teste, on n'ecrit
+// qu'aux trois adresses qui existent et qui nous appartiennent.
+//
+// LE JOUR DU LANCEMENT : mettre la variable d'environnement EMAIL_ALLOWLIST
+// a "*" dans Vercel. Les e-mails partiront alors a tout le monde, sans avoir
+// a retoucher une ligne de code.
+// On peut aussi y mettre une liste d'adresses separees par des virgules.
+
+const DESTINATAIRES_DE_TEST = [
+  "axeliachetta@gmail.com",
+  "contact@uneek.store",
+  "warriors2829@gmail.com",
+];
+
+// null = aucune restriction ; sinon, la liste des adresses autorisees.
+export function listeAutorisee() {
+  const brut = String(process.env.EMAIL_ALLOWLIST || "").trim();
+  if (brut === "*") return null;
+  if (!brut) return DESTINATAIRES_DE_TEST.map((a) => a.toLowerCase());
+  return brut.split(",").map((a) => a.trim().toLowerCase()).filter(Boolean);
+}
+
+export function destinataireAutorise(adresse) {
+  const liste = listeAutorisee();
+  if (liste === null) return true;
+  return liste.includes(String(adresse || "").trim().toLowerCase());
+}
+
 // --- envoi ----------------------------------------------------------------
 
 // Ne leve jamais. Renvoie toujours un objet decrivant ce qui s'est passe.
@@ -128,6 +159,19 @@ export async function envoyer({ to, subject, html, replyTo }) {
     return { sent: false, reason: "no_recipient" };
   }
 
+  // Mode test : on ne garde que les adresses autorisees. Rien ne part vers
+  // une adresse inventee de marque fictive.
+  const demandes = Array.isArray(to) ? to : [to];
+  const permis = demandes.filter(destinataireAutorise);
+  const refuses = demandes.filter((a) => !destinataireAutorise(a));
+  if (refuses.length) {
+    console.warn("[email] mode test — destinataire non autorisé, e-mail non envoyé à "
+      + refuses.join(", ") + " (sujet : " + subject + ")");
+  }
+  if (!permis.length) {
+    return { sent: false, reason: "not_allowlisted", refuses };
+  }
+
   try {
     const reponse = await fetch(RESEND_URL, {
       method: "POST",
@@ -137,7 +181,7 @@ export async function envoyer({ to, subject, html, replyTo }) {
       },
       body: JSON.stringify({
         from: FROM,
-        to: Array.isArray(to) ? to : [to],
+        to: permis,
         subject,
         html,
         reply_to: replyTo || REPLY_TO,
