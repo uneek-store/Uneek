@@ -113,63 +113,69 @@ export function bloqueInfo(titre, lignes) {
   return html + '</div>';
 }
 
-// --- mode test : qui a le droit de recevoir ? -----------------------------
+// --- adresses a ne jamais contacter --------------------------------------
 //
-// Les comptes createurs fictifs portent des adresses inventees, qui peuvent
-// tres bien appartenir a de vraies personnes. Tant qu'on teste, on n'ecrit
-// qu'aux trois adresses qui existent et qui nous appartiennent.
+// TOUT LE MONDE recoit ses e-mails : clients, createurs, admin. Seule
+// exception, la courte liste ci-dessous.
 //
-// LE JOUR DU LANCEMENT : mettre la variable d'environnement EMAIL_ALLOWLIST
-// a "*" dans Vercel. Les e-mails partiront alors a tout le monde, sans avoir
-// a retoucher une ligne de code.
-// On peut aussi y mettre une liste d'adresses separees par des virgules.
+// Ces adresses ont ete inventees pour creer des marques de test. Elles ont
+// l'air fausses mais peuvent tres bien appartenir a de vraies personnes :
+// lors du premier envoi reel, une notification de commande est partie chez
+// un inconnu. On ne leur ecrit plus.
+//
+// A vider le jour ou ces marques fictives seront supprimees. Modifiable sans
+// toucher au code via la variable d'environnement EMAIL_BLOCKLIST (adresses
+// separees par des virgules ; la mettre a "-" pour ne bloquer personne).
+//
+// Note : warriors2829@gmail.com (marque "testify") n'est PAS dans la liste,
+// c'est une vraie adresse qui sert justement a tester l'e-mail createur.
 
-const DESTINATAIRES_DE_TEST = [
-  "axeliachetta@gmail.com",
-  "contact@uneek.store",
-  "warriors2829@gmail.com",
+const ADRESSES_FICTIVES = [
+  "michelboss@gmail.com",
+  "louisborne@gmail.com",
+  "david@bravon.io",
 ];
 
-// null = aucune restriction ; sinon, la liste des adresses autorisees.
-export function listeAutorisee() {
-  const brut = String(process.env.EMAIL_ALLOWLIST || "").trim();
-  if (brut === "*") return null;
-  if (!brut) return DESTINATAIRES_DE_TEST.map((a) => a.toLowerCase());
+export function listeBloquee() {
+  const brut = String(process.env.EMAIL_BLOCKLIST || "").trim();
+  if (brut === "-") return [];
+  if (!brut) return ADRESSES_FICTIVES.map((a) => a.toLowerCase());
   return brut.split(",").map((a) => a.trim().toLowerCase()).filter(Boolean);
 }
 
 export function destinataireAutorise(adresse) {
-  const liste = listeAutorisee();
-  if (liste === null) return true;
-  return liste.includes(String(adresse || "").trim().toLowerCase());
+  const a = String(adresse || "").trim().toLowerCase();
+  if (!a) return false;
+  return !listeBloquee().includes(a);
 }
 
 // --- envoi ----------------------------------------------------------------
 
 // Ne leve jamais. Renvoie toujours un objet decrivant ce qui s'est passe.
 export async function envoyer({ to, subject, html, replyTo }) {
-  const apiKey = process.env.RESEND_API_KEY;
-
-  if (!apiKey) {
-    console.warn("[email] RESEND_API_KEY absente — e-mail non envoyé :", subject);
-    return { sent: false, reason: "no_api_key" };
-  }
   if (!to) {
     console.warn("[email] destinataire manquant — e-mail non envoyé :", subject);
     return { sent: false, reason: "no_recipient" };
   }
 
-  // Mode test : on ne garde que les adresses autorisees. Rien ne part vers
-  // une adresse inventee de marque fictive.
+  // Ce filtre est place AVANT toute autre verification : ne jamais ecrire a
+  // une adresse fictive ne doit dependre d'aucune configuration.
+  // Tout autre destinataire passe normalement.
   const demandes = Array.isArray(to) ? to : [to];
   const permis = demandes.filter(destinataireAutorise);
   const refuses = demandes.filter((a) => !destinataireAutorise(a));
   if (refuses.length) {
-    console.warn("[email] mode test — destinataire non autorisé, e-mail non envoyé à "
+    console.warn("[email] adresse fictive ignorée, e-mail non envoyé à "
       + refuses.join(", ") + " (sujet : " + subject + ")");
   }
   if (!permis.length) {
-    return { sent: false, reason: "not_allowlisted", refuses };
+    return { sent: false, reason: "adresse_fictive", refuses };
+  }
+
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn("[email] RESEND_API_KEY absente — e-mail non envoyé :", subject);
+    return { sent: false, reason: "no_api_key" };
   }
 
   try {
