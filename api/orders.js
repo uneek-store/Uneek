@@ -7,7 +7,11 @@ import crypto from "crypto";
 import {
   confirmationCommande,
   nouvelleCommandeCreateur,
+  alerteAdmin,
   envoyerTous,
+  ligneArticle,
+  esc,
+  prix,
 } from "./lib/email.js";
 
 function generateOrderNumber() {
@@ -296,6 +300,19 @@ export default async function handler(req, res) {
             orderItems.filter((i) => i.brand_id === bid)
           ));
         }
+
+        // Alerte interne : etre prevenu de chaque commande sans avoir a
+        // surveiller le panneau admin.
+        taches.push(alerteAdmin(
+          "Nouvelle commande " + (order.order_number || ""),
+          [
+            "<strong>" + esc(order.customer_name) + "</strong>",
+            orderItems.map((i) => ligneArticle(i)).join("<br>"),
+            "Total : " + prix(order.total_amount),
+            "Livraison : " + esc(order.shipping_address),
+          ],
+          "Voir la commande"
+        ));
 
         await envoyerTous(taches);
       } catch (err) {
