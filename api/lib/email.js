@@ -127,13 +127,13 @@ export function bloqueInfo(titre, lignes) {
 // toucher au code via la variable d'environnement EMAIL_BLOCKLIST (adresses
 // separees par des virgules ; la mettre a "-" pour ne bloquer personne).
 //
-// Note : warriors2829@gmail.com (marque "testify") n'est PAS dans la liste,
-// c'est une vraie adresse qui sert justement a tester l'e-mail createur.
+// Ne sont PAS dans la liste, car ce sont de vraies adresses :
+//   warriors2829@gmail.com (marque "testify") — sert a tester l'e-mail createur
+//   david@bravon.io        (marque "David")    — retiree a la demande d'Axel
 
 const ADRESSES_FICTIVES = [
   "michelboss@gmail.com",
   "louisborne@gmail.com",
-  "david@bravon.io",
 ];
 
 export function listeBloquee() {
@@ -308,6 +308,74 @@ export async function candidatureAcceptee(destinataire, contactName, brandName, 
     to: destinataire,
     subject: "Bienvenue sur UNEEK — ton code d'invitation",
     html: gabarit("Ta candidature est acceptée", corps),
+  });
+}
+
+// 5. La marque a expedie : on previent le client.
+export async function commandeExpediee(order, articles) {
+  const corps =
+    '<p style="margin:0 0 14px">Bonjour ' + esc((order.customer_name || "").split(" ")[0]) + ',</p>'
+    + '<p style="margin:0 0 18px">Bonne nouvelle : ta commande vient de partir. '
+    + 'Elle est entre les mains du transporteur, tu n\'as plus rien à faire.</p>'
+    + bloqueInfo("Commande", [
+        '<strong>' + esc(order.order_number) + '</strong>',
+        'Expédiée le ' + dateFr(new Date()),
+      ])
+    + '<div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;'
+    + 'color:#888;margin:20px 0 4px">En route</div>'
+    + tableauArticles(articles, false)
+    + bloqueInfo("Livraison", [
+        esc(order.customer_name),
+        esc(order.shipping_address),
+      ])
+    + '<p style="margin:20px 0 0;font-size:13px;color:#666">Un souci à la réception ? '
+    + 'Réponds simplement à cet e-mail.</p>';
+
+  return envoyer({
+    to: order.customer_email,
+    subject: "Ta commande " + (order.order_number || "") + " est en route",
+    html: gabarit("Commande expédiée", corps),
+  });
+}
+
+// 6. L'admin a valide ou refuse : on previent le createur.
+export async function reponseValidation(destinataire, nomCreateur, info) {
+  const approuve = !!(info && info.approuve);
+  const nomProduit = (info && info.nomProduit) || "ton produit";
+  const estNouveau = !!(info && info.estNouveau);
+  const note = (info && info.note) || "";
+
+  const quoi = estNouveau ? "produit" : "modification";
+
+  let corps = '<p style="margin:0 0 14px">Bonjour '
+    + esc((nomCreateur || "").split(" ")[0]) + ',</p>';
+
+  if (approuve) {
+    corps += estNouveau
+      ? '<p style="margin:0 0 18px"><strong>' + esc(nomProduit) + '</strong> est validé '
+        + 'et publié sur la boutique. Il est visible par tout le monde dès maintenant.</p>'
+      : '<p style="margin:0 0 18px">Ta modification sur <strong>' + esc(nomProduit)
+        + '</strong> est validée et appliquée sur la boutique.</p>';
+  } else {
+    corps += '<p style="margin:0 0 18px">Ta demande concernant <strong>'
+      + esc(nomProduit) + '</strong> n\'a pas été retenue pour le moment. '
+      + 'Tu peux la corriger et la soumettre à nouveau depuis ton panneau.</p>';
+  }
+
+  if (note) {
+    corps += bloqueInfo("Message de l\'équipe UNEEK", [esc(note)]);
+  }
+
+  corps += '<p style="margin:20px 0 0"><a href="' + SITE + '/creator" '
+    + 'style="display:inline-block;background:#000;color:#fff;text-decoration:none;'
+    + 'padding:12px 22px;border-radius:6px;font-size:14px">Ouvrir mon panneau</a></p>';
+
+  return envoyer({
+    to: destinataire,
+    subject: approuve
+      ? "Ton " + quoi + " est validé — " + nomProduit
+      : "Ta demande sur " + nomProduit + " n\'a pas été retenue",
+    html: gabarit(approuve ? "Validé par UNEEK" : "Demande non retenue", corps),
   });
 }
 

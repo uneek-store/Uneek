@@ -179,6 +179,17 @@ export default async function handler(req, res) {
           return res.status(500).json({ error: "Erreur soumission" });
         }
 
+        try {
+          const { data: marque } = await supabaseAdmin
+            .from("brands").select("name").eq("id", brand_id).single();
+          await alerteAdmin("Modification de produit à valider", [
+            "<strong>" + esc(name || "Produit") + "</strong>",
+            "Marque : " + esc((marque && marque.name) || brand_id),
+          ], "Voir les modifications en attente");
+        } catch (err) {
+          console.error("[email] alerte modification ignoree :", err && err.message);
+        }
+
         return res.status(200).json({
           success: true,
           stock_applied: stockApplied,

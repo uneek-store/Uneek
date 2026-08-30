@@ -3,6 +3,7 @@
 // POST → approuver ou rejeter une modification
 
 import { supabaseAdmin } from "../lib/supabase.js";
+import { reponseValidation } from "../lib/email.js";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -248,6 +249,39 @@ export default async function handler(req, res) {
       if (statusError) {
         console.error("Error updating edit status:", statusError);
         return res.status(500).json({ error: "Erreur mise à jour statut" });
+      }
+
+      // Prevenir le createur de la decision. Enferme dans un try : un echec
+      // d'envoi ne doit pas annuler une validation deja enregistree.
+      try {
+        const { data: compte } = await supabaseAdmin
+          .from("creator_accounts")
+          .select("email, full_name")
+          .eq("brand_id", edit.brand_id)
+          .maybeSingle();
+        const { data: marque } = await supabaseAdmin
+          .from("brands")
+          .select("name, email")
+          .eq("id", edit.brand_id)
+          .maybeSingle();
+
+        const destinataire = (compte && compte.email) || (marque && marque.email);
+        if (destinataire) {
+          await reponseValidation(
+            destinataire,
+            (compte && compte.full_name) || (marque && marque.name) || "",
+            {
+              approuve: action === "approve",
+              nomProduit: (edit.changes && edit.changes.name) || "ton produit",
+              estNouveau: !!edit.is_new_product,
+              note: admin_note || "",
+            }
+          );
+        } else {
+          console.warn("[email] aucune adresse pour la marque", edit.brand_id);
+        }
+      } catch (err) {
+        console.error("[email] reponse de validation ignoree :", err && err.message);
       }
 
       return res.status(200).json({

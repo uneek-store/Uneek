@@ -3,6 +3,7 @@
 // POST → marquer un item comme expédié
 
 import { supabaseAdmin } from "../lib/supabase.js";
+import { commandeExpediee } from "../lib/email.js";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -82,6 +83,34 @@ export default async function handler(req, res) {
       if (error) {
         console.error("Error updating fulfillment:", error);
         return res.status(500).json({ error: "Erreur mise à jour" });
+      }
+
+      // Prevenir le client. Deux requetes simples plutot qu'une jointure
+      // imbriquee : les embeds PostgREST echouent durement au moindre nom
+      // de colonne inexact, et on ne veut pas risquer l'expedition pour un
+      // e-mail.
+      try {
+        const { data: ligne } = await supabaseAdmin
+          .from("order_items")
+          .select("order_id, product_name, size, color, quantity")
+          .eq("id", order_item_id)
+          .maybeSingle();
+
+        if (ligne && ligne.order_id) {
+          const { data: commande } = await supabaseAdmin
+            .from("orders")
+            .select("order_number, customer_name, customer_email, shipping_address")
+            .eq("id", ligne.order_id)
+            .maybeSingle();
+
+          if (commande && commande.customer_email) {
+            await commandeExpediee(commande, [ligne]);
+          } else {
+            console.warn("[email] pas d'adresse client pour la commande", ligne.order_id);
+          }
+        }
+      } catch (err) {
+        console.error("[email] avis d'expedition ignore :", err && err.message);
       }
 
       return res.status(200).json({ success: true, message: "Marqué comme expédié" });
