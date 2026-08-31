@@ -133,9 +133,11 @@ export function bloqueInfo(titre, lignes) {
 // toucher au code via la variable d'environnement EMAIL_BLOCKLIST (adresses
 // separees par des virgules ; la mettre a "-" pour ne bloquer personne).
 //
-// Ne sont PAS dans la liste, car ce sont de vraies adresses :
-//   warriors2829@gmail.com (marque "testify") — sert a tester l'e-mail createur
-//   david@bravon.io        (marque "David")    — retiree a la demande d'Axel
+// Ne sont PAS dans la liste, car ce sont de vraies adresses : celle du compte
+// createur de la marque "testify" (qui sert a tester l'e-mail createur) et
+// celle de la marque "David", retiree a la demande d'Axel. Elles ne sont pas
+// recopiees ici : ce depot est public, et une adresse ecrite en clair dans du
+// code publie finit ramassee par les robots a spam.
 
 const ADRESSES_FICTIVES = [
   "michelboss@gmail.com",
@@ -158,7 +160,10 @@ export function destinataireAutorise(adresse) {
 // --- envoi ----------------------------------------------------------------
 
 // Ne leve jamais. Renvoie toujours un objet decrivant ce qui s'est passe.
-export async function envoyer({ to, subject, html, replyTo }) {
+// "attachments" : liste de { filename, content } ou content est le fichier
+// encode en base64. Utilise par la sauvegarde quotidienne. Absent partout
+// ailleurs : les e-mails existants ne changent pas d'un octet.
+export async function envoyer({ to, subject, html, replyTo, attachments }) {
   if (!to) {
     console.warn("[email] destinataire manquant — e-mail non envoyé :", subject);
     return { sent: false, reason: "no_recipient" };
@@ -197,6 +202,8 @@ export async function envoyer({ to, subject, html, replyTo }) {
         subject,
         html,
         reply_to: replyTo || REPLY_TO,
+        // La cle n'apparait dans la requete que s'il y a vraiment un fichier.
+        ...(Array.isArray(attachments) && attachments.length ? { attachments } : {}),
       }),
     });
 

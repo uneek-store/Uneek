@@ -1,4 +1,10 @@
 {
+  "crons": [
+    { "path": "/api/cron/sauvegarde", "schedule": "0 3 * * *" }
+  ],
+  "functions": {
+    "api/cron/sauvegarde.js": { "maxDuration": 60 }
+  },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/admin", "destination": "/admin.html" },
