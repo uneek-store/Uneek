@@ -359,6 +359,18 @@
                style="width:100%;padding:11px 13px;border:1px solid var(--gray-200);border-radius:6px;font-size:14px;margin-bottom:16px;outline:none">
         <button class="btn-add" onclick="changerMotDePasse()">Mettre &agrave; jour le mot de passe</button>
         <div id="adm-pw-msg" style="font-size:13px;margin-top:12px;display:none"></div>
+        </div>
+
+        <div class="card" style="max-width:460px;padding:22px;margin-top:20px">
+          <div class="card-header" style="margin-bottom:10px">Sauvegarder mes donn&eacute;es</div>
+          <div style="font-size:13px;color:var(--gray-500);line-height:1.6;margin-bottom:16px">
+            T&eacute;l&eacute;charge tout le contenu de la base dans un fichier&nbsp;: produits,
+            marques, commandes, comptes clients et cr&eacute;ateurs. Supabase ne fait
+            aucune sauvegarde sur le plan gratuit&nbsp;: ce fichier est ta seule copie.
+          </div>
+          <button class="btn-add" onclick="telechargerSauvegarde(true)">T&eacute;l&eacute;charger tout (avec les photos)</button>
+          <button class="btn-add" style="margin-top:8px;background:var(--gray-100);color:var(--gray-600)" onclick="telechargerSauvegarde(false)">Version l&eacute;g&egrave;re (sans les photos)</button>
+          <div id="adm-bk-msg" style="font-size:13px;margin-top:12px;display:none"></div>
         <div style="font-size:12px;color:var(--gray-400);margin-top:14px;line-height:1.6">
           Au moins 6 caract&egrave;res. Ton mot de passe n'est jamais enregistr&eacute; en clair :
           seule une empreinte est conserv&eacute;e, et elle ne permet pas de le retrouver.
@@ -477,7 +489,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-08-31-ordre-tailles-16';
+  const APP_VERSION = '2026-08-31-sauvegarde-donnees-17';
 
   async function checkAppVersion() {
     try {
@@ -490,6 +502,42 @@
       }
     } catch (e) { /* hors ligne : on ne bloque rien */ }
     return true;
+  }
+
+  async function telechargerSauvegarde(avecPhotos) {
+    const msg = document.getElementById('adm-bk-msg');
+    msg.style.color = 'var(--gray-500)';
+    msg.textContent = 'Pr\u00e9paration en cours, \u00e7a peut prendre quelques secondes...';
+    msg.style.display = 'block';
+    try {
+      const res = await fetch(API_BASE + '/admin/export?images=' + (avecPhotos ? '1' : '0'), {
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+      if (!res.ok) {
+        msg.style.color = 'var(--red)';
+        msg.textContent = res.status === 401
+          ? 'Session expir\u00e9e, reconnecte-toi.'
+          : 'Erreur ' + res.status;
+        return;
+      }
+      const texte = await res.text();
+      const jour = new Date().toISOString().slice(0, 10);
+      // On fabrique le fichier dans le navigateur puis on declenche le
+      // telechargement : rien ne transite par un autre serveur.
+      const lien = document.createElement('a');
+      lien.href = URL.createObjectURL(new Blob([texte], { type: 'application/json' }));
+      lien.download = 'uneek-sauvegarde-' + jour + (avecPhotos ? '' : '-leger') + '.json';
+      document.body.appendChild(lien);
+      lien.click();
+      document.body.removeChild(lien);
+      URL.revokeObjectURL(lien.href);
+      const mo = (texte.length / 1048576).toFixed(1);
+      msg.style.color = 'var(--green)';
+      msg.textContent = '\u2713 Sauvegarde t\u00e9l\u00e9charg\u00e9e (' + mo + ' Mo). Range-la en lieu s\u00fbr.';
+    } catch (err) {
+      msg.style.color = 'var(--red)';
+      msg.textContent = 'Erreur r\u00e9seau, r\u00e9essaie.';
+    }
   }
 
   async function changerMotDePasse() {
@@ -783,7 +831,7 @@
   // saisies : la fiche produit montrait "L, M, S, XL". On les range.
   // Les tailles chiffrees (34, 36, 38) sont triees comme des nombres, et
   // tout ce qui n'est ni une lettre connue ni un nombre passe a la fin.
-  const ORDRE_TAILLES = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '4XL'];
+  var ORDRE_TAILLES = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '4XL'];
 
   function rangTaille(t) {
     var v = String(t == null ? '' : t).trim().toUpperCase();
