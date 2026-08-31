@@ -2,6 +2,7 @@
 // DELETE → supprimer une marque et notifier le créateur
 
 import { supabaseAdmin } from "../lib/supabase.js";
+import { controlerAcces } from "../lib/session.js";
 
 // Envoyer un email via Resend (si configuré)
 async function sendEmail(to, subject, html) {
@@ -27,6 +28,11 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") return res.status(200).end();
+
+  // Reserve aux administrateurs. En mode observation, un echec est
+  // seulement trace dans les logs — rien n'est bloque.
+  const acces = controlerAcces(req, { admin: true, nom: "/api/admin/brands" });
+  if (!acces.ok) return res.status(401).json({ error: "Non autorisé" });
 
   if (req.method === "DELETE") {
     const { brand_id } = req.body || {};

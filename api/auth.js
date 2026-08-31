@@ -2,6 +2,7 @@
 // POST → connexion créateur ou admin, changement email/mot de passe
 
 import { supabaseAdmin } from "./lib/supabase.js";
+import { creerJeton } from "./lib/session.js";
 import crypto from "crypto";
 
 // Hash simple du mot de passe (en production, utiliser bcrypt)
@@ -70,7 +71,10 @@ export default async function handler(req, res) {
         brand = data;
       }
 
-      const token = generateToken();
+      // Jeton signe : le serveur pourra verifier qu'il vient bien de lui.
+      // Si AUTH_SECRET manque, on retombe sur l'ancien jeton aleatoire
+      // pour ne pas empecher la connexion.
+      const token = creerJeton(account) || generateToken();
 
       return res.status(200).json({
         success: true,

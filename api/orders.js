@@ -3,6 +3,7 @@
 // POST → créer une nouvelle commande (checkout)
 
 import { supabaseAdmin } from "./lib/supabase.js";
+import { controlerAcces } from "./lib/session.js";
 import crypto from "crypto";
 import {
   confirmationCommande,
@@ -74,6 +75,12 @@ export default async function handler(req, res) {
   try {
     // --- GET : liste toutes les commandes avec leurs items ---
     if (req.method === "GET") {
+      // Cette liste contient les noms, adresses et e-mails des clients.
+      // Elle n'a rien a faire en acces libre. Le POST juste en dessous
+      // reste public : c'est le passage de commande.
+      const acces = controlerAcces(req, { admin: true, nom: "/api/orders (GET)" });
+      if (!acces.ok) return res.status(401).json({ error: "Non autorisé" });
+
       const { data: rawOrders, error } = await supabaseAdmin
         .from("orders")
         .select("*, order_items(*, products(name), brands(name))")

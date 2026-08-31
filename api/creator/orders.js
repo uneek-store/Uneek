@@ -3,6 +3,7 @@
 // POST → marquer un item comme expédié
 
 import { supabaseAdmin } from "../lib/supabase.js";
+import { controlerAcces } from "../lib/session.js";
 import { commandeExpediee } from "../lib/email.js";
 
 export default async function handler(req, res) {
@@ -11,6 +12,11 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") return res.status(200).end();
+
+  // Compte connecte, et uniquement sur SA marque. En mode
+  // observation, un echec est seulement trace dans les logs.
+  const acces = controlerAcces(req, { marque: true, nom: "/api/creator/orders" });
+  if (!acces.ok) return res.status(401).json({ error: "Non autorisé" });
 
   try {
     // --- GET : commandes de la marque ---

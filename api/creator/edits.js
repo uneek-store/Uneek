@@ -2,6 +2,7 @@
 // GET → liste les soumissions d'une marque (toutes : pending, approved, rejected)
 
 import { supabaseAdmin } from "../lib/supabase.js";
+import { controlerAcces } from "../lib/session.js";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -9,6 +10,11 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") return res.status(200).end();
+
+  // Compte connecte, et uniquement sur SA marque. En mode
+  // observation, un echec est seulement trace dans les logs.
+  const acces = controlerAcces(req, { marque: true, nom: "/api/creator/edits" });
+  if (!acces.ok) return res.status(401).json({ error: "Non autorisé" });
 
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });

@@ -4,6 +4,7 @@
 // DELETE → supprimer un produit (notifie l'admin)
 
 import { supabaseAdmin } from "../lib/supabase.js";
+import { controlerAcces } from "../lib/session.js";
 import { alerteAdmin, esc } from "../lib/email.js";
 
 // sizes_stock a deux formes : plate { S: 3 } ou par couleur { Rouge: { S: 3 } }.
@@ -44,6 +45,11 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") return res.status(200).end();
+
+  // Compte connecte, et uniquement sur SA marque. En mode
+  // observation, un echec est seulement trace dans les logs.
+  const acces = controlerAcces(req, { marque: true, nom: "/api/creator/products" });
+  if (!acces.ok) return res.status(401).json({ error: "Non autorisé" });
 
   try {
     const brand_id = req.method === "GET" ? req.query.brand_id : req.body.brand_id;
