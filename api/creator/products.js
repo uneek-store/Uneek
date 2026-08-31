@@ -372,21 +372,21 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Erreur suppression" });
       }
 
-      // Notifier l'admin par email (via Supabase Edge Function ou simple log)
-      // On insère une notification dans une table pour que l'admin la voie
+      // Prevenir l'administrateur. Ce bloc inserait autrefois une ligne dans
+      // une table "admin_notifications" qui n'a jamais existe : l'insertion
+      // echouait en silence (supabase-js renvoie { error } au lieu de lever,
+      // donc le catch de repli ne partait jamais) et personne n'etait averti.
+      // Un e-mail arrive vraiment, et se lit sans ouvrir le panneau.
       try {
-        await supabaseAdmin.from("admin_notifications").insert({
-          type: "product_deleted",
-          message: `Le créateur ${brand?.name || "inconnu"} a supprimé le produit "${product.name}"`,
-          brand_id,
-          product_id,
-          read: false,
-        });
-      } catch (notifErr) {
-        // Si la table n'existe pas encore, on log simplement
-        console.log(
-          `[NOTIFICATION] Produit supprimé: "${product.name}" par ${brand?.name || brand_id}`
-        );
+        await alerteAdmin("Produit supprimé par un créateur", [
+          "<strong>" + esc(product.name) + "</strong>",
+          "Marque : " + esc((brand && brand.name) || brand_id),
+          "Cette suppression est définitive : le produit n'est plus en base.",
+        ], "Ouvrir le panneau admin");
+      } catch (err) {
+        // Regle absolue : un e-mail ne fait jamais echouer l'action metier.
+        // La suppression a deja eu lieu, elle reste un succes.
+        console.error("[email] alerte suppression ignoree :", err && err.message);
       }
 
       return res.status(200).json({

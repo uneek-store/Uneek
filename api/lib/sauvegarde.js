@@ -21,12 +21,14 @@ export const TABLES = [
   "order_items",
   "partner_applications",
   "product_edits",
-  // Oubliee de la premiere version : le panneau admin y ecrit ses alertes
-  // (nouveau produit en attente, etc.). Le garde-fou compare desormais cette
-  // liste aux tables reellement utilisees par le code, pour que ca ne se
-  // reproduise pas.
-  "admin_notifications",
 ];
+
+// Volontairement absente de la liste : "admin_notifications". La sauvegarde du
+// 31 aout a revele qu'elle n'existe pas dans la base — le code croyait y ecrire.
+// La laisser ici ferait afficher "table non sauvegardee" en rouge dans le mail
+// quotidien, tous les jours, pour rien : une alarme qui sonne toujours est une
+// alarme qu'on cesse de lire. Le garde-fou verifie qu'aucune table reellement
+// utilisee par le code ne manque a la liste.
 
 // Les photos sont stockees en base64 dans la base : elles representent
 // l'essentiel du poids. On peut les exclure pour obtenir un fichier leger,
