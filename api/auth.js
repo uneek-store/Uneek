@@ -2,7 +2,7 @@
 // POST → connexion créateur ou admin, changement email/mot de passe
 
 import { supabaseAdmin } from "./lib/supabase.js";
-import { creerJeton } from "./lib/session.js";
+import { creerJeton, lireJeton, jetonDeLaRequete } from "./lib/session.js";
 import crypto from "crypto";
 
 // Hash simple du mot de passe (en production, utiliser bcrypt)
@@ -181,11 +181,24 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Le mot de passe doit faire au moins 6 caractères" });
       }
 
-      // Trouver le compte avec l'ancien mot de passe
-      const { data: accounts } = await supabaseAdmin
+      // Le compte etait retrouve par le SEUL mot de passe : deux personnes
+      // ayant choisi le meme mot de passe pouvaient changer celui de l'autre,
+      // au hasard de l'ordre des resultats. On restreint donc au compte
+      // effectivement connecte.
+      const sessionMdp = lireJeton(jetonDeLaRequete(req)).session;
+
+      let requeteCompte = supabaseAdmin
         .from("creator_accounts")
         .select("id")
         .eq("password_hash", hashPassword(old_password));
+
+      if (sessionMdp && sessionMdp.id) {
+        requeteCompte = requeteCompte.eq("id", sessionMdp.id);
+      } else {
+        console.warn("[auth] changement de mot de passe sans session identifiee");
+      }
+
+      const { data: accounts } = await requeteCompte;
 
       if (!accounts || accounts.length === 0) {
         return res.status(401).json({ error: "Mot de passe actuel incorrect" });
