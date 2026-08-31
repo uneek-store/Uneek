@@ -485,6 +485,28 @@ function stockParCouleur(ss) {
 }
 
 // Liste a plat : [{ couleur|null, taille, qte }]
+// Ordre d'affichage des tailles.
+// Les tailles etaient rendues dans l'ordre ou le createur les avait
+// saisies : la fiche produit montrait "L, M, S, XL". On les range.
+// Les tailles chiffrees (34, 36, 38) sont triees comme des nombres, et
+// tout ce qui n'est ni une lettre connue ni un nombre passe a la fin.
+const ORDRE_TAILLES = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '4XL'];
+
+function rangTaille(t) {
+  var v = String(t == null ? '' : t).trim().toUpperCase();
+  var i = ORDRE_TAILLES.indexOf(v);
+  if (i !== -1) return [0, i, ''];
+  if (/^[0-9]+([.,][0-9]+)?$/.test(v)) return [1, parseFloat(v.replace(',', '.')), ''];
+  if (v === 'UNIQUE' || v === 'TAILLE UNIQUE') return [3, 0, ''];
+  return [2, 0, v];
+}
+
+function comparerTailles(a, b) {
+  var ra = rangTaille(a), rb = rangTaille(b);
+  if (ra[0] !== rb[0]) return ra[0] - rb[0];
+  if (ra[1] !== rb[1]) return ra[1] - rb[1];
+  return ra[2] < rb[2] ? -1 : (ra[2] > rb[2] ? 1 : 0);
+}
 function stockLignes(ss) {
   if (!ss || typeof ss !== 'object') return [];
   const out = [];
@@ -500,6 +522,17 @@ function stockLignes(ss) {
       out.push({ couleur: null, taille: t, qte: parseInt(ss[t]) || 0 });
     });
   }
+  // On range les tailles sans toucher a l'ordre des couleurs : le createur
+  // choisit l'ordre de ses couleurs, pas celui des tailles.
+  var ordreCouleur = [];
+  out.forEach(function (l) {
+    if (ordreCouleur.indexOf(l.couleur) === -1) ordreCouleur.push(l.couleur);
+  });
+  out.sort(function (a, b) {
+    var ca = ordreCouleur.indexOf(a.couleur), cb = ordreCouleur.indexOf(b.couleur);
+    if (ca !== cb) return ca - cb;
+    return comparerTailles(a.taille, b.taille);
+  });
   return out;
 }
 
@@ -525,6 +558,7 @@ function getAvailableSizes(product, couleur) {
     if (vues[l.taille] === undefined) { vues[l.taille] = out.length; out.push({ size: l.taille, stock: l.qte }); }
     else { out[vues[l.taille]].stock += l.qte; }
   });
+  out.sort(function (a, b) { return comparerTailles(a.size, b.size); });
   return out;
 }
 
