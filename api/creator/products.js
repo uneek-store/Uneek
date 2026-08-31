@@ -32,6 +32,50 @@ function aplatirStock(ss) {
 // Regle UNEEK : au moins 3 pieces des qu'une combinaison est proposee.
 // Verifiee ICI, cote serveur : le controle du navigateur peut etre contourne,
 // et il ne couvrait que la creation, jamais la modification.
+// --- Details du produit ---------------------------------------------------
+// Chaque marque ecrivait sa description comme elle voulait : avec trente
+// marques, la boutique devenait un patchwork. On demande donc des champs
+// plutot qu'un texte, et les trois premiers sont obligatoires.
+// Les valeurs de coupe et d'entretien sont fermees : une marque ne peut pas
+// inventer sa propre formulation, c'est ce qui garde les fiches coherentes.
+
+const COUPES = ["Ample", "Classique", "Ajustée"];
+const ENTRETIENS = [
+  "Lavage à 30°", "Lavage à 40°", "Lavage à la main",
+  "Pas de sèche-linge", "Pas de repassage", "Nettoyage à sec",
+];
+
+function detailsManquants(d) {
+  if (!d || typeof d !== "object" || Array.isArray(d)) {
+    return ["la composition", "la coupe", "au moins une consigne d'entretien"];
+  }
+  const manque = [];
+  if (!String(d.composition || "").trim()) manque.push("la composition");
+  if (!COUPES.includes(String(d.coupe || ""))) manque.push("la coupe");
+  const e = d.entretien;
+  if (!Array.isArray(e) || e.filter((x) => ENTRETIENS.includes(x)).length === 0) {
+    manque.push("au moins une consigne d'entretien");
+  }
+  return manque;
+}
+
+// Ne garde que les champs connus et les valeurs autorisees : rien de ce qui
+// vient du navigateur n'entre tel quel en base.
+function nettoyerDetails(d) {
+  if (!d || typeof d !== "object" || Array.isArray(d)) return {};
+  const propre = {};
+  const texte = (v) => String(v == null ? "" : v).trim().slice(0, 200);
+  if (texte(d.composition)) propre.composition = texte(d.composition);
+  if (COUPES.includes(String(d.coupe || ""))) propre.coupe = String(d.coupe);
+  if (Array.isArray(d.entretien)) {
+    const gardes = d.entretien.filter((x) => ENTRETIENS.includes(x));
+    if (gardes.length) propre.entretien = gardes;
+  }
+  if (texte(d.mannequin)) propre.mannequin = texte(d.mannequin);
+  if (texte(d.fabrique)) propre.fabrique = texte(d.fabrique);
+  return propre;
+}
+
 const STOCK_MINIMUM = 3;
 function combinaisonsSousLeMinimum(ss) {
   return aplatirStock(ss)
@@ -76,7 +120,7 @@ export default async function handler(req, res) {
 
     // --- POST: NEW PRODUCT OR MODIFICATION ---
     if (req.method === "POST") {
-      const { product_id, edit_type, name, price, category, description, sizes_stock, image_url, image_urls, variants, commission_percent } = req.body;
+      const { product_id, edit_type, name, price, category, description, sizes_stock, image_url, image_urls, variants, commission_percent, details } = req.body;
 
       // EDIT MODE: update product directly (stock, name, price, etc.)
       // --- MODIFICATION : soumise a la validation de l'admin ---
@@ -101,6 +145,18 @@ export default async function handler(req, res) {
         if (Array.isArray(variants)) changes.variants = variants;
         if (commission_percent !== undefined && commission_percent !== null) {
           changes.commission_percent = parseFloat(commission_percent);
+        }
+        // Les details ne sont verifies que si le createur y a touche : sinon
+        // une simple correction de stock sur un ancien produit serait
+        // bloquee par des champs qui n'existaient pas quand il l'a cree.
+        if (details !== undefined) {
+          const manque = detailsManquants(details);
+          if (manque.length > 0) {
+            return res.status(400).json({
+              error: "Il manque " + manque.join(", ") + " dans les détails du produit.",
+            });
+          }
+          changes.details = nettoyerDetails(details);
         }
         // Le stock est operationnel, pas editorial : il s'applique tout de
         // suite, sans validation. Tout le reste passe par l'admin.
@@ -217,7 +273,17 @@ export default async function handler(req, res) {
             });
           }
         }
+        // Obligatoire des la creation : aucune nouvelle fiche ne peut etre
+        // incomplete sur la boutique.
+        const manqueDetails = detailsManquants(details);
+        if (manqueDetails.length > 0) {
+          return res.status(400).json({
+            error: "Il manque " + manqueDetails.join(", ") + " dans les détails du produit.",
+          });
+        }
+
         const product_data = { name, price, category, description, sizes_stock, image_url };
+        product_data.details = nettoyerDetails(details);
         if (Array.isArray(image_urls) && image_urls.length > 0) {
           product_data.image_urls = image_urls;
           product_data.image_url = image_urls[0];

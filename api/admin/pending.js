@@ -173,6 +173,9 @@ export default async function handler(req, res) {
         // La colonne de la table products s'appelle "colors", pas "variants".
         // Ecrire dans variants faisait echouer toute l'approbation.
         if (Array.isArray(c.variants)) productData.colors = c.variants;
+        // Sans cette ligne, les details saisis par le createur etaient perdus
+        // au moment de l'approbation.
+        if (c.details && typeof c.details === "object") productData.details = c.details;
         if (c.sizes_stock) {
           // sizes_stock a deux formes : plate { S: 3 } ou par couleur
           // { Rouge: { S: 3 } }. On aplatit pour calculer sizes et stock.

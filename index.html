@@ -604,6 +604,37 @@ const ROUTES = {
 const CHEMINS_RESERVES = ['admin', 'creator', 'api'];
 
 // Un produit est designe par son slug quand il en a un, sinon par son id.
+// Les details sont saisis par les createurs dans un formulaire ferme, mais
+// on affiche toujours le meme ordre et les memes intitules : c'est ce qui
+// fait qu'une fiche remplie a 3 champs et une fiche remplie a 5 se
+// ressemblent quand meme. Les champs vides ne s'affichent pas.
+function detailsProduitHTML(d) {
+  if (!d || typeof d !== 'object' || Array.isArray(d)) return '';
+  const proteger = function (v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  };
+  const lignes = [];
+  if (d.composition) lignes.push(['Composition', proteger(d.composition)]);
+  if (d.coupe) lignes.push(['Coupe', proteger(d.coupe)]);
+  if (Array.isArray(d.entretien) && d.entretien.length) {
+    lignes.push(['Entretien', d.entretien.map(proteger).join(' · ')]);
+  }
+  if (d.mannequin) lignes.push(['Mannequin', proteger(d.mannequin)]);
+  if (d.fabrique) lignes.push(['Fabriqué à', proteger(d.fabrique)]);
+  if (!lignes.length) return '';
+
+  return '<div style="padding:28px 0;border-top:1px solid var(--gray-200)">'
+    + '<div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:14px">Détails</div>'
+    + lignes.map(function (l) {
+        return '<div style="display:flex;gap:16px;font-size:14px;line-height:1.9;color:var(--gray-500);font-weight:300">'
+          + '<span style="min-width:110px;flex-shrink:0;color:var(--gray-400)">' + l[0] + '</span>'
+          + '<span>' + l[1] + '</span></div>';
+      }).join('')
+    + '</div>';
+}
+
 function trouverProduit(ref) {
   if (!ref) return null;
   return PRODUCTS.find(x => x.id === ref || x.slug === ref) || null;
@@ -884,6 +915,7 @@ function productPage() {
             <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px">Description</div>
             <p style="font-size:14px;line-height:1.7;color:var(--gray-500);font-weight:300">${p.description}</p>
           </div>` : ''}
+          ${detailsProduitHTML(p.details)}
         </div>
       </div>
     </section>

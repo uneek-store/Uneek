@@ -425,6 +425,38 @@
     <label>Description</label>
     <textarea id="f-desc" placeholder="Décris ton produit..."></textarea>
 
+    <div style="border-top:1px solid var(--gray-200);margin:20px 0 6px;padding-top:16px">
+      <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gray-400)">Détails du produit</div>
+      <div style="font-size:12px;color:var(--gray-400);margin-top:5px;line-height:1.5">Les trois premiers sont obligatoires. Ils s'affichent sur ta fiche produit, au même endroit que pour toutes les autres marques.</div>
+    </div>
+
+    <label>Composition *</label>
+    <input id="f-composition" placeholder="100 % coton" maxlength="200" />
+
+    <label>Coupe *</label>
+    <select id="f-coupe" style="width:100%;padding:11px 13px;border:1px solid var(--gray-200);border-radius:6px;font-size:14px;outline:none;background:#fff">
+      <option value="">— Choisir —</option>
+      <option>Ample</option>
+      <option>Classique</option>
+      <option>Ajustée</option>
+    </select>
+
+    <label>Entretien *</label>
+    <div id="f-entretien" style="display:flex;flex-wrap:wrap;gap:10px 18px;margin-bottom:6px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0"><input type="checkbox" value="Lavage à 30°" style="width:auto;margin:0"> Lavage à 30°</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0"><input type="checkbox" value="Lavage à 40°" style="width:auto;margin:0"> Lavage à 40°</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0"><input type="checkbox" value="Lavage à la main" style="width:auto;margin:0"> Lavage à la main</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0"><input type="checkbox" value="Pas de sèche-linge" style="width:auto;margin:0"> Pas de sèche-linge</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0"><input type="checkbox" value="Pas de repassage" style="width:auto;margin:0"> Pas de repassage</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0"><input type="checkbox" value="Nettoyage à sec" style="width:auto;margin:0"> Nettoyage à sec</label>
+    </div>
+
+    <label>Mannequin</label>
+    <input id="f-mannequin" placeholder="1m75, porte du M" maxlength="200" />
+
+    <label>Fabriqué à</label>
+    <input id="f-fabrique" placeholder="Portugal" maxlength="200" />
+
     <label>Commission UNEEK (%)</label>
     <input id="f-commission" type="number" placeholder="12" min="0" max="100" />
     <p class="modal-note" style="margin-top:2px">Pourcentage prélevé par UNEEK sur chaque vente.</p>
@@ -488,7 +520,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-08-25-couleur-commandes-12';
+  const APP_VERSION = '2026-08-31-details-produit-15';
 
   async function checkAppVersion() {
     try {
@@ -572,6 +604,45 @@
       errorEl.textContent = 'Erreur de connexion au serveur';
       errorEl.style.display = 'block';
     }
+  }
+
+  // --- Details du produit ---------------------------------------------
+  // Meme vocabulaire que le serveur : coupe et entretien sont des listes
+  // fermees, pour que toutes les fiches se ressemblent.
+
+  function lireDetails() {
+    const coches = [];
+    document.querySelectorAll('#f-entretien input[type=checkbox]').forEach(function (c) {
+      if (c.checked) coches.push(c.value);
+    });
+    const val = function (id) { return (document.getElementById(id).value || '').trim(); };
+    const d = {};
+    if (val('f-composition')) d.composition = val('f-composition');
+    if (val('f-coupe')) d.coupe = val('f-coupe');
+    if (coches.length) d.entretien = coches;
+    if (val('f-mannequin')) d.mannequin = val('f-mannequin');
+    if (val('f-fabrique')) d.fabrique = val('f-fabrique');
+    return d;
+  }
+
+  function remplirDetails(d) {
+    d = (d && typeof d === 'object') ? d : {};
+    document.getElementById('f-composition').value = d.composition || '';
+    document.getElementById('f-coupe').value = d.coupe || '';
+    document.getElementById('f-mannequin').value = d.mannequin || '';
+    document.getElementById('f-fabrique').value = d.fabrique || '';
+    const liste = Array.isArray(d.entretien) ? d.entretien : [];
+    document.querySelectorAll('#f-entretien input[type=checkbox]').forEach(function (c) {
+      c.checked = liste.indexOf(c.value) !== -1;
+    });
+  }
+
+  function detailsIncomplets(d) {
+    const manque = [];
+    if (!d.composition) manque.push('la composition');
+    if (!d.coupe) manque.push('la coupe');
+    if (!d.entretien || !d.entretien.length) manque.push('au moins une consigne d\'entretien');
+    return manque;
   }
 
   // --- LOGIN ---
@@ -742,6 +813,7 @@
         }
         const encoded = encodeURIComponent(JSON.stringify({
           id: p.id, name: p.name, price: p.price, category: p.category, description: p.description,
+          details: p.details || {},
           commission_percent: p.commission_percent, variants: p.colors || p.variants || [], sizes_stock: p.sizes_stock, image_urls: p.image_urls || []
         }));
         // Le statut etait code en dur sur "Publie" : un produit en attente
@@ -1015,6 +1087,7 @@
     document.getElementById('f-name').value = '';
     document.getElementById('f-price').value = '';
     document.getElementById('f-desc').value = '';
+    remplirDetails({});
     document.getElementById('f-img').value = '';
     document.getElementById('f-file').value = '';
     selectedImages = [];
@@ -1041,6 +1114,7 @@
     document.getElementById('f-price').value = p.price;
     if (p.category) document.getElementById('f-cat').value = p.category;
     document.getElementById('f-desc').value = p.description || '';
+    remplirDetails(p.details);
     document.getElementById('f-commission').value = p.commission_percent || '';
     document.getElementById('f-variants').value = (p.variants || []).join(', ');
     // Ces deux champs gardaient l'image du produit precedemment ouvert.
@@ -1055,6 +1129,7 @@
       price: String(p.price === undefined || p.price === null ? '' : p.price),
       category: p.category || '',
       description: p.description || '',
+      details: JSON.stringify(lireDetails()),
       commission: String(p.commission_percent === undefined || p.commission_percent === null ? '' : p.commission_percent),
       variants: (p.variants || []).join(', '),
       images: selectedImages.slice(),
@@ -1161,7 +1236,20 @@
 
     if (!name || !price) { showToast('Nom et prix requis'); return; }
 
+    const details = lireDetails();
+    const manqueDetails = detailsIncomplets(details);
+    // A la creation, les trois champs sont exiges. En modification, on ne
+    // bloque que si le createur a commence a les remplir : sinon corriger
+    // le stock d'un ancien produit deviendrait impossible.
+    const dejaRempli = isEditMode && originalProduct
+      && originalProduct.details && originalProduct.details !== '{}';
+    if ((!isEditMode || dejaRempli || Object.keys(details).length > 0) && manqueDetails.length > 0) {
+      showToast('Il manque ' + manqueDetails.join(', '));
+      return;
+    }
+
     const body = { brand_id: currentBrand.id, name, price: parseFloat(price), category, description };
+    body.details = details;
 
     if (commissionVal) body.commission_percent = parseFloat(commissionVal);
     body.variants = variants;
@@ -1177,6 +1265,7 @@
       if (String(price) === String(o.price)) delete body.price;
       if (String(category) === String(o.category)) delete body.category;
       if (String(description) === String(o.description)) delete body.description;
+      if (JSON.stringify(details) === String(o.details)) delete body.details;
       if (String(commissionVal) === String(o.commission)) delete body.commission_percent;
       if (variants.join(', ') === o.variants) delete body.variants;
       attachImages(body, true);
