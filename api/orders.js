@@ -4,6 +4,7 @@
 
 import { supabaseAdmin } from "./lib/supabase.js";
 import { controlerAcces } from "./lib/session.js";
+import { limiter } from "./lib/limite.js";
 import crypto from "crypto";
 import {
   confirmationCommande,
@@ -135,6 +136,17 @@ export default async function handler(req, res) {
 
     // --- POST : créer une nouvelle commande ---
     if (req.method === "POST") {
+      // Passer commande est public, et c'est l'appel le plus couteux du site :
+      // il ecrit trois tables, decremente les stocks et envoie trois e-mails.
+      // En boucle, il noierait la base de fausses commandes et ferait grimper
+      // la facture. Un client reel en passe une, pas quinze en cinq minutes.
+      if (limiter(req, res, {
+        cle: "commande",
+        max: 15,
+        secondes: 300,
+        message: "Trop de commandes d'affilée. Attends quelques minutes, ou écris-nous à contact@uneek.store.",
+      })) return;
+
       const { customer, items } = req.body;
 
       if (!customer?.email || !customer?.name || !customer?.address) {

@@ -1,6 +1,15 @@
 // API : /api/brands
 // GET → liste toutes les marques actives
 // GET ?slug=xxx → une marque spécifique avec ses produits
+//
+// CETTE ADRESSE EST PUBLIQUE : la boutique en a besoin sans connexion.
+// Tout ce qu'elle renvoie est donc lisible par n'importe qui sur Internet.
+// Elle a longtemps renvoye l'ADRESSE E-MAIL des createurs — une donnee
+// personnelle, en libre acces. Les colonnes sont maintenant listees une par
+// une : plus de "select *", pour qu'une colonne ajoutee un jour a la table
+// ne se retrouve pas publiee sans que personne l'ait decide.
+// Le panneau admin lit ces memes marques, e-mails compris, sur
+// /api/admin/brands, qui exige un jeton administrateur.
 
 import { supabaseAdmin } from "./lib/supabase.js";
 
@@ -19,7 +28,7 @@ export default async function handler(req, res) {
     if (slug) {
       const { data: brand, error } = await supabaseAdmin
         .from("brands")
-        .select("*, products(*)")
+        .select("id, name, slug, tagline, city, year, image_url, logo_url, is_active, created_at, instagram, story" + ", products(*)")
         .eq("slug", slug)
         .eq("is_active", true)
         .single();
@@ -34,7 +43,7 @@ export default async function handler(req, res) {
     // Liste de toutes les marques actives (avec créateur)
     const { data, error } = await supabaseAdmin
       .from("brands")
-      .select("id, name, slug, tagline, city, year, image_url, logo_url, email, products(count), creator_accounts(full_name)")
+      .select("id, name, slug, tagline, city, year, image_url, logo_url, products(count), creator_accounts(full_name)")
       .eq("is_active", true)
       .order("name");
 

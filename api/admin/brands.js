@@ -1,4 +1,5 @@
 // API : /api/admin/brands
+// GET    → liste des marques AVEC l'e-mail du créateur (réservé admin)
 // DELETE → supprimer une marque et notifier le créateur
 
 import { supabaseAdmin } from "../lib/supabase.js";
@@ -24,7 +25,7 @@ async function sendEmail(to, subject, html) {
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -33,6 +34,38 @@ export default async function handler(req, res) {
   // seulement trace dans les logs — rien n'est bloque.
   const acces = controlerAcces(req, { admin: true, nom: "/api/admin/brands" });
   if (!acces.ok) return res.status(401).json({ error: "Non autorisé" });
+
+  // La meme liste que /api/brands, mais avec l'e-mail : celui-ci n'a rien a
+  // faire sur l'adresse publique, et le panneau admin en a besoin.
+  if (req.method === "GET") {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from("brands")
+        .select("id, name, slug, tagline, city, year, image_url, logo_url, email, products(count), creator_accounts(full_name, email)")
+        .eq("is_active", true)
+        .order("name");
+
+      if (error) {
+        console.error("Error fetching admin brands:", error);
+        return res.status(500).json({ error: "Erreur serveur" });
+      }
+
+      const brands = (data || []).map((b) => ({
+        ...b,
+        product_count: b.products?.[0]?.count || 0,
+        creator_name: b.creator_accounts?.[0]?.full_name || "",
+        // L'adresse du compte createur prime : c'est celle qui recoit
+        // reellement les e-mails. Celle de la marque sert de repli.
+        email: b.creator_accounts?.[0]?.email || b.email || "",
+        products: undefined,
+        creator_accounts: undefined,
+      }));
+      return res.status(200).json(brands);
+    } catch (err) {
+      console.error("Admin brands GET error:", err);
+      return res.status(500).json({ error: "Erreur serveur" });
+    }
+  }
 
   if (req.method === "DELETE") {
     const { brand_id } = req.body || {};

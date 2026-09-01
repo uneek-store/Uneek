@@ -489,7 +489,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-08-31-sauvegarde-donnees-17';
+  const APP_VERSION = '2026-08-31-securite-18';
 
   async function checkAppVersion() {
     try {
@@ -1052,13 +1052,15 @@
 
   async function loadBrands() {
     try {
-      const res = await fetch(API_BASE + '/brands');
+      // /api/brands est public et ne contient plus les e-mails des createurs.
+      // Cette liste-ci est reservee a l'administrateur, e-mails compris.
+      const res = await fetch(API_BASE + '/admin/brands', { headers: { 'Authorization': 'Bearer ' + authToken } });
       const data = await res.json();
       const brands = data.brands || data || [];
       let html = '';
       brands.forEach(b => {
         const safeName = String(b.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-        html += '<tr><td class="bold">' + b.name + '</td><td class="sec">' + (b.city || '') + '</td><td class="sec">' + (b.email || '') + '</td><td>' + (b.product_count || 0) + '</td><td><span class="badge badge-green">Active</span></td>' +
+        html += '<tr><td class="bold">' + esc(b.name) + '</td><td class="sec">' + esc(b.city || '') + '</td><td class="sec">' + esc(b.email || '') + '</td><td>' + (b.product_count || 0) + '</td><td><span class="badge badge-green">Active</span></td>' +
           '<td><button class="btn-delete-brand" onclick="askDeleteBrand(\'' + b.id + '\', \'' + safeName + '\')">Supprimer</button></td></tr>';
       });
       document.getElementById('brands-table').innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune marque</td></tr>';

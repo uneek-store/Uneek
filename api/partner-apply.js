@@ -3,6 +3,7 @@
 
 import { supabaseAdmin } from "./lib/supabase.js";
 import { alerteAdmin, esc } from "./lib/email.js";
+import { limiter } from "./lib/limite.js";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -11,6 +12,16 @@ export default async function handler(req, res) {
 
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  // Un formulaire ouvert a tous, qui ecrit en base et envoie un e-mail :
+  // sans plafond, on remplit la table de candidatures en une minute.
+  // Une vraie marque en depose une, pas cinq par heure.
+  if (limiter(req, res, {
+    cle: "candidature",
+    max: 5,
+    secondes: 3600,
+    message: "Candidature déjà envoyée. Réessaie plus tard ou écris-nous à contact@uneek.store.",
+  })) return;
 
   try {
     const { brand_name, contact_name, email, instagram, website, message } = req.body;

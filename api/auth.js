@@ -3,6 +3,7 @@
 
 import { supabaseAdmin } from "./lib/supabase.js";
 import { creerJeton, lireJeton, jetonDeLaRequete } from "./lib/session.js";
+import { limiter } from "./lib/limite.js";
 import crypto from "crypto";
 
 // Hash simple du mot de passe (en production, utiliser bcrypt)
@@ -40,8 +41,27 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
+  // Plafond large : laisse passer un usage normal (une page de connexion
+  // fait 1 a 3 appels), coupe une boucle automatique.
+  if (limiter(req, res, { cle: "auth", max: 60, secondes: 60 })) return;
+
   try {
     const { action, email, password, name } = req.body;
+
+    // Plafond serre sur tout ce qui touche a un identifiant : c'est la porte
+    // par laquelle on essaie de deviner un mot de passe, mille fois de suite.
+    // 10 essais par tranche de 5 minutes suffisent largement a quelqu'un qui
+    // se trompe de touche.
+    const ACTIONS_SENSIBLES = ["login", "register", "register_creator",
+      "customer_login", "customer_register", "change_password", "change_email"];
+    if (ACTIONS_SENSIBLES.includes(action)) {
+      if (limiter(req, res, {
+        cle: "identifiants",
+        max: 10,
+        secondes: 300,
+        message: "Trop de tentatives. Attends quelques minutes avant de réessayer.",
+      })) return;
+    }
 
     // --- LOGIN ---
     if (action === "login") {
