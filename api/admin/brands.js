@@ -4,24 +4,11 @@
 
 import { supabaseAdmin } from "../lib/supabase.js";
 import { controlerAcces } from "../lib/session.js";
-
-// Envoyer un email via Resend (si configuré)
-async function sendEmail(to, subject, html) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return { sent: false, reason: 'RESEND_API_KEY not configured' };
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: 'UNEEK <onboarding@resend.dev>', to, subject, html })
-    });
-    const data = await res.json();
-    return { sent: res.ok, data };
-  } catch (err) {
-    console.error('Email error:', err);
-    return { sent: false, error: err.message };
-  }
-}
+// Ce fichier avait sa propre fonction d'envoi, qui appelait Resend en direct.
+// Elle contournait donc le filtre des adresses fictives : supprimer une marque
+// inventee aurait ecrit a une vraie personne. Elle utilisait aussi un autre
+// expediteur (onboarding@resend.dev). Tout passe par le module commun.
+import { envoyer, esc } from "../lib/email.js";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -138,18 +125,22 @@ export default async function handler(req, res) {
       // 5. Notifier le créateur par email
       let emailResult = { sent: false };
       if (creatorEmail) {
-        emailResult = await sendEmail(
-          creatorEmail,
-          'UNEEK — Votre marque a été retirée',
-          '<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:20px">'
-          + '<h2 style="font-size:20px">UNEEK</h2>'
-          + '<p>Bonjour ' + creatorName + ',</p>'
-          + '<p>Nous vous informons que votre marque <strong>' + brandName + '</strong> a été retirée de la plateforme UNEEK.</p>'
-          + '<p>Vos produits et votre compte créateur associés ont été supprimés.</p>'
-          + '<p>Si vous avez des questions, contactez-nous à <a href="mailto:contact@uneek.store">contact@uneek.store</a>.</p>'
-          + '<p style="color:#888;font-size:12px;margin-top:24px">— L\'équipe UNEEK</p>'
-          + '</div>'
-        );
+        // envoyer() ne leve jamais et applique le filtre des adresses fictives.
+        // Les noms sont echappes : une marque appelee <b>X</b> casserait sinon
+        // la mise en page de l'e-mail.
+        emailResult = await envoyer({
+          to: creatorEmail,
+          subject: 'UNEEK — Votre marque a été retirée',
+          html:
+            '<div style="font-family:sans-serif;max-width:500px;margin:0 auto;padding:20px">'
+            + '<h2 style="font-size:20px">UNEEK</h2>'
+            + '<p>Bonjour ' + esc(creatorName) + ',</p>'
+            + '<p>Nous vous informons que votre marque <strong>' + esc(brandName) + '</strong> a été retirée de la plateforme UNEEK.</p>'
+            + '<p>Vos produits et votre compte créateur associés ont été supprimés.</p>'
+            + '<p>Si vous avez des questions, contactez-nous à <a href="mailto:contact@uneek.store">contact@uneek.store</a>.</p>'
+            + '<p style="color:#888;font-size:12px;margin-top:24px">— L\'équipe UNEEK</p>'
+            + '</div>',
+        });
       }
 
       return res.status(200).json({
