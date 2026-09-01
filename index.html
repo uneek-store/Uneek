@@ -4,7 +4,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UNEEK — Independent Fashion</title>
+<title>UNEEK — Marques de mode indépendantes belges</title>
+<!-- Ces valeurs sont celles que voient les robots qui n'executent pas de
+     JavaScript : ceux de ChatGPT et de Perplexity, et les apercus de partage
+     de Facebook, WhatsApp ou iMessage. Le JavaScript les remplace ensuite par
+     des valeurs propres a chaque page, pour Google qui, lui, execute. -->
+<meta name="description" content="UNEEK réunit des marques de mode indépendantes belges. Des pièces en petite série, chaque commande soutient directement un créateur.">
+<link rel="canonical" href="https://www.uneek.store/">
+<meta property="og:site_name" content="UNEEK">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="fr_BE">
+<meta property="og:url" content="https://www.uneek.store/">
+<meta property="og:title" content="UNEEK — Marques de mode indépendantes belges">
+<meta property="og:description" content="UNEEK réunit des marques de mode indépendantes belges. Des pièces en petite série, chaque commande soutient directement un créateur.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="UNEEK — Marques de mode indépendantes belges">
+<meta name="twitter:description" content="UNEEK réunit des marques de mode indépendantes belges. Des pièces en petite série, chaque commande soutient directement un créateur.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,300;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
 <style>
@@ -702,15 +717,65 @@ function routeDeChemin(chemin) {
   return trouve.length ? { page: trouve[0], data: null } : { page: 'home', data: null };
 }
 
-// Le titre de l'onglet suit la page : utile pour l'historique et les favoris.
+// Titre, description et adresse officielle suivent la page affichee.
+//
+// Le titre servait deja a l'historique et aux favoris. On y ajoute la
+// description (le texte gris sous le lien bleu dans Google) et le canonical
+// (l'adresse officielle de la page, qui evite que Google compte deux fois la
+// meme page vue sous deux adresses).
+//
+// Google execute le JavaScript : il verra donc bien ces valeurs. Les robots
+// de ChatGPT et les apercus de partage, non — eux gardent les valeurs ecrites
+// en dur dans l'en-tete. C'est la limite de cette etape, et elle est connue.
+
+const SITE_PUBLIC = 'https://www.uneek.store';
+const DESCRIPTION_PAR_DEFAUT = 'UNEEK réunit des marques de mode indépendantes belges. '
+  + 'Des pièces en petite série, chaque commande soutient directement un créateur.';
+
+// Google coupe la description autour de 155 caracteres.
+function couper(texte, max) {
+  const t = String(texte == null ? '' : texte).replace(/\s+/g, ' ').trim();
+  if (t.length <= max) return t;
+  const bout = t.slice(0, max - 1);
+  const espace = bout.lastIndexOf(' ');
+  return (espace > max * 0.6 ? bout.slice(0, espace) : bout) + '…';
+}
+
+// Ecrit une balise <meta> ou <link> de l'en-tete, en la creant si besoin.
+function poserBalise(selecteur, attribut, valeur, contenu) {
+  let el = document.head.querySelector(selecteur);
+  if (!el) {
+    el = document.createElement(selecteur.indexOf('link') === 0 ? 'link' : 'meta');
+    el.setAttribute(attribut, valeur);
+    document.head.appendChild(el);
+  }
+  el.setAttribute(selecteur.indexOf('link') === 0 ? 'href' : 'content', contenu);
+}
+
 function majTitre(page, data) {
-  let t = 'UNEEK — Independent Fashion';
+  let t = 'UNEEK — Marques de mode indépendantes belges';
+  let description = DESCRIPTION_PAR_DEFAUT;
+
   if (page === 'product') {
     const p = trouverProduit(data);
-    if (p) t = p.name + ' — UNEEK';
+    if (p) {
+      const marque = (BRANDS.find(b => b.id === p.brand_id) || {}).name || '';
+      t = p.name + (marque ? ' — ' + marque : '') + ' | UNEEK';
+      description = couper(
+        p.description
+          ? p.description
+          : p.name + (marque ? ' par ' + marque : '') + ', marque indépendante belge. '
+            + 'Pièce en petite série disponible sur UNEEK.',
+        155);
+    }
   } else if (page === 'brand') {
     const b = getBrandBySlug(data);
-    if (b) t = b.name + ' — UNEEK';
+    if (b) {
+      t = b.name + ' — marque indépendante' + (b.city ? ' à ' + b.city : '') + ' | UNEEK';
+      description = couper(b.tagline || b.story
+        || b.name + ', marque de mode indépendante' + (b.city ? ' basée à ' + b.city : '')
+           + '. Découvre ses pièces sur UNEEK.', 155);
+    }
   } else {
     const noms = {
       shop: 'Shop', brands: 'Les Marques', manifesto: 'Manifesto',
@@ -718,9 +783,31 @@ function majTitre(page, data) {
       register: 'Inscription', profile: 'Mon profil', cgv: 'CGV',
       privacy: 'Confidentialité', legal: 'Mentions légales'
     };
+    const textes = {
+      shop: 'Toutes les pièces des marques indépendantes belges réunies sur UNEEK.',
+      brands: 'Les marques indépendantes belges présentes sur UNEEK : leur histoire, leurs pièces.',
+      manifesto: 'Pourquoi UNEEK existe : soutenir les créateurs indépendants, pièce par pièce.',
+      partner: 'Tu crées une marque indépendante ? Rejoins UNEEK et vends tes pièces.'
+    };
     if (noms[page]) t = noms[page] + ' — UNEEK';
+    if (textes[page]) description = textes[page];
   }
+
   document.title = t;
+
+  // Enferme : une balise mal ecrite ne doit jamais empecher la page de s'afficher.
+  try {
+    poserBalise('meta[name="description"]', 'name', 'description', description);
+    poserBalise('meta[property="og:title"]', 'property', 'og:title', t);
+    poserBalise('meta[property="og:description"]', 'property', 'og:description', description);
+    poserBalise('meta[name="twitter:title"]', 'name', 'twitter:title', t);
+    poserBalise('meta[name="twitter:description"]', 'name', 'twitter:description', description);
+    const adresse = SITE_PUBLIC + cheminDeRoute(page, data);
+    poserBalise('link[rel="canonical"]', 'rel', 'canonical', adresse);
+    poserBalise('meta[property="og:url"]', 'property', 'og:url', adresse);
+  } catch (e) {
+    console.warn('[meta] balises non mises a jour :', e && e.message);
+  }
 }
 
 // sansHistorique : utilise par le bouton Retour, qui a deja change l'adresse.
