@@ -23,6 +23,8 @@
   ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/robots.txt", "destination": "/api/robots" },
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/creator", "destination": "/creator.html" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
