@@ -263,6 +263,7 @@
     <div class="sidebar-tag">Créateur</div>
     <a class="active" onclick="showSection('overview', this)">Vue d'ensemble</a>
     <a onclick="showSection('products', this)">Mes produits</a>
+    <a onclick="showSection('mapage', this)">Ma page</a>
     <a onclick="showSection('edits', this)">Mes demandes</a>
     <a onclick="showSection('orders', this)">Commandes <span class="badge-count" id="ordersCount" style="display:none">0</span></a>
     <a onclick="showSection('settings', this)">Paramètres</a>
@@ -333,6 +334,63 @@
             <thead><tr><th>Commande</th><th>Produit</th><th>Qté</th><th>Taille / Couleur</th><th>Client</th><th>Surnom emballage</th><th>Adresse</th><th>Statut</th><th></th></tr></thead>
             <tbody id="orders-table"></tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MA PAGE -->
+    <div id="sec-mapage" class="section">
+      <div class="page-title">Ma page</div>
+      <div class="page-sub">Ta banni&egrave;re et ton texte de pr&eacute;sentation, visibles par tout le monde</div>
+
+      <div class="card" style="padding:22px;max-width:860px">
+        <div class="card-header" style="margin-bottom:18px">Banni&egrave;re</div>
+        <div id="mp-apercu-banniere"
+             style="height:200px;border-radius:10px;background:#0A0A0A;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-bottom:14px">
+          <div style="color:#666;font-size:13px" id="mp-banniere-vide">Aucune banni&egrave;re</div>
+        </div>
+        <input type="file" id="mp-fichier" accept="image/*" style="display:none" onchange="choisirBanniere(this)">
+        <button class="btn-save" onclick="document.getElementById('mp-fichier').click()">Choisir une image</button>
+        <button class="btn-cancel" onclick="retirerBanniere()" id="mp-retirer" style="display:none;margin-left:8px">Retirer</button>
+        <div style="font-size:12px;color:var(--gray-400);margin-top:12px;line-height:1.6">
+          Une image large fonctionne mieux qu'une image haute. Elle est
+          automatiquement redimensionn&eacute;e avant l'envoi : tu peux choisir
+          une photo prise au t&eacute;l&eacute;phone sans t'inqui&eacute;ter du poids.
+        </div>
+      </div>
+
+      <div class="card" style="padding:22px;max-width:860px;margin-top:18px">
+        <div class="card-header" style="margin-bottom:14px">Texte de pr&eacute;sentation</div>
+        <textarea id="mp-texte" rows="4" maxlength="400" oninput="apercuMaPage()"
+                  placeholder="En deux ou trois phrases : qui tu es, ce que tu fabriques, pourquoi."
+                  style="width:100%;padding:12px 14px;border:1px solid var(--gray-200);border-radius:8px;font-size:14px;font-family:inherit;line-height:1.7;outline:none;resize:vertical"></textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <div style="font-size:12px;color:var(--gray-400)">Il appara&icirc;t sous ton nom, au-dessus de tes pi&egrave;ces.</div>
+          <div style="font-size:12px;color:var(--gray-400)"><span id="mp-compteur">0</span> / 400</div>
+        </div>
+      </div>
+
+      <div class="card" style="padding:22px;max-width:860px;margin-top:18px">
+        <div class="card-header" style="margin-bottom:14px">Aper&ccedil;u de ta page</div>
+        <div style="border:1px solid var(--gray-200);border-radius:10px;overflow:hidden">
+          <div id="mp-apercu-hero"
+               style="height:220px;background:#0A0A0A;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center">
+            <div style="position:relative;z-index:2;text-align:center;color:#FAFAFA;padding:0 20px">
+              <div id="mp-apercu-nom" style="font-size:34px;font-weight:800;letter-spacing:-1px">&mdash;</div>
+              <div id="mp-apercu-info" style="font-size:11px;opacity:0.45;letter-spacing:1px;text-transform:uppercase;margin-top:10px"></div>
+            </div>
+          </div>
+          <div style="padding:26px 20px;background:#FAFAFA">
+            <p id="mp-apercu-texte" style="max-width:520px;margin:0 auto;text-align:center;font-size:14px;line-height:1.9;color:var(--gray-600);font-weight:300"></p>
+          </div>
+        </div>
+        <div style="margin-top:18px;display:flex;align-items:center;gap:14px">
+          <button class="btn-save" onclick="enregistrerMaPage()" id="mp-enregistrer">Publier les modifications</button>
+          <div id="mp-msg" style="font-size:13px;display:none"></div>
+        </div>
+        <div style="font-size:12px;color:var(--gray-400);margin-top:14px;line-height:1.6">
+          Tes modifications sont en ligne imm&eacute;diatement, sans validation.
+          L'&eacute;quipe UNEEK est simplement pr&eacute;venue par e-mail &agrave; chaque changement.
         </div>
       </div>
     </div>
@@ -520,7 +578,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-08-31-ordre-tailles-16';
+  const APP_VERSION = '2026-09-02-ma-page-17';
 
   async function checkAppVersion() {
     try {
@@ -695,7 +753,8 @@
     // Les listes n'etaient chargees qu'a la connexion : une demande soumise
     // depuis n'apparaissait pas tant qu'on ne rechargeait pas toute la page.
     if (!currentBrand) return;
-    if (id === 'edits') loadEdits();
+    if (id === 'mapage') chargerMaPage();
+    else if (id === 'edits') loadEdits();
     else if (id === 'products') loadProducts();
     else if (id === 'orders') loadOrders();
     else if (id === 'overview') { loadProducts(); loadOrders(); }
@@ -1188,6 +1247,127 @@
 
   // Redimensionne l image a maxSize px et la compresse en JPEG 0.8
   // avant de la convertir en data URL (les images sont stockees en base64).
+  // ---------------------------------------------------------------- MA PAGE
+  // Le createur modifie la banniere et le texte de sa page publique.
+  // Publication immediate : l'administrateur est prevenu par e-mail, il ne
+  // valide pas. C'est le choix assume — la fluidite plutot que le controle.
+
+  let maPage = null;          // ce qui est enregistre cote serveur
+  let banniereChoisie = null; // null = inchangee, '' = retiree, sinon la nouvelle
+
+  function echapperTexte(v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function banniereCourante() {
+    if (banniereChoisie !== null) return banniereChoisie;
+    return (maPage && maPage.image_url) || '';
+  }
+
+  async function chargerMaPage() {
+    if (maPage) { apercuMaPage(); return; }
+    try {
+      const res = await fetch(API_BASE + '/creator/marque?brand_id=' + encodeURIComponent(currentBrand.id), {
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+      if (!res.ok) throw new Error('chargement impossible');
+      maPage = await res.json();
+      banniereChoisie = null;
+      document.getElementById('mp-texte').value = maPage.story || '';
+      apercuMaPage();
+    } catch (err) {
+      direMaPage('Impossible de charger ta page. Recharge la page du panneau.', 'var(--red)');
+    }
+  }
+
+  async function choisirBanniere(input) {
+    const f = input.files && input.files[0];
+    input.value = '';
+    if (!f) return;
+    try {
+      // 1600 px de large : assez pour un plein ecran, sans envoyer 8 Mo.
+      banniereChoisie = await resizeAndReadFile(f, 1600);
+      apercuMaPage();
+      direMaPage('Image prête — clique sur Publier pour la mettre en ligne.', 'var(--gray-500)');
+    } catch (err) {
+      direMaPage('Cette image n\'a pas pu être lue. Essaie un JPEG ou un PNG.', 'var(--red)');
+    }
+  }
+
+  function retirerBanniere() {
+    banniereChoisie = '';
+    apercuMaPage();
+    direMaPage('Bannière retirée — clique sur Publier pour confirmer.', 'var(--gray-500)');
+  }
+
+  // Redessine l'apercu a partir de ce qui est a l'ecran, pas de ce qui est
+  // enregistre : le createur voit le resultat avant de publier.
+  function apercuMaPage() {
+    const texte = document.getElementById('mp-texte').value;
+    document.getElementById('mp-compteur').textContent = texte.length;
+
+    const img = banniereCourante();
+    const zone = document.getElementById('mp-apercu-banniere');
+    const vide = document.getElementById('mp-banniere-vide');
+    const hero = document.getElementById('mp-apercu-hero');
+    const fond = img
+      ? 'url(' + JSON.stringify(img) + ') center/cover no-repeat'
+      : '';
+
+    zone.style.background = img ? fond : '#0A0A0A';
+    vide.style.display = img ? 'none' : 'block';
+    document.getElementById('mp-retirer').style.display = img ? 'inline-block' : 'none';
+
+    // Meme rendu que la page publique : image en fond, assombrie.
+    hero.style.background = img ? fond : '#0A0A0A';
+    hero.style.boxShadow = img ? 'inset 0 0 0 2000px rgba(0,0,0,0.6)' : 'none';
+
+    if (maPage) {
+      document.getElementById('mp-apercu-nom').textContent = maPage.name || '—';
+      const bouts = [];
+      if (maPage.city) bouts.push(maPage.city);
+      if (maPage.year) bouts.push('Est. ' + maPage.year);
+      document.getElementById('mp-apercu-info').textContent = bouts.join('  ·  ');
+    }
+    document.getElementById('mp-apercu-texte').innerHTML = echapperTexte(texte);
+  }
+
+  function direMaPage(texte, couleur) {
+    const m = document.getElementById('mp-msg');
+    m.textContent = texte;
+    m.style.color = couleur;
+    m.style.display = 'block';
+  }
+
+  async function enregistrerMaPage() {
+    const bouton = document.getElementById('mp-enregistrer');
+    const corps = { brand_id: currentBrand.id, story: document.getElementById('mp-texte').value };
+    if (banniereChoisie !== null) corps.image_url = banniereChoisie;
+
+    bouton.disabled = true;
+    direMaPage('Publication…', 'var(--gray-500)');
+    try {
+      const res = await fetch(API_BASE + '/creator/marque', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify(corps)
+      });
+      const data = await res.json();
+      if (!res.ok) { direMaPage(data.error || 'Erreur', 'var(--red)'); return; }
+      maPage = data;
+      banniereChoisie = null;
+      document.getElementById('mp-texte').value = data.story || '';
+      apercuMaPage();
+      direMaPage(data.inchange ? 'Rien n\'avait changé.' : '\u2713 En ligne.', 'var(--green)');
+    } catch (err) {
+      direMaPage('Erreur réseau, réessaie.', 'var(--red)');
+    } finally {
+      bouton.disabled = false;
+    }
+  }
+
   function resizeAndReadFile(file, maxSize) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();

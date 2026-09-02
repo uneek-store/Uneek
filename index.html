@@ -717,6 +717,14 @@ function routeDeChemin(chemin) {
   return trouve.length ? { page: trouve[0], data: null } : { page: 'home', data: null };
 }
 
+// Tout texte saisi par un createur passe par la avant d'entrer dans la page.
+// Sans ca, un texte de presentation contenant <script> serait execute.
+function echapper(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 // Titre, description et adresse officielle suivent la page affichee.
 //
 // Le titre servait deja a l'historique et aux favoris. On y ajoute la
@@ -1119,13 +1127,16 @@ function brandPage() {
       <img src="${b.image_url || ''}" alt="${b.name}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.4">
       <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.8),transparent)"></div>
       <div style="position:relative;z-index:2;text-align:center;color:var(--white)">
-        <h1 style="font-family:var(--font-display);font-size:clamp(48px,7vw,80px);font-weight:800;letter-spacing:-2px">${b.name}</h1>
-        <div style="font-size:16px;opacity:0.5;font-style:italic;margin-top:8px;font-weight:300">${b.tagline || ''}</div>
+        <h1 style="font-family:var(--font-display);font-size:clamp(48px,7vw,80px);font-weight:800;letter-spacing:-2px">${echapper(b.name)}</h1>
+        <div style="font-size:16px;opacity:0.5;font-style:italic;margin-top:8px;font-weight:300">${echapper(b.tagline || '')}</div>
         <div style="display:flex;gap:24px;justify-content:center;margin-top:20px;font-size:12px;opacity:0.4;letter-spacing:1px;text-transform:uppercase">
-          <span>${b.city || ''}</span>${b.year ? `<span>Est. ${b.year}</span>` : ''}<span>${bp.length} pièces</span>
+          <span>${echapper(b.city || '')}</span>${b.year ? `<span>Est. ${echapper(b.year)}</span>` : ''}<span>${bp.length} pièces</span>
         </div>
       </div>
     </div>
+    ${b.story ? `<section class="section" style="padding-bottom:0">
+      <p style="max-width:680px;margin:0 auto;text-align:center;font-size:17px;line-height:1.9;color:var(--gray-600);font-weight:300">${echapper(b.story)}</p>
+    </section>` : ''}
     <section class="section">
       <div class="section-header"><h2 class="section-title">Les pièces</h2></div>
       ${bp.length > 0 ? `<div class="product-grid">${bp.map(p => productCardHTML(p)).join('')}</div>` : '<p style="color:var(--gray-400);text-align:center;padding:48px 0">Aucun produit pour le moment.</p>'}
