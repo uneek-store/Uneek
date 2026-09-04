@@ -717,6 +717,17 @@ function routeDeChemin(chemin) {
   return trouve.length ? { page: trouve[0], data: null } : { page: 'home', data: null };
 }
 
+// Quelle partie de la banniere reste visible dans le bandeau.
+// Une photo verticale recadree en bandeau large perd le haut et le bas :
+// 0 garde le haut, 50 le centre, 100 le bas. Le createur choisit depuis son
+// panneau. Une valeur absente ou farfelue retombe sur 50 : la page ne doit
+// jamais dependre de la proprete de cette donnee.
+function cadrageBanniere(b) {
+  const v = parseInt((b && b.banner_position), 10);
+  if (isNaN(v)) return 50;
+  return Math.max(0, Math.min(100, v));
+}
+
 // Tout texte saisi par un createur passe par la avant d'entrer dans la page.
 // Sans ca, un texte de presentation contenant <script> serait execute.
 function echapper(v) {
@@ -1124,7 +1135,7 @@ function brandPage() {
   const bp = PRODUCTS.filter(x => x.brand_id === b.id);
   return `<div>
     <div style="height:70vh;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--black)">
-      <img src="${b.image_url || ''}" alt="${b.name}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.4">
+      <img src="${b.image_url || ''}" alt="${echapper(b.name)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center ${cadrageBanniere(b)}%;opacity:0.3">
       <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.8),transparent)"></div>
       <div style="position:relative;z-index:2;text-align:center;color:var(--white)">
         <h1 style="font-family:var(--font-display);font-size:clamp(48px,7vw,80px);font-weight:800;letter-spacing:-2px">${echapper(b.name)}</h1>

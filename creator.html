@@ -262,10 +262,10 @@
     <div class="sidebar-brand" id="sidebarBrand">—</div>
     <div class="sidebar-tag">Créateur</div>
     <a class="active" onclick="showSection('overview', this)">Vue d'ensemble</a>
+    <a onclick="showSection('orders', this)">Commandes <span class="badge-count" id="ordersCount" style="display:none">0</span></a>
     <a onclick="showSection('products', this)">Mes produits</a>
     <a onclick="showSection('mapage', this)">Ma page</a>
     <a onclick="showSection('edits', this)">Mes demandes</a>
-    <a onclick="showSection('orders', this)">Commandes <span class="badge-count" id="ordersCount" style="display:none">0</span></a>
     <a onclick="showSection('settings', this)">Paramètres</a>
   </div>
 
@@ -352,7 +352,19 @@
         <input type="file" id="mp-fichier" accept="image/*" style="display:none" onchange="choisirBanniere(this)">
         <button class="btn-save" onclick="document.getElementById('mp-fichier').click()">Choisir une image</button>
         <button class="btn-cancel" onclick="retirerBanniere()" id="mp-retirer" style="display:none;margin-left:8px">Retirer</button>
-        <div style="font-size:12px;color:var(--gray-400);margin-top:12px;line-height:1.6">
+        <div id="mp-bloc-cadrage" style="display:none;margin-top:18px">
+          <div style="font-size:13px;font-weight:500;margin-bottom:4px">Cadrage</div>
+          <div style="font-size:12px;color:var(--gray-400);margin-bottom:10px;line-height:1.6">
+            Ta photo est recadr&eacute;e en bandeau large : une partie est forc&eacute;ment
+            coup&eacute;e. Choisis la zone qui reste visible.
+          </div>
+          <input type="range" id="mp-cadrage" min="0" max="100" step="1" value="50"
+                 oninput="apercuMaPage()" style="width:100%;max-width:420px;display:block">
+          <div style="display:flex;justify-content:space-between;max-width:420px;font-size:11px;color:var(--gray-400);margin-top:2px">
+            <span>Haut de la photo</span><span>Centre</span><span>Bas de la photo</span>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--gray-400);margin-top:16px;line-height:1.6">
           Une image large fonctionne mieux qu'une image haute. Elle est
           automatiquement redimensionn&eacute;e avant l'envoi : tu peux choisir
           une photo prise au t&eacute;l&eacute;phone sans t'inqui&eacute;ter du poids.
@@ -578,7 +590,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-09-02-ma-page-17';
+  const APP_VERSION = '2026-09-02-cadrage-banniere-18';
 
   async function checkAppVersion() {
     try {
@@ -1261,6 +1273,14 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  // 0 = haut de la photo, 50 = centre, 100 = bas. Toute valeur douteuse
+  // retombe au centre : le panneau ne doit jamais afficher un curseur casse.
+  function cadrageValide(v) {
+    const n = parseInt(v, 10);
+    if (isNaN(n)) return 50;
+    return Math.max(0, Math.min(100, n));
+  }
+
   function banniereCourante() {
     if (banniereChoisie !== null) return banniereChoisie;
     return (maPage && maPage.image_url) || '';
@@ -1276,6 +1296,10 @@
       maPage = await res.json();
       banniereChoisie = null;
       document.getElementById('mp-texte').value = maPage.story || '';
+      document.getElementById('mp-cadrage').value = cadrageValide(maPage.banner_position);
+      // Le curseur n'apparait que si la base sait le retenir.
+      document.getElementById('mp-bloc-cadrage').style.display =
+        maPage.cadrage_disponible === false ? 'none' : '';
       apercuMaPage();
     } catch (err) {
       direMaPage('Impossible de charger ta page. Recharge la page du panneau.', 'var(--red)');
@@ -1309,11 +1333,13 @@
     document.getElementById('mp-compteur').textContent = texte.length;
 
     const img = banniereCourante();
+    const cadrage = cadrageValide(document.getElementById('mp-cadrage').value);
     const zone = document.getElementById('mp-apercu-banniere');
     const vide = document.getElementById('mp-banniere-vide');
     const hero = document.getElementById('mp-apercu-hero');
+    // "center X%" : exactement ce que la page publique applique a l'image.
     const fond = img
-      ? 'url(' + JSON.stringify(img) + ') center/cover no-repeat'
+      ? 'url(' + JSON.stringify(img) + ') center ' + cadrage + '% / cover no-repeat'
       : '';
 
     zone.style.background = img ? fond : '#0A0A0A';
@@ -1345,6 +1371,9 @@
     const bouton = document.getElementById('mp-enregistrer');
     const corps = { brand_id: currentBrand.id, story: document.getElementById('mp-texte').value };
     if (banniereChoisie !== null) corps.image_url = banniereChoisie;
+    if (maPage && maPage.cadrage_disponible !== false) {
+      corps.banner_position = cadrageValide(document.getElementById('mp-cadrage').value);
+    }
 
     bouton.disabled = true;
     direMaPage('Publication…', 'var(--gray-500)');
@@ -1359,6 +1388,9 @@
       maPage = data;
       banniereChoisie = null;
       document.getElementById('mp-texte').value = data.story || '';
+      if (data.cadrage_disponible !== false) {
+        document.getElementById('mp-cadrage').value = cadrageValide(data.banner_position);
+      }
       apercuMaPage();
       direMaPage(data.inchange ? 'Rien n\'avait changé.' : '\u2713 En ligne.', 'var(--green)');
     } catch (err) {

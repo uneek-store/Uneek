@@ -35,6 +35,43 @@ const IMAGE_MAX_OCTETS = 700 * 1024;
 
 const SITE = process.env.SITE_URL || "https://www.uneek.store";
 
+// Les champs qui existent depuis toujours. banner_position est traitee a
+// part : elle a ete ajoutee plus tard, et le code doit fonctionner meme si la
+// commande SQL n'a pas encore ete passee.
+const CHAMPS = "id, name, slug, tagline, city, year, image_url, story";
+
+// null = on ne sait pas encore, true/false = constate en interrogeant la base.
+// Cette memoire ne vit que le temps d'une instance Vercel : si la colonne est
+// ajoutee plus tard, une nouvelle instance la trouvera.
+let cadrageDisponible = null;
+
+// 0 = on garde le haut de la photo, 50 = le centre, 100 = le bas.
+function cadrageValide(v) {
+  const n = parseInt(v, 10);
+  if (isNaN(n)) return null;
+  return Math.max(0, Math.min(100, n));
+}
+
+// Distingue "cette colonne n'existe pas" de "cette marque n'existe pas".
+// Sans ca, une marque introuvable ferait croire que la colonne manque.
+function colonneManquante(error) {
+  const m = String((error && error.message) || "").toLowerCase();
+  return m.includes("banner_position") || m.includes("column");
+}
+
+async function lireMarque(brandId) {
+  if (cadrageDisponible !== false) {
+    const r = await supabaseAdmin
+      .from("brands").select(CHAMPS + ", banner_position").eq("id", brandId).single();
+    if (!r.error) { cadrageDisponible = true; return { data: r.data, cadrage: true }; }
+    if (!colonneManquante(r.error)) return { data: null, error: r.error, cadrage: true };
+    console.warn("[page marque] colonne banner_position absente — cadrage desactive");
+    cadrageDisponible = false;
+  }
+  const r2 = await supabaseAdmin.from("brands").select(CHAMPS).eq("id", brandId).single();
+  return { data: r2.data, error: r2.error, cadrage: false };
+}
+
 function nettoyerTexte(v) {
   if (v == null) return "";
   return String(v).replace(/\s+/g, " ").trim().slice(0, TEXTE_MAX);
@@ -78,14 +115,14 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === "GET") {
-      const { data, error } = await supabaseAdmin
-        .from("brands")
-        .select("id, name, slug, tagline, city, year, image_url, story")
-        .eq("id", brandId)
-        .single();
-
+      const { data, error, cadrage } = await lireMarque(brandId);
       if (error || !data) return res.status(404).json({ error: "Marque non trouvée" });
-      return res.status(200).json({ ...data, texte_max: TEXTE_MAX });
+      return res.status(200).json({
+        ...data,
+        banner_position: cadrageValide(data.banner_position) === null ? 50 : cadrageValide(data.banner_position),
+        cadrage_disponible: cadrage,
+        texte_max: TEXTE_MAX,
+      });
     }
 
     if (req.method === "POST") {
@@ -99,17 +136,13 @@ export default async function handler(req, res) {
 
       const corps = req.body || {};
 
-      const { data: avant, error: errAvant } = await supabaseAdmin
-        .from("brands")
-        .select("id, name, slug, image_url, story")
-        .eq("id", brandId)
-        .single();
-
+      const { data: avant, error: errAvant, cadrage } = await lireMarque(brandId);
       if (errAvant || !avant) return res.status(404).json({ error: "Marque non trouvée" });
 
       const maj = {};
       let banniereChangee = false;
       let texteChange = false;
+      let cadrageChange = false;
 
       if (Object.prototype.hasOwnProperty.call(corps, "image_url")) {
         const verdict = imageAcceptable(corps.image_url);
@@ -128,15 +161,30 @@ export default async function handler(req, res) {
         }
       }
 
-      if (!banniereChangee && !texteChange) {
-        return res.status(200).json({ success: true, inchange: true, ...avant });
+      // Le cadrage n'est enregistre que si la base sait le retenir.
+      if (cadrage && Object.prototype.hasOwnProperty.call(corps, "banner_position")) {
+        const valeur = cadrageValide(corps.banner_position);
+        if (valeur !== null) {
+          const actuel = cadrageValide(avant.banner_position);
+          if (valeur !== (actuel === null ? 50 : actuel)) {
+            maj.banner_position = valeur;
+            cadrageChange = true;
+          }
+        }
       }
 
+      if (!banniereChangee && !texteChange && !cadrageChange) {
+        return res.status(200).json({
+          success: true, inchange: true, ...avant, cadrage_disponible: cadrage,
+        });
+      }
+
+      const champsRendus = CHAMPS + (cadrage ? ", banner_position" : "");
       const { data: apres, error } = await supabaseAdmin
         .from("brands")
         .update(maj)
         .eq("id", brandId)
-        .select("id, name, slug, tagline, city, year, image_url, story")
+        .select(champsRendus)
         .single();
 
       if (error) {
@@ -150,6 +198,7 @@ export default async function handler(req, res) {
         const quoi = [];
         if (banniereChangee) quoi.push(maj.image_url ? "nouvelle bannière" : "bannière retirée");
         if (texteChange) quoi.push(maj.story ? "texte de présentation modifié" : "texte retiré");
+        if (cadrageChange) quoi.push("cadrage de la bannière ajusté");
 
         const lignes = [
           "<strong>" + esc(apres.name) + "</strong>",
@@ -166,7 +215,13 @@ export default async function handler(req, res) {
         console.error("[email] alerte page marque ignoree :", err && err.message);
       }
 
-      return res.status(200).json({ success: true, ...apres, texte_max: TEXTE_MAX });
+      return res.status(200).json({
+        success: true,
+        ...apres,
+        banner_position: cadrageValide(apres.banner_position) === null ? 50 : cadrageValide(apres.banner_position),
+        cadrage_disponible: cadrage,
+        texte_max: TEXTE_MAX,
+      });
     }
 
     return res.status(405).json({ error: "Method not allowed" });
