@@ -8,6 +8,12 @@
 // personnelle, en libre acces. Les colonnes sont maintenant listees une par
 // une : plus de "select *", pour qu'une colonne ajoutee un jour a la table
 // ne se retrouve pas publiee sans que personne l'ait decide.
+//
+// REVERS DE CETTE PRUDENCE, constate le 2 septembre : une colonne oubliee
+// dans la liste n'arrive jamais a la boutique. "story" et "banner_position"
+// manquaient — le createur ecrivait, la base enregistrait, la page
+// n'affichait rien. Toute colonne affichee par la page marque doit figurer
+// ici. Le garde-fou le verifie desormais.
 // Le panneau admin lit ces memes marques, e-mails compris, sur
 // /api/admin/brands, qui exige un jeton administrateur.
 
@@ -28,7 +34,7 @@ export default async function handler(req, res) {
     if (slug) {
       const { data: brand, error } = await supabaseAdmin
         .from("brands")
-        .select("id, name, slug, tagline, city, year, image_url, logo_url, is_active, created_at, instagram, story" + ", products(*)")
+        .select("id, name, slug, tagline, city, year, image_url, logo_url, is_active, created_at, instagram, story, banner_position" + ", products(*)")
         .eq("slug", slug)
         .eq("is_active", true)
         .single();
@@ -43,7 +49,7 @@ export default async function handler(req, res) {
     // Liste de toutes les marques actives (avec créateur)
     const { data, error } = await supabaseAdmin
       .from("brands")
-      .select("id, name, slug, tagline, city, year, image_url, logo_url, products(count), creator_accounts(full_name)")
+      .select("id, name, slug, tagline, city, year, image_url, logo_url, story, banner_position, products(count), creator_accounts(full_name)")
       .eq("is_active", true)
       .order("name");
 
