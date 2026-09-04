@@ -791,7 +791,7 @@ function majTitre(page, data) {
     const b = getBrandBySlug(data);
     if (b) {
       t = b.name + ' — marque indépendante' + (b.city ? ' à ' + b.city : '') + ' | UNEEK';
-      description = couper(b.tagline || b.story
+      description = couper(b.tagline
         || b.name + ', marque de mode indépendante' + (b.city ? ' basée à ' + b.city : '')
            + '. Découvre ses pièces sur UNEEK.', 155);
     }
@@ -1145,9 +1145,6 @@ function brandPage() {
         </div>
       </div>
     </div>
-    ${b.story ? `<section class="section" style="padding-bottom:0">
-      <p style="max-width:680px;margin:0 auto;text-align:center;font-size:17px;line-height:1.9;color:var(--gray-600);font-weight:300">${echapper(b.story)}</p>
-    </section>` : ''}
     <section class="section">
       <div class="section-header"><h2 class="section-title">Les pièces</h2></div>
       ${bp.length > 0 ? `<div class="product-grid">${bp.map(p => productCardHTML(p)).join('')}</div>` : '<p style="color:var(--gray-400);text-align:center;padding:48px 0">Aucun produit pour le moment.</p>'}

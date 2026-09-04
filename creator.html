@@ -372,17 +372,6 @@
       </div>
 
       <div class="card" style="padding:22px;max-width:860px;margin-top:18px">
-        <div class="card-header" style="margin-bottom:14px">Texte de pr&eacute;sentation</div>
-        <textarea id="mp-texte" rows="4" maxlength="400" oninput="apercuMaPage()"
-                  placeholder="En deux ou trois phrases : qui tu es, ce que tu fabriques, pourquoi."
-                  style="width:100%;padding:12px 14px;border:1px solid var(--gray-200);border-radius:8px;font-size:14px;font-family:inherit;line-height:1.7;outline:none;resize:vertical"></textarea>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
-          <div style="font-size:12px;color:var(--gray-400)">Il appara&icirc;t sous ton nom, au-dessus de tes pi&egrave;ces.</div>
-          <div style="font-size:12px;color:var(--gray-400)"><span id="mp-compteur">0</span> / 400</div>
-        </div>
-      </div>
-
-      <div class="card" style="padding:22px;max-width:860px;margin-top:18px">
         <div class="card-header" style="margin-bottom:14px">Aper&ccedil;u de ta page</div>
         <div style="border:1px solid var(--gray-200);border-radius:10px;overflow:hidden">
           <div id="mp-apercu-hero"
@@ -391,9 +380,6 @@
               <div id="mp-apercu-nom" style="font-size:34px;font-weight:800;letter-spacing:-1px">&mdash;</div>
               <div id="mp-apercu-info" style="font-size:11px;opacity:0.45;letter-spacing:1px;text-transform:uppercase;margin-top:10px"></div>
             </div>
-          </div>
-          <div style="padding:26px 20px;background:#FAFAFA">
-            <p id="mp-apercu-texte" style="max-width:520px;margin:0 auto;text-align:center;font-size:14px;line-height:1.9;color:var(--gray-600);font-weight:300"></p>
           </div>
         </div>
         <div style="margin-top:18px;display:flex;align-items:center;gap:14px">
@@ -590,7 +576,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-09-02-cadrage-banniere-18';
+  const APP_VERSION = '2026-09-02-sans-texte-19';
 
   async function checkAppVersion() {
     try {
@@ -1267,12 +1253,6 @@
   let maPage = null;          // ce qui est enregistre cote serveur
   let banniereChoisie = null; // null = inchangee, '' = retiree, sinon la nouvelle
 
-  function echapperTexte(v) {
-    return String(v == null ? '' : v)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
-
   // 0 = haut de la photo, 50 = centre, 100 = bas. Toute valeur douteuse
   // retombe au centre : le panneau ne doit jamais afficher un curseur casse.
   function cadrageValide(v) {
@@ -1295,7 +1275,6 @@
       if (!res.ok) throw new Error('chargement impossible');
       maPage = await res.json();
       banniereChoisie = null;
-      document.getElementById('mp-texte').value = maPage.story || '';
       document.getElementById('mp-cadrage').value = cadrageValide(maPage.banner_position);
       // Le curseur n'apparait que si la base sait le retenir.
       document.getElementById('mp-bloc-cadrage').style.display =
@@ -1329,9 +1308,6 @@
   // Redessine l'apercu a partir de ce qui est a l'ecran, pas de ce qui est
   // enregistre : le createur voit le resultat avant de publier.
   function apercuMaPage() {
-    const texte = document.getElementById('mp-texte').value;
-    document.getElementById('mp-compteur').textContent = texte.length;
-
     const img = banniereCourante();
     const cadrage = cadrageValide(document.getElementById('mp-cadrage').value);
     const zone = document.getElementById('mp-apercu-banniere');
@@ -1357,7 +1333,6 @@
       if (maPage.year) bouts.push('Est. ' + maPage.year);
       document.getElementById('mp-apercu-info').textContent = bouts.join('  ·  ');
     }
-    document.getElementById('mp-apercu-texte').innerHTML = echapperTexte(texte);
   }
 
   function direMaPage(texte, couleur) {
@@ -1369,7 +1344,7 @@
 
   async function enregistrerMaPage() {
     const bouton = document.getElementById('mp-enregistrer');
-    const corps = { brand_id: currentBrand.id, story: document.getElementById('mp-texte').value };
+    const corps = { brand_id: currentBrand.id };
     if (banniereChoisie !== null) corps.image_url = banniereChoisie;
     if (maPage && maPage.cadrage_disponible !== false) {
       corps.banner_position = cadrageValide(document.getElementById('mp-cadrage').value);
@@ -1387,7 +1362,6 @@
       if (!res.ok) { direMaPage(data.error || 'Erreur', 'var(--red)'); return; }
       maPage = data;
       banniereChoisie = null;
-      document.getElementById('mp-texte').value = data.story || '';
       if (data.cadrage_disponible !== false) {
         document.getElementById('mp-cadrage').value = cadrageValide(data.banner_position);
       }

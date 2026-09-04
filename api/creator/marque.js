@@ -9,8 +9,12 @@
 // raconter elle-meme.
 //
 // CE QU'IL PEUT CHANGER, ET RIEN D'AUTRE
-//   image_url : la banniere
-//   story     : un court texte de presentation
+//   image_url       : la banniere
+//   banner_position : quelle partie de la photo reste visible
+//
+// Le texte de presentation a existe du 2 septembre au 2 septembre : Axel l'a
+// retire. La colonne "story" reste en base avec ce qui y avait ete ecrit —
+// on retire une fonctionnalite, on ne detruit pas de donnee.
 // Ni le nom, ni le slug (l'adresse de sa page changerait et tous les liens
 // existants casseraient), ni l'e-mail, ni is_active. Le champ est nomme
 // explicitement dans la mise a jour : impossible d'en glisser un autre en
@@ -26,8 +30,6 @@ import { controlerAcces } from "../lib/session.js";
 import { limiter } from "../lib/limite.js";
 import { alerteAdmin, esc } from "../lib/email.js";
 
-const TEXTE_MAX = 400;
-
 // Une banniere pese lourd : elle est stockee en texte dans la base. Le
 // panneau la redimensionne deja avant l'envoi ; ce plafond est le garde-fou
 // cote serveur, celui qui ne depend pas du navigateur du createur.
@@ -38,7 +40,7 @@ const SITE = process.env.SITE_URL || "https://www.uneek.store";
 // Les champs qui existent depuis toujours. banner_position est traitee a
 // part : elle a ete ajoutee plus tard, et le code doit fonctionner meme si la
 // commande SQL n'a pas encore ete passee.
-const CHAMPS = "id, name, slug, tagline, city, year, image_url, story";
+const CHAMPS = "id, name, slug, tagline, city, year, image_url";
 
 // null = on ne sait pas encore, true/false = constate en interrogeant la base.
 // Cette memoire ne vit que le temps d'une instance Vercel : si la colonne est
@@ -70,11 +72,6 @@ async function lireMarque(brandId) {
   }
   const r2 = await supabaseAdmin.from("brands").select(CHAMPS).eq("id", brandId).single();
   return { data: r2.data, error: r2.error, cadrage: false };
-}
-
-function nettoyerTexte(v) {
-  if (v == null) return "";
-  return String(v).replace(/\s+/g, " ").trim().slice(0, TEXTE_MAX);
 }
 
 // Accepte une image envoyee par le panneau (data:image/...) ou une adresse
@@ -121,7 +118,6 @@ export default async function handler(req, res) {
         ...data,
         banner_position: cadrageValide(data.banner_position) === null ? 50 : cadrageValide(data.banner_position),
         cadrage_disponible: cadrage,
-        texte_max: TEXTE_MAX,
       });
     }
 
@@ -141,7 +137,6 @@ export default async function handler(req, res) {
 
       const maj = {};
       let banniereChangee = false;
-      let texteChange = false;
       let cadrageChange = false;
 
       if (Object.prototype.hasOwnProperty.call(corps, "image_url")) {
@@ -150,14 +145,6 @@ export default async function handler(req, res) {
         if (verdict.valeur !== (avant.image_url || null)) {
           maj.image_url = verdict.valeur;
           banniereChangee = true;
-        }
-      }
-
-      if (Object.prototype.hasOwnProperty.call(corps, "story")) {
-        const texte = nettoyerTexte(corps.story);
-        if (texte !== (avant.story || "")) {
-          maj.story = texte || null;
-          texteChange = true;
         }
       }
 
@@ -173,7 +160,7 @@ export default async function handler(req, res) {
         }
       }
 
-      if (!banniereChangee && !texteChange && !cadrageChange) {
+      if (!banniereChangee && !cadrageChange) {
         return res.status(200).json({
           success: true, inchange: true, ...avant, cadrage_disponible: cadrage,
         });
@@ -197,16 +184,12 @@ export default async function handler(req, res) {
       try {
         const quoi = [];
         if (banniereChangee) quoi.push(maj.image_url ? "nouvelle bannière" : "bannière retirée");
-        if (texteChange) quoi.push(maj.story ? "texte de présentation modifié" : "texte retiré");
         if (cadrageChange) quoi.push("cadrage de la bannière ajusté");
 
         const lignes = [
           "<strong>" + esc(apres.name) + "</strong>",
           "Modification : " + esc(quoi.join(" · ")),
         ];
-        if (texteChange && maj.story) {
-          lignes.push("Nouveau texte : « " + esc(maj.story) + " »");
-        }
         lignes.push('<a href="' + SITE + "/marque/" + encodeURIComponent(apres.slug || "")
           + '">Voir la page</a>');
 
@@ -220,7 +203,6 @@ export default async function handler(req, res) {
         ...apres,
         banner_position: cadrageValide(apres.banner_position) === null ? 50 : cadrageValide(apres.banner_position),
         cadrage_disponible: cadrage,
-        texte_max: TEXTE_MAX,
       });
     }
 
