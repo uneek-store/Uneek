@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UNEEK - Secure Payment</title>
+  <script src="https://js.stripe.com/v3/"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      max-width: 1000px;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+    }
+
+    .order-summary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .summary-header {
+      margin-bottom: 30px;
+    }
+
+    .summary-header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .summary-header p {
+      opacity: 0.9;
+      font-size: 14px;
+    }
+
+    .order-items {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 30px;
+    }
+
+    .order-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .order-item:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    .item-details {
+      flex: 1;
+    }
+
+    .item-name {
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    .item-description {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .item-price {
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .price-breakdown {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+
+    .price-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .price-row.total {
+      border-top: 1px solid rgba(255, 255, 255, 0.3);
+      padding-top: 10px;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .test-mode-badge {
+      display: inline-block;
+      background: rgba(255, 215, 0, 0.2);
+      color: #ffd700;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 20px;
+      border: 1px solid rgba(255, 215, 0, 0.4);
+    }
+
+    .payment-form {
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-section {
+      margin-bottom: 30px;
+    }
+
+    .form-section h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 6px;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: all 0.3s;
+      font-family: inherit;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .stripe-element {
+      padding: 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      background: white;
+      transition: all 0.3s;
+    }
+
+    .stripe-element.StripeElement--focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .stripe-element.StripeElement--invalid {
+      border-color: #fa755a;
+    }
+
+    .card-errors {
+      color: #fa755a;
+      font-size: 13px;
+      margin-top: 8px;
+      min-height: 20px;
+    }
+
+    .submit-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .submit-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .message {
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .message.show {
+      display: block;
+    }
+
+    .message.success {
+      background: #f0fdf4;
+      color: #166534;
+      border: 1px solid #86efac;
+    }
+
+    .message.error {
+      background: #fef2f2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+    }
+
+    .message.info {
+      background: #f0f9ff;
+      color: #0c2340;
+      border: 1px solid #bae6fd;
+    }
+
+    .test-cards {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      font-size: 12px;
+    }
+
+    .test-cards-title {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .test-card {
+      margin-bottom: 8px;
+      color: #666;
+    }
+
+    .test-card code {
+      background: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+    }
+
+    .test-card:last-child {
+      margin-bottom: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Order Summary -->
+    <div class="order-summary">
+      <div class="summary-header">
+        <h1>Order Summary</h1>
+        <p>Complete your purchase with Stripe</p>
+      </div>
+
+      <div class="order-items">
+        <div class="order-item">
+          <div class="item-details">
+            <div class="item-name" id="productName">Premium Design Package</div>
+            <div class="item-description">Digital Product Delivery</div>
+          </div>
+          <div class="item-price" id="itemPrice">$99.00</div>
+        </div>
+      </div>
+
+      <div class="price-breakdown">
+        <div class="price-row">
+          <span>Subtotal</span>
+          <span id="subtotal">$99.00</span>
+        </div>
+        <div class="price-row">
+          <span>Shipping</span>
+          <span id="shipping">Free</span>
+        </div>
+        <div class="price-row">
+          <span>Tax</span>
+          <span id="tax">$0.00</span>
+        </div>
+        <div class="price-row total">
+          <span>Total</span>
+          <span id="totalAmount">$99.00</span>
+        </div>
+      </div>
+
+      <div class="test-mode-badge">🧪 TEST MODE - Fake Money</div>
+    </div>
+
+    <!-- Payment Form -->
+    <div class="payment-form">
+      <div id="messageContainer" class="message"></div>
+
+      <div class="test-cards">
+        <div class="test-cards-title">📝 Test Card Numbers (Test Mode)</div>
+        <div class="test-card">✅ Success: <code>4242 4242 4242 4242</code></div>
+        <div class="test-card">❌ Decline: <code>4000 0000 0000 0002</code></div>
+        <div class="test-card">⚠️ 3D Secure: <code>4000 0025 0000 3155</code></div>
+        <div class="test-card">Use any future date & any 3-digit CVC</div>
+      </div>
+
+      <form id="payment-form">
+        <div class="form-section">
+          <h2>Customer Information</h2>
+
+          <div class="form-group">
+            <label for="email">Email Address *</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              placeholder="customer@example.com"
+              required
+            >
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="firstName">First Name *</label>
+              <input
+                type="text"
+                id="firstName"
+                name="firstName"
+                placeholder="John"
+                required
+              >
+            </div>
+            <div class="form-group">
+              <label for="lastName">Last Name *</label>
+              <input
+                type="text"
+                id="lastName"
+                name="lastName"
+                placeholder="Doe"
+                required
+              >
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h2>Payment Method</h2>
+
+          <div class="form-group">
+            <label for="card-element">Card Details *</label>
+            <div id="card-element" class="stripe-element"></div>
+            <div id="card-errors" class="card-errors" role="alert"></div>
+          </div>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submit-btn">
+          <span id="btn-text">Pay $99.00</span>
+        </button>
+      </form>
+
+      <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #999;">
+        Your payment is securely processed by Stripe
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Stripe
+    // ⚠️ IMPORTANT: Replace this with your actual publishable key from Vercel
+    const STRIPE_PUBLISHABLE_KEY = 'pk_test_YOUR_KEY_HERE'; // Replace with actual key
+    const API_BASE_URL = '/api'; // Adjust based on your API location
+
+    if (!STRIPE_PUBLISHABLE_KEY || STRIPE_PUBLISHABLE_KEY.includes('YOUR_KEY')) {
+      console.error('⚠️ Stripe publishable key not configured!');
+    }
+
+    const stripe = Stripe(STRIPE_PUBLISHABLE_KEY);
+    const elements = stripe.elements();
+    const cardElement = elements.create('card');
+    cardElement.mount('#card-element');
+
+    // Handle card errors
+    const cardErrorsElement = document.getElementById('card-errors');
+    cardElement.addEventListener('change', (event) => {
+      if (event.error) {
+        cardErrorsElement.textContent = event.error.message;
+      } else {
+        cardErrorsElement.textContent = '';
+      }
+    });
+
+    // Handle form submission
+    const paymentForm = document.getElementById('payment-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const btnText = document.getElementById('btn-text');
+    const messageContainer = document.getElementById('messageContainer');
+
+    paymentForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // Disable button and show loading
+      submitBtn.disabled = true;
+      btnText.innerHTML = '<span class="loading-spinner"></span>Processing...';
+
+      try {
+        // Get form data
+        const email = document.getElementById('email').value;
+        const firstName = document.getElementById('firstName').value;
+        const lastName = document.getElementById('lastName').value;
+        const amount = 9900; // $99.00 in cents
+
+        // Create payment method
+        const { error, paymentMethod } = await stripe.createPaymentMethod({
+          type: 'card',
+          card: cardElement,
+          billing_details: {
+            email: email,
+            name: `${firstName} ${lastName}`,
+          },
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        // Send payment to backend
+        const response = await fetch(`${API_BASE_URL}/stripe/checkout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            paymentMethodId: paymentMethod.id,
+            amount: amount,
+            currency: 'usd',
+            email: email,
+            firstName: firstName,
+            lastName: lastName,
+            description: 'Premium Design Package - Test Purchase',
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Payment failed');
+        }
+
+        // Handle successful payment
+        showMessage(`✅ Payment successful! Order ID: ${result.orderId}`, 'success');
+        paymentForm.reset();
+        cardElement.clear();
+
+        // Optionally redirect after delay
+        setTimeout(() => {
+          // window.location.href = '/order-confirmation?orderId=' + result.orderId;
+        }, 2000);
+
+      } catch (error) {
+        showMessage(`❌ ${error.message || 'Payment processing failed. Please try again.'}`, 'error');
+      } finally {
+        // Re-enable button
+        submitBtn.disabled = false;
+        btnText.textContent = 'Pay $99.00';
+      }
+    });
+
+    function showMessage(message, type) {
+      messageContainer.textContent = message;
+      messageContainer.className = `message show ${type}`;
+
+      if (type === 'success') {
+        setTimeout(() => {
+          messageContainer.classList.remove('show');
+        }, 5000);
+      }
+    }
+
+    // Show info message on load
+    window.addEventListener('load', () => {
+      if (STRIPE_PUBLISHABLE_KEY.includes('YOUR_KEY')) {
+        showMessage('⚠️ Stripe key not configured. Replace STRIPE_PUBLISHABLE_KEY with your actual test key from Vercel environment variables.', 'info');
+      } else {
+        showMessage('🧪 Test mode enabled. Use test card 4242 4242 4242 4242 to complete the payment.', 'info');
+      }
+    });
+  </script>
+</body>
+</html>
