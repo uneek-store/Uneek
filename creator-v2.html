@@ -1,0 +1,2808 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UNEEK Créateur</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+    :root {
+      --black: #0A0A0A;
+      --white: #FAFAFA;
+      --gray-50: #F9F9F9;
+      --gray-100: #F5F5F5;
+      --gray-200: #E5E5E5;
+      --gray-300: #D4D4D4;
+      --gray-400: #A3A3A3;
+      --gray-500: #737373;
+      --gray-600: #525252;
+      --gray-800: #262626;
+      --green: #22C55E;
+      --green-bg: #F0FDF4;
+      --red: #EF4444;
+      --red-bg: #FEF2F2;
+      --orange: #F59E0B;
+      --orange-bg: #FFFBEB;
+      --blue: #3B82F6;
+      --blue-bg: #EFF6FF;
+      --font-display: 'Urbanist', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-body); background: var(--gray-50); color: var(--black); min-height: 100vh; }
+
+    /* LOGIN */
+    .login-wrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--black); }
+    .login-box { background: var(--white); padding: 40px; border-radius: 16px; width: 380px; }
+    .login-box h1 { font-family: var(--font-display); font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+    .login-box p { color: var(--gray-500); font-size: 13px; margin-bottom: 24px; }
+    .login-box label { display: block; font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; margin-top: 14px; }
+    .login-box input[type="email"], .login-box input[type="password"] { width: 100%; padding: 10px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 14px; font-family: var(--font-body); }
+    .login-box input:focus { outline: none; border-color: var(--black); }
+    .login-btn { width: 100%; padding: 12px; background: var(--black); color: var(--white); border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 20px; font-family: var(--font-body); }
+    .login-btn:hover { background: var(--gray-800); }
+    .login-error { color: var(--red); font-size: 12px; margin-top: 8px; display: none; }
+
+    /* LAYOUT */
+    .app { display: none; min-height: 100vh; }
+    .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 200px; background: var(--black); color: var(--white); padding: 24px 0; z-index: 10; }
+    .sidebar-logo { padding: 0 20px 2px; font-family: var(--font-display); font-weight: 700; font-size: 20px; }
+    .sidebar-brand { padding: 0 20px 4px; font-size: 14px; color: var(--gray-200); }
+    .sidebar-tag { padding: 0 20px 24px; font-size: 11px; color: var(--gray-500); letter-spacing: 1px; text-transform: uppercase; }
+    .sidebar a { display: flex; align-items: center; gap: 10px; padding: 10px 20px; font-size: 13px; color: var(--gray-400); cursor: pointer; text-decoration: none; transition: all 0.15s; border: none; background: none; width: 100%; font-family: var(--font-body); }
+    .sidebar a:hover { color: var(--white); background: rgba(255,255,255,0.05); }
+    .sidebar .badge-count { background: var(--red); color: var(--white); font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-left: auto; font-weight: 600; }
+
+    .sidebar a.active { color: var(--white); background: rgba(255,255,255,0.08); border-right: 2px solid var(--white); }
+    .main { margin-left: 200px; padding: 28px; }
+    .page-title { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--black); }
+    .page-sub { font-size: 13px; color: var(--gray-500); margin-bottom: 20px; }
+
+    /* STATS */
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .stat-card { background: var(--white); padding: 16px; border-radius: 12px; border: 1px solid var(--gray-200); }
+    .stat-label { font-size: 10px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .stat-value { font-size: 24px; font-weight: 600; font-family: var(--font-display); color: var(--black); }
+
+    /* CARDS & TABLES */
+    .card { background: var(--white); border: 1px solid var(--gray-200); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+    .card-header { padding: 14px 18px; border-bottom: 1px solid var(--gray-200); font-size: 14px; font-weight: 500; display: flex; justify-content: space-between; align-items: center; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 8px 16px; font-size: 10px; font-weight: 500; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; background: var(--gray-50); border-bottom: 1px solid var(--gray-200); white-space: nowrap; }
+    td { padding: 10px 16px; border-top: 1px solid var(--gray-100); font-size: 13px; vertical-align: middle; }
+    td.sec { color: var(--gray-500); }
+    .bold { font-weight: 500; }
+
+    /* BADGES */
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 50px; font-size: 11px; white-space: nowrap; font-weight: 500; }
+    .badge-green { background: var(--green-bg); color: var(--green); }
+    .badge-orange { background: var(--orange-bg); color: var(--orange); }
+    .badge-blue { background: var(--blue-bg); color: var(--blue); }
+    .badge-red { background: var(--red-bg); color: var(--red); }
+
+    /* BUTTONS */
+    .btn-add { padding: 7px 16px; background: var(--black); color: var(--white); border: none; border-radius: 8px; font-size: 12px; cursor: pointer; font-family: var(--font-body); font-weight: 500; }
+    .btn-add:hover { background: var(--gray-800); }
+    .btn-ship { padding: 5px 14px; background: var(--green); color: var(--white); border: none; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: var(--font-body); }
+    .btn-ship:hover { background: #16A34A; }
+    .btn-edit { padding: 5px 14px; background: transparent; color: var(--blue); border: 1px solid var(--gray-200); border-radius: 6px; font-size: 12px; cursor: pointer; font-family: var(--font-body); }
+    .btn-edit:hover { background: var(--blue-bg); }
+    .done-mark { color: var(--gray-400); font-size: 12px; }
+    .return-mark { color: var(--red); font-size: 11px; }
+
+    /* SECTIONS */
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* MODAL */
+    .modal-bg { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
+    .modal-bg.show { display: flex; }
+    .modal { background: var(--white); border-radius: 16px; padding: 28px; width: 420px; max-height: 85vh; overflow-y: auto; }
+    .modal h3 { font-family: var(--font-display); font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+    .modal label { display: block; font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; margin-top: 14px; }
+    .modal input, .modal select, .modal textarea { width: 100%; padding: 9px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 13px; font-family: var(--font-body); background: var(--white); color: var(--black); }
+    .modal input:focus, .modal select:focus, .modal textarea:focus { outline: none; border-color: var(--black); }
+    .modal textarea { height: 60px; resize: vertical; }
+    .modal-btns { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
+    .modal-btns button { padding: 9px 20px; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: var(--font-body); border: none; }
+    .btn-cancel { background: var(--gray-100); color: var(--gray-600); }
+    .btn-cancel:hover { background: var(--gray-200); }
+    .btn-submit { background: var(--black); color: var(--white); font-weight: 500; }
+    .btn-submit:hover { background: var(--gray-800); }
+    .modal-note { font-size: 11px; color: var(--gray-400); margin-top: 10px; }
+
+    /* SIZE GRID */
+    .size-checks { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+    .size-cb { display: flex; align-items: center; gap: 4px; font-size: 13px; cursor: pointer; }
+    .size-cb input { width: auto; }
+    .size-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+    .size-item { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .size-item span { font-size: 11px; color: var(--gray-500); font-weight: 500; }
+    .size-item input { width: 54px; text-align: center; padding: 7px 4px; }
+
+    .stale-banner { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 9999; background: var(--red); color: #fff; padding: 10px 16px; font-size: 13px; text-align: center; font-family: var(--font-body); }
+    .stale-banner button { margin-left: 10px; padding: 4px 12px; border: none; border-radius: 6px; background: #fff; color: var(--red); font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--font-body); }
+
+    .nickname { display: inline-block; padding: 3px 10px; border-radius: 6px; background: var(--black); color: var(--white); font-weight: 600; font-size: 12px; letter-spacing: 0.3px; white-space: nowrap; }
+    .nickname.vide { background: var(--gray-100); color: var(--gray-400); font-weight: 400; font-style: italic; }
+
+    .stock-sizes { display: flex; flex-wrap: wrap; gap: 4px; }
+    .size-chip { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; background: var(--gray-100); color: var(--gray-600); white-space: nowrap; }
+    .size-chip .sz-label { color: var(--gray-400); font-weight: 400; }
+    .size-chip .sz-qty { font-weight: 600; color: var(--black); }
+    .size-chip.low { background: var(--red-bg); }
+    .size-chip.low .sz-qty { color: var(--red); }
+    .size-chip.out { background: var(--red-bg); }
+    .size-chip.out .sz-qty { color: var(--red); text-decoration: line-through; }
+
+    .stock-matrix { margin-top: 6px; }
+    .stock-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+    .stock-row .couleur { min-width: 78px; font-size: 12px; font-weight: 600; color: var(--black); }
+    .stock-row .cellules { display: flex; gap: 6px; flex-wrap: wrap; }
+    .stock-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .stock-cell span { font-size: 10px; color: var(--gray-500); font-weight: 500; }
+    .stock-cell input { width: 46px; text-align: center; padding: 6px 2px; border: 1px solid var(--gray-200); border-radius: 6px; font-size: 13px; font-family: var(--font-body); }
+    .stock-cell input:focus { outline: none; border-color: var(--black); }
+
+    .img-thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .img-thumb { position: relative; width: 68px; height: 88px; border-radius: 8px; overflow: hidden; border: 1px solid var(--gray-200); background: var(--gray-100); }
+    .img-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .img-thumb .x { position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; border-radius: 50%; border: none; background: rgba(0,0,0,0.65); color: #fff; font-size: 12px; line-height: 1; cursor: pointer; padding: 0; }
+    .img-thumb .x:hover { background: var(--red); }
+    .img-thumb .main { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); color: #fff; font-size: 8px; text-align: center; padding: 2px 0; letter-spacing: 0.5px; text-transform: uppercase; }
+    .img-count { font-size: 11px; color: var(--gray-500); margin-top: 6px; }
+    .img-count.full { color: var(--orange); font-weight: 500; }
+
+    .img-section { display: none; }
+    .img-section.show { display: block; }
+
+    /* TOAST */
+    .toast { display: none; position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 10px; font-size: 13px; z-index: 300; background: var(--green); color: var(--white); box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+    .toast.show { display: block; animation: slideUp 0.3s ease; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .faded { opacity: 0.5; }
+    .grp { background: var(--gray-50); }
+    .grp-sub td { border-top: none; padding-top: 2px; }
+
+    /* DELETE BUTTON */
+    .btn-delete { padding: 5px 14px; background: transparent; color: var(--red); border: 1px solid var(--red); border-radius: 6px; font-size: 12px; cursor: pointer; font-family: var(--font-body); }
+    .btn-delete:hover { background: #FEF2F2; }
+
+    /* CONFIRM DIALOG */
+    .confirm-bg { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 150; align-items: center; justify-content: center; }
+    .confirm-bg.show { display: flex; }
+    .confirm-box { background: var(--white); border-radius: 16px; padding: 28px; width: 380px; text-align: center; }
+    .confirm-box h3 { font-family: var(--font-display); font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+    .confirm-box p { font-size: 13px; color: var(--gray-500); margin-bottom: 20px; line-height: 1.5; }
+    .confirm-btns { display: flex; gap: 8px; justify-content: center; }
+    .confirm-btns button { padding: 9px 20px; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: var(--font-body); border: none; }
+
+    /* SETTINGS SECTION */
+    .settings-card { background: var(--white); border: 1px solid var(--gray-200); border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+    .settings-card label { display: block; font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; margin-top: 14px; }
+    .settings-card label:first-child { margin-top: 0; }
+    .settings-card input { width: 100%; padding: 9px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: 13px; font-family: var(--font-body); }
+    .settings-card input:focus { outline: none; border-color: var(--black); }
+    .settings-title { font-family: var(--font-display); font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+    .btn-save { padding: 9px 20px; background: var(--black); color: var(--white); border: none; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: var(--font-body); font-weight: 500; margin-top: 16px; }
+    .btn-save:hover { background: var(--gray-800); }
+
+    /* MOBILE RESPONSIVE */
+    @media (max-width: 768px) {
+      .sidebar { position: fixed; left: 0; top: 0; right: 0; bottom: auto; width: 100%; height: auto; padding: 12px 0 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 0; z-index: 10; }
+      .sidebar-logo { padding: 0 16px 0; font-size: 16px; }
+      .sidebar-brand { padding: 0 8px 0; font-size: 12px; }
+      .sidebar-tag { padding: 0 8px 0; font-size: 9px; margin-right: auto; }
+      .sidebar a { padding: 6px 12px; font-size: 11px; width: auto; white-space: nowrap; border-right: none !important; }
+      .sidebar a.active { background: rgba(255,255,255,0.15); border-radius: 6px; border-right: none !important; }
+      .main { margin-left: 0; margin-top: 80px; padding: 16px; }
+      .stats { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .stat-card { padding: 12px; }
+      .stat-value { font-size: 20px; }
+      .page-title { font-size: 18px; }
+      .page-sub { font-size: 12px; }
+      .card-header { padding: 10px 14px; font-size: 13px; flex-direction: column; gap: 8px; align-items: flex-start; }
+      td { padding: 8px 10px; font-size: 12px; }
+      th { padding: 6px 10px; font-size: 9px; }
+      .modal { width: 95vw; padding: 20px; max-height: 90vh; }
+      .modal h3 { font-size: 16px; }
+      .size-checks { gap: 6px; }
+      .confirm-box { width: 90vw; }
+      .settings-card { padding: 16px; }
+    }
+/* ===== AJOUTS VUE D'ENSEMBLE (greffe v2 sur v1) ===== */
+    .ov-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+    .seg { display: inline-flex; background: var(--white); border: 1px solid var(--gray-200); border-radius: 9px; padding: 2px; }
+    .seg button { border: none; background: transparent; font-family: var(--font-body); font-size: 12px; color: var(--gray-500); padding: 6px 12px; border-radius: 7px; cursor: pointer; }
+    .seg button:hover { color: var(--black); }
+    .seg button.on { background: var(--black); color: var(--white); }
+    .stat-foot { margin-top: 7px; font-size: 11.5px; color: var(--gray-500); }
+    .delta { font-weight: 500; }
+    .delta.up { color: var(--green); } .delta.down { color: var(--red); } .delta.flat { color: var(--gray-400); }
+    .late { color: var(--red); font-weight: 500; }
+    .ov-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; margin-bottom: 16px; }
+    @media (max-width: 900px) { .ov-grid { grid-template-columns: 1fr; } }
+    .card-sub { font-size: 11.5px; color: var(--gray-500); font-weight: 400; margin-top: 2px; }
+    .card-body { padding: 16px 18px; }
+    .chart { position: relative; }
+    .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+    .ax { font-size: 10px; fill: var(--gray-500); font-family: var(--font-body); }
+    .axv { font-size: 10px; fill: var(--gray-400); font-family: var(--font-body); }
+    .gl { stroke: var(--gray-200); stroke-width: 1; }
+    .tip { position: absolute; pointer-events: none; background: var(--black); color: var(--white); border-radius: 8px; padding: 8px 11px; font-size: 11.5px; line-height: 1.5; white-space: nowrap; opacity: 0; transition: opacity .1s; z-index: 20; box-shadow: 0 6px 20px rgba(0,0,0,.18); }
+    .tip b { font-family: var(--font-display); font-weight: 600; }
+    .tip .s { color: var(--gray-400); font-size: 10.5px; }
+    .stock-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--gray-100); font-size: 13px; }
+    .stock-row:first-child { border-top: none; }
+    .stock-row .lab { flex: 1; min-width: 0; }
+    .stock-row .lab .p { font-weight: 500; }
+    .stock-row .lab .v { color: var(--gray-500); font-size: 11.5px; }
+    .stock-bar { width: 96px; height: 6px; border-radius: 4px; background: var(--gray-100); overflow: hidden; flex: 0 0 96px; }
+    .stock-bar i { display: block; height: 100%; border-radius: 4px; }
+    .stock-n { width: 86px; text-align: right; font-weight: 500; }
+    .vide-mini { color: var(--gray-400); font-size: 12.5px; padding: 16px 0; text-align: center; }
+    /* ===== fin des ajouts ===== */
+/* ===== AJOUT : marque bloquée ===== */
+    .bloq-bg { display: none; position: fixed; inset: 0; background: rgba(10,10,10,.62); backdrop-filter: blur(3px);
+      z-index: 300; align-items: center; justify-content: center; padding: 24px; }
+    .bloq-bg.show { display: flex; }
+    .bloq-box { background: var(--white); border-radius: 16px; padding: 34px; max-width: 460px; text-align: center; }
+    .bloq-box .ico { width: 54px; height: 54px; border-radius: 50%; background: var(--red-bg); color: var(--red);
+      display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 16px; }
+    .bloq-box h2 { font-family: var(--font-display); font-size: 20px; font-weight: 600; margin-bottom: 10px; }
+    .bloq-box p { font-size: 13.5px; color: var(--gray-600); line-height: 1.65; margin-bottom: 10px; }
+    .bloq-box .mail { display: inline-block; margin-top: 8px; font-size: 13px; color: var(--black); font-weight: 500; }
+    .bloq-box .btns { margin-top: 22px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .bloq-box .btns button { padding: 10px 20px; border-radius: 8px; font-size: 13px; cursor: pointer;
+      font-family: var(--font-body); border: none; }
+    .bandeau-bloq { display: none; background: var(--red-bg); border: 1px solid #FECACA; color: #7F1D1D;
+      border-radius: 12px; padding: 12px 16px; font-size: 13px; line-height: 1.5; margin-bottom: 18px; }
+    .bandeau-bloq b { font-family: var(--font-display); }
+    .bandeau-bloq a { color: inherit; font-weight: 500; }
+    .bandeau-bloq.show { display: block; }
+    .verrou { opacity: .45 !important; cursor: not-allowed !important; }
+    /* ===== fin ===== */
+
+    /* ===== mise en page vue d'ensemble ===== */
+    .ov-cmd { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin-bottom: 16px; }
+    /* la carte de gauche suit la hauteur de la colonne de droite : sinon un grand
+       vide flotte sous elle quand il y a peu de commandes */
+    .ov-col:not(.ov-pile) > .card { height: 100%; }
+    @media (max-width: 1000px) { .ov-cmd { grid-template-columns: 1fr; } }
+    .ov-col { min-width: 0; }
+    .ov-pile { display: flex; flex-direction: column; gap: 16px; }
+    .ov-cmd .table-wrap { overflow-x: visible; }
+    .ov-cmd table { table-layout: fixed; width: 100%; }
+    .ov-cmd th { padding: 8px 12px; }
+    .ov-cmd td { padding: 8px 12px; font-size: 12.5px; vertical-align: top; }
+    .ov-cmd .nickname { font-size: 10.5px; padding: 1px 6px; }
+    .col-cmd { width: 22%; } .col-produit { width: 36%; } .col-client { width: 22%; } .col-statut { width: 20%; }
+    /* Sur téléphone, le tableau doit encore tenir : on resserre au lieu de faire défiler. */
+    @media (max-width: 560px) {
+      .ov-cmd th { padding: 7px 6px; font-size: 9px; letter-spacing: 0; }
+      .ov-cmd td { padding: 9px 6px; font-size: 11px; }
+      .ov-cmd .badge { font-size: 9.5px; padding: 2px 6px; }
+      .ov-cmd .nickname { font-size: 9.5px; padding: 1px 4px; }
+      .ov-cmd .cmd-date { font-size: 9.5px; }
+      .ov-cmd .pastille-retard { font-size: 9px; padding: 1px 5px; margin-left: 0; }
+      .col-cmd { width: 21%; } .col-produit { width: 33%; } .col-client { width: 22%; } .col-statut { width: 24%; }
+    }
+    /* Rien ne doit jamais forcer un défilement horizontal : un nom de produit
+       ou un e-mail sans espace se coupe plutôt que de pousser le tableau. */
+    .ov-cmd table { min-width: 0; }
+    .ov-cmd th, .ov-cmd td { overflow-wrap: break-word; }
+    /* Entre 1000 et 1180 px la mise en page passe à deux colonnes : le tableau
+       n'a plus que ~380 px et doit se resserrer comme sur téléphone. */
+    @media (min-width: 1001px) and (max-width: 1180px) {
+      .ov-cmd th { padding: 7px 6px; font-size: 9px; letter-spacing: 0; }
+      .ov-cmd td { padding: 9px 6px; font-size: 11px; }
+      .ov-cmd .badge { font-size: 9.5px; padding: 2px 6px; }
+      .ov-cmd .nickname { font-size: 9.5px; padding: 1px 4px; }
+      .ov-cmd .cmd-date { font-size: 9.5px; }
+      .ov-cmd .pastille-retard { font-size: 9px; padding: 1px 5px; margin-left: 0; }
+      /* Un peu plus de place au client : « Vandenberghe » doit tenir en un mot. */
+      .col-cmd { width: 19%; } .col-produit { width: 30%; } .col-client { width: 27%; } .col-statut { width: 24%; }
+    }
+    .cmd-client { line-height: 1.5; }
+    .cmd-qte { font-weight: 600; }
+    .ov-2-1 { display: grid; grid-template-columns: 1.9fr 1fr; gap: 16px; align-items: start; margin-bottom: 16px; }
+    @media (max-width: 1000px) { .ov-2-1 { grid-template-columns: 1fr; } }
+    .ov-grid > .card { margin-bottom: 0; }
+    #ovStock { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
+    @media (max-width: 800px) { #ovStock { grid-template-columns: 1fr; } }
+    .card-head-2 { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+    .lien-doux { font-size: 11.5px; color: var(--gray-500); cursor: pointer; white-space: nowrap; }
+    .lien-doux:hover { color: var(--black); }
+    tr.retard td { background: #FFFBF5; }
+    tr.cmd-reste td { background: var(--gray-50); color: var(--gray-500); font-size: 12px; text-align: center; }
+    tr.cmd-reste .lien-doux { display: inline; }
+    .pastille-retard { display: inline-block; margin-left: 6px; font-size: 10px; font-weight: 600;
+      color: #B91C1C; background: var(--red-bg); border-radius: 50px; padding: 2px 8px; vertical-align: middle; }
+    .cmd-date { font-size: 11px; font-weight: 400; color: var(--gray-400); margin-top: 2px; white-space: nowrap; }
+    .stock-row { align-items: center; gap: 14px; padding: 11px 0; }
+    .stock-row:nth-child(2) { border-top: none; }
+    .stock-bar { width: 84px; flex: 0 0 84px; }
+    .stock-n { width: 92px; text-align: right; white-space: nowrap; font-size: 12.5px; }
+    .stock-n .u { font-weight: 400; color: var(--gray-500); }
+    .stock-plus { grid-column: 1 / -1; padding-top: 12px; font-size: 12px; color: var(--gray-400);
+      border-top: 1px solid var(--gray-100); }
+    /* ===== fin ===== */
+
+    /* ===== animations et squelettes ===== */
+    @keyframes sq-glisse { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
+    .sq { background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-50) 50%, var(--gray-100) 75%);
+      background-size: 200% 100%; animation: sq-glisse 1.3s ease-in-out infinite; border-radius: 8px; }
+    .sq-chart { height: 210px; }
+    .sq-ligne { height: 14px; margin: 14px 0; }
+    .sq-ligne.courte { width: 55%; } .sq-ligne.moyenne { width: 78%; }
+    .anim-bar { transform-box: fill-box; transform-origin: left center; transform: scaleX(0);
+      transition: transform .55s cubic-bezier(.22,.9,.3,1); }
+    .anim-col { transform-box: fill-box; transform-origin: bottom center; transform: scaleY(0);
+      transition: transform .5s cubic-bezier(.22,.9,.3,1); }
+    .anim-on { transform: none !important; }
+    .ov-aire { opacity: 0; transition: opacity .45s ease-out .25s; }
+    .ov-aire.anim-on { opacity: .07; }
+
+    /* ===== stock par couleur, dans Mes produits ===== */
+    /* Une couleur par ligne : côte à côte, on ne savait plus quelle taille
+       appartenait à quelle couleur. flex: 0 0 100% force le retour à la ligne
+       sans toucher au cas des produits sans couleur. */
+    .stock-sizes > div { flex: 0 0 100%; position: relative; padding: 4px 0 4px 10px; margin-bottom: 5px;
+      border-left: 2px solid var(--gray-200); }
+    .stock-sizes > div:last-child { margin-bottom: 0; }
+    .stock-sizes > div > span:first-child { text-transform: uppercase; letter-spacing: .5px;
+      color: var(--gray-600); font-size: 10px !important; }
+    .stock-sizes > div:hover { border-left-color: var(--black); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .sq { animation: none; }
+      .anim-bar, .anim-col { transition: none; transform: none; }
+      .ov-aire { transition: none; opacity: .07; }
+    }
+    /* ===== fin ===== */
+
+    /* ===== apparition en cascade ===== */
+    .carte-anim { opacity: 0; transform: translateY(10px);
+      transition: opacity .45s ease-out, transform .45s cubic-bezier(.22,.9,.3,1); }
+    .carte-anim.anim-on { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) { .carte-anim { opacity: 1; transform: none; transition: none; } }
+    /* ===== fin ===== */
+
+    /* Les deux cartes du haut sont resserrées : le but est qu'un créateur
+       voie ses commandes et ses deux graphiques sans avoir à faire défiler. */
+    .ov-pile .card-header { padding: 11px 18px; }
+    .ov-pile .card-body { padding: 10px 18px 12px; }
+    .ov-pile { gap: 14px; }
+
+    /* ===== plein écran d'un graphique ===== */
+    .btn-zoom { background: transparent; border: 1px solid var(--gray-200); border-radius: 7px;
+      width: 28px; height: 26px; cursor: pointer; color: var(--gray-500); font-size: 13px; line-height: 1;
+      font-family: var(--font-body); padding: 0; flex: none; }
+    .btn-zoom:hover { border-color: var(--black); color: var(--black); }
+    .chart.cliquable { cursor: zoom-in; }
+    .zoom-bg { display: none; position: fixed; inset: 0; z-index: 400; background: var(--white);
+      flex-direction: column; padding: 18px 24px 28px; }
+    .zoom-bg.show { display: flex; }
+    .zoom-tete { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; flex: none; }
+    .zoom-retour { display: inline-flex; align-items: center; gap: 8px; background: transparent;
+      border: 1px solid var(--gray-200); border-radius: 8px; padding: 8px 14px; cursor: pointer;
+      font-family: var(--font-body); font-size: 13px; color: var(--gray-600); }
+    .zoom-retour:hover { border-color: var(--black); color: var(--black); }
+    .zoom-titre { font-family: var(--font-display); font-size: 18px; font-weight: 600; }
+    .zoom-sous { font-size: 12px; color: var(--gray-500); margin-left: auto; }
+    .zoom-zone { flex: 1; display: flex; align-items: center; justify-content: center;
+      min-height: 0; padding-top: 10px; }
+    .zoom-zone > .chart { width: 100%; max-width: 1300px; cursor: default; }
+    .zoom-zone > .chart .ax { font-size: 14px; }
+    @media (max-width: 620px) { .zoom-bg { padding: 12px 12px 20px; } .zoom-sous { display: none; } }
+    /* ===== fin ===== */
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginScreen">
+  <div class="login-box" id="loginBox">
+    <h1>UNEEK</h1>
+    <p>Espace créateur</p>
+    <label>Email</label>
+    <input type="email" id="loginEmail" placeholder="julien@brouillon.com" />
+    <label>Mot de passe</label>
+    <input type="password" id="loginPassword" placeholder="••••••••" />
+    <button class="login-btn" onclick="doLogin()">Se connecter</button>
+    <div class="login-error" id="loginError">Email ou mot de passe incorrect</div>
+    <div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-200)">
+      <span style="font-size:13px;color:var(--gray-500)">Pas encore de compte ?</span><br>
+      <a href="#" onclick="showRegister();return false" style="font-size:13px;color:var(--black);font-weight:600;text-decoration:underline">Créer un compte avec mon code</a>
+    </div>
+  </div>
+  <!-- INSCRIPTION PAR CODE D'INVITATION -->
+  <div class="login-box" id="registerBox" style="display:none">
+    <h1>UNEEK</h1>
+    <p>Créer ton compte créateur</p>
+    <label>Code d'invitation</label>
+    <input type="text" id="regCode" placeholder="UNEEK-XXXX" style="text-transform:uppercase;font-family:monospace;font-weight:600;letter-spacing:2px" />
+    <label>Email</label>
+    <input type="email" id="regEmail" placeholder="ton@email.com" />
+    <label>Mot de passe</label>
+    <input type="password" id="regPassword" placeholder="Choisis un mot de passe" />
+    <label>Confirme le mot de passe</label>
+    <input type="password" id="regPassword2" placeholder="Répète ton mot de passe" />
+    <button class="login-btn" onclick="doRegister()">Créer mon compte</button>
+    <div class="login-error" id="registerError"></div>
+    <div class="login-error" id="registerSuccess" style="color:var(--green)"></div>
+    <div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-200)">
+      <a href="#" onclick="showLogin();return false" style="font-size:13px;color:var(--gray-500);text-decoration:underline">← Retour à la connexion</a>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">UNEEK</div>
+    <div class="sidebar-brand" id="sidebarBrand">—</div>
+    <div class="sidebar-tag">Créateur</div>
+    <a class="active" onclick="showSection('overview', this)">Vue d'ensemble</a>
+    <a onclick="showSection('orders', this)">Commandes <span class="badge-count" id="ordersCount" style="display:none">0</span></a>
+    <a onclick="showSection('products', this)">Mes produits</a>
+    <a onclick="showSection('mapage', this)">Ma page</a>
+    <a onclick="showSection('edits', this)">Mes demandes</a>
+    <a onclick="showSection('settings', this)">Paramètres</a>
+  </div>
+
+  <div class="main">
+    <!-- AJOUT : bandeau permanent quand la marque est en pause -->
+    <div class="bandeau-bloq" id="bandeauBloque">
+      <b>Ta boutique est en pause.</b> Tes produits ne sont plus visibles sur uneek.store et tu ne peux plus
+      en ajouter ni en modifier. Tes commandes déjà passées restent à expédier.
+      <a href="mailto:contact@uneek.store">Écrire à UNEEK</a>
+    </div>
+
+    <!-- VUE D'ENSEMBLE -->
+    <div id="sec-overview" class="section active">
+      <div class="ov-head">
+        <div>
+          <div class="page-title" id="welcomeTitle">Bonjour</div>
+          <div class="page-sub" id="welcomeSub" style="margin-bottom:0">Tableau de bord</div>
+        </div>
+        <div class="seg" id="ovPeriode">
+          <button type="button" data-j="7">7 jours</button>
+          <button type="button" data-j="30" class="on">30 jours</button>
+          <button type="button" data-j="90">3 mois</button>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat-card"><div class="stat-label" id="lbl-sales">Ventes ce mois</div><div class="stat-value" id="stat-sales">0</div><div class="stat-foot" id="foot-sales"></div></div>
+        <div class="stat-card"><div class="stat-label" id="lbl-ca">Chiffre d'affaires</div><div class="stat-value" id="stat-ca">&euro;0</div><div class="stat-foot" id="foot-ca"></div></div>
+        <div class="stat-card"><div class="stat-label" id="lbl-revenue">Ton revenu</div><div class="stat-value" id="stat-revenue">&euro;0</div></div>
+        <div class="stat-card"><div class="stat-label">&Agrave; exp&eacute;dier</div><div class="stat-value" id="stat-toship">0</div><div class="stat-foot" id="foot-toship"></div></div>
+      </div>
+
+      <!-- AJOUT : commandes (gauche) + les deux graphiques empil&eacute;s (droite) -->
+      <div class="ov-cmd">
+        <div class="ov-col">
+          <div class="card" style="margin-bottom:0">
+            <div class="card-header card-head-2">
+              <div>Commandes r&eacute;centes
+                <div class="card-sub" id="cmdSub">&agrave; exp&eacute;dier + les 3 derni&egrave;res envoy&eacute;es</div>
+              </div>
+              <span class="lien-doux" id="lienToutesCommandes">Voir toutes les commandes &rarr;</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead id="ovCmdHead"><tr><th>Commande</th><th>Produit(s)</th><th>Qt&eacute;</th><th>Client</th><th>Surnom emballage</th><th>Statut</th></tr></thead>
+                <tbody id="overview-orders"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="ov-col ov-pile">
+          <div class="card" style="margin-bottom:0">
+            <div class="card-header card-head-2">
+              <div>Tes produits qui rapportent le plus
+                <div class="card-sub">revenu net sur la p&eacute;riode</div>
+              </div>
+              <button type="button" class="btn-zoom" data-zoom="ovBarres" title="Agrandir">&#9974;</button>
+            </div>
+            <div class="card-body"><div class="chart" id="ovBarres"><div class="tip" id="tipBarres"></div></div></div>
+          </div>
+
+          <div class="card" style="margin-bottom:0">
+            <div class="card-header card-head-2">
+              <div>Ton revenu net, jour par jour
+                <div class="card-sub" id="courbeSub">30 derniers jours</div>
+              </div>
+              <button type="button" class="btn-zoom" data-zoom="ovCourbe" title="Agrandir">&#9974;</button>
+            </div>
+            <div class="card-body">
+              <div class="chart" id="ovCourbe"><div class="tip" id="tipCourbe"></div></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- AJOUT : ce qui part le plus, plus bas -->
+        <div class="card">
+          <div class="card-header card-head-2">
+            <div>Ce qui part le plus
+              <div class="card-sub">pi&egrave;ces vendues sur la p&eacute;riode</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="seg" id="ovMix">
+                <button type="button" data-m="taille" class="on">Tailles</button>
+                <button type="button" data-m="couleur">Couleurs</button>
+              </div>
+              <button type="button" class="btn-zoom" data-zoom="ovColonnes" title="Agrandir">&#9974;</button>
+            </div>
+          </div>
+          <div class="card-body"><div class="chart" id="ovColonnes"><div class="tip" id="tipColonnes"></div></div></div>
+        </div>
+
+      <!-- AJOUT : stock qui s'&eacute;puise, pleine largeur -->
+      <div class="card">
+        <div class="card-header card-head-2">
+          <div>Stock qui s'&eacute;puise
+            <div class="card-sub">seuil d'alerte : 3 pi&egrave;ces</div>
+          </div>
+          <span class="lien-doux" id="lienProduits">Voir mes produits &rarr;</span>
+        </div>
+        <div class="card-body" id="ovStock"></div>
+      </div>
+    </div>
+
+    <!-- MES PRODUITS -->
+    <div id="sec-products" class="section">
+      <div class="page-title">Mes produits</div>
+      <div class="page-sub">Le stock se met à jour automatiquement à chaque vente</div>
+      <div class="card">
+        <div class="card-header">
+          <span id="productCount">0 produits</span>
+          <button class="btn-add" onclick="openAddModal()">+ Ajouter un produit</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Produit</th><th>Prix</th><th>Catégorie</th><th>Stock restant</th><th>Statut</th><th></th></tr></thead>
+            <tbody id="products-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MES DEMANDES -->
+    <div id="sec-edits" class="section">
+      <div class="page-title">Mes demandes</div>
+      <div class="page-sub">Suivi de tes soumissions — nouveau produit ou modification</div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Produit</th><th style="min-width:280px">Détail de la demande</th><th>Date</th><th>Statut</th><th>Note UNEEK</th></tr></thead>
+            <tbody id="edits-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMMANDES -->
+    <div id="sec-orders" class="section">
+      <div class="page-title">Commandes à traiter</div>
+      <div class="page-sub">Les commandes multi-produits sont groupées — les retours sont signalés en rouge</div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Commande</th><th>Produit</th><th>Qté</th><th>Taille / Couleur</th><th>Client</th><th>Surnom emballage</th><th>Adresse</th><th>Statut</th><th></th></tr></thead>
+            <tbody id="orders-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MA PAGE -->
+    <div id="sec-mapage" class="section">
+      <div class="page-title">Ma page</div>
+      <div class="page-sub">Ta banni&egrave;re et ton texte de pr&eacute;sentation, visibles par tout le monde</div>
+
+      <div class="card" style="padding:22px;max-width:860px">
+        <div class="card-header" style="margin-bottom:18px">Banni&egrave;re</div>
+        <div id="mp-apercu-banniere"
+             style="height:200px;border-radius:10px;background:#0A0A0A;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-bottom:14px">
+          <div style="color:#666;font-size:13px" id="mp-banniere-vide">Aucune banni&egrave;re</div>
+        </div>
+        <input type="file" id="mp-fichier" accept="image/*" style="display:none" onchange="choisirBanniere(this)">
+        <button class="btn-save" onclick="document.getElementById('mp-fichier').click()">Choisir une image</button>
+        <button class="btn-cancel" onclick="retirerBanniere()" id="mp-retirer" style="display:none;margin-left:8px">Retirer</button>
+        <div id="mp-bloc-cadrage" style="display:none;margin-top:18px">
+          <div style="font-size:13px;font-weight:500;margin-bottom:4px">Cadrage</div>
+          <div style="font-size:12px;color:var(--gray-400);margin-bottom:10px;line-height:1.6">
+            Ta photo est recadr&eacute;e en bandeau large : une partie est forc&eacute;ment
+            coup&eacute;e. Choisis la zone qui reste visible.
+          </div>
+          <input type="range" id="mp-cadrage" min="0" max="100" step="1" value="50"
+                 oninput="apercuMaPage()" style="width:100%;max-width:420px;display:block">
+          <div style="display:flex;justify-content:space-between;max-width:420px;font-size:11px;color:var(--gray-400);margin-top:2px">
+            <span>Haut de la photo</span><span>Centre</span><span>Bas de la photo</span>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--gray-400);margin-top:16px;line-height:1.6">
+          Une image large fonctionne mieux qu'une image haute. Elle est
+          automatiquement redimensionn&eacute;e avant l'envoi : tu peux choisir
+          une photo prise au t&eacute;l&eacute;phone sans t'inqui&eacute;ter du poids.
+        </div>
+      </div>
+
+      <div class="card" style="padding:22px;max-width:860px;margin-top:18px">
+        <div class="card-header" style="margin-bottom:14px">Aper&ccedil;u de ta page</div>
+        <div style="border:1px solid var(--gray-200);border-radius:10px;overflow:hidden">
+          <div id="mp-apercu-hero"
+               style="height:220px;background:#0A0A0A;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center">
+            <div style="position:relative;z-index:2;text-align:center;color:#FAFAFA;padding:0 20px">
+              <div id="mp-apercu-nom" style="font-size:34px;font-weight:800;letter-spacing:-1px">&mdash;</div>
+              <div id="mp-apercu-info" style="font-size:11px;opacity:0.45;letter-spacing:1px;text-transform:uppercase;margin-top:10px"></div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:18px;display:flex;align-items:center;gap:14px">
+          <button class="btn-save" onclick="enregistrerMaPage()" id="mp-enregistrer">Publier les modifications</button>
+          <div id="mp-msg" style="font-size:13px;display:none"></div>
+        </div>
+        <div style="font-size:12px;color:var(--gray-400);margin-top:14px;line-height:1.6">
+          Tes modifications sont en ligne imm&eacute;diatement, sans validation.
+          L'&eacute;quipe UNEEK est simplement pr&eacute;venue par e-mail &agrave; chaque changement.
+        </div>
+      </div>
+    </div>
+
+    <!-- PARAMÈTRES -->
+    <div id="sec-settings" class="section">
+      <div class="page-title">Paramètres</div>
+      <div class="page-sub">Gère ton compte créateur</div>
+
+      <div class="settings-card">
+        <div class="settings-title">Changer l'adresse email</div>
+        <label>Nouvel email</label>
+        <input type="email" id="set-email" placeholder="nouvel@email.com" />
+        <label>Mot de passe actuel (confirmation)</label>
+        <input type="password" id="set-email-pw" placeholder="••••••••" />
+        <button class="btn-save" onclick="changeEmail()">Mettre à jour l'email</button>
+        <div id="email-msg" style="font-size:12px;margin-top:8px;display:none"></div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-title">Changer le mot de passe</div>
+        <label>Mot de passe actuel</label>
+        <input type="password" id="set-old-pw" placeholder="••••••••" />
+        <label>Nouveau mot de passe</label>
+        <input type="password" id="set-new-pw" placeholder="••••••••" />
+        <label>Confirmer le nouveau mot de passe</label>
+        <input type="password" id="set-confirm-pw" placeholder="••••••••" />
+        <button class="btn-save" onclick="changePassword()">Mettre à jour le mot de passe</button>
+        <div id="pw-msg" style="font-size:12px;margin-top:8px;display:none"></div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-title">Déconnexion</div>
+        <p style="font-size:13px;color:var(--gray-500);margin-bottom:12px">Tu seras redirigé vers la page de connexion.</p>
+        <button class="btn-save" style="background:var(--red)" onclick="doLogout()">Se déconnecter</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- CONFIRM DELETE DIALOG -->
+<div class="confirm-bg" id="confirmDeleteBg">
+  <div class="confirm-box">
+    <h3>Supprimer ce produit ?</h3>
+    <p id="confirmDeleteMsg">Cette action est irréversible. Le produit sera définitivement supprimé.</p>
+    <div class="confirm-btns">
+      <button class="btn-cancel" onclick="closeConfirmDelete()">Annuler</button>
+      <button class="btn-submit" style="background:var(--red)" id="confirmDeleteBtn">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<div class="stale-banner" id="staleBanner">
+  Cette page n'est plus à jour — une nouvelle version du panneau est en ligne.
+  <button onclick="location.reload(true)">Recharger maintenant</button>
+</div>
+
+<!-- DIALOGUE GENERIQUE -->
+<div class="confirm-bg" id="askBg">
+  <div class="confirm-box">
+    <h3 id="askTitle">Confirmer ?</h3>
+    <p id="askMsg"></p>
+    <div class="confirm-btns">
+      <button class="btn-cancel" onclick="closeAsk()">Annuler</button>
+      <button class="btn-submit" id="askOk">Continuer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="productModal">
+  <div class="modal">
+    <h3 id="modalTitle">Ajouter un produit</h3>
+
+    <label>Nom du produit</label>
+    <input id="f-name" placeholder="ex: Hoodie Oversized" />
+
+    <label>Prix (€)</label>
+    <input id="f-price" type="number" placeholder="65" />
+
+    <label>Catégorie</label>
+    <select id="f-cat">
+      <option>Tops</option>
+      <option>Bottoms</option>
+      <option>Outerwear</option>
+      <option>Accessories</option>
+    </select>
+
+    <label>Description</label>
+    <textarea id="f-desc" placeholder="Décris ton produit..."></textarea>
+
+    <div style="border-top:1px solid var(--gray-200);margin:20px 0 6px;padding-top:16px">
+      <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gray-400)">Détails du produit</div>
+      <div style="font-size:12px;color:var(--gray-400);margin-top:5px;line-height:1.5">Les trois premiers sont obligatoires. Ils s'affichent sur ta fiche produit, au même endroit que pour toutes les autres marques.</div>
+    </div>
+
+    <label>Composition *</label>
+    <input id="f-composition" placeholder="100 % coton" maxlength="200" />
+
+    <label>Coupe *</label>
+    <select id="f-coupe" style="width:100%;padding:11px 13px;border:1px solid var(--gray-200);border-radius:6px;font-size:14px;outline:none;background:#fff">
+      <option value="">— Choisir —</option>
+      <option>Ample</option>
+      <option>Classique</option>
+      <option>Ajustée</option>
+    </select>
+
+    <label>Entretien *</label>
+    <div id="f-entretien" style="display:flex;flex-wrap:wrap;gap:10px 18px;margin-bottom:6px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0"><input type="checkbox" value="Lavage à 30°" style="width:auto;margin:0"> Lavage à 30°</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0"><input type="checkbox" value="Lavage à 40°" style="width:auto;margin:0"> Lavage à 40°</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0"><input type="checkbox" value="Lavage à la main" style="width:auto;margin:0"> Lavage à la main</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0"><input type="checkbox" value="Pas de sèche-linge" style="width:auto;margin:0"> Pas de sèche-linge</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0"><input type="checkbox" value="Pas de repassage" style="width:auto;margin:0"> Pas de repassage</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0"><input type="checkbox" value="Nettoyage à sec" style="width:auto;margin:0"> Nettoyage à sec</label>
+    </div>
+
+    <label>Mannequin</label>
+    <input id="f-mannequin" placeholder="1m75, porte du M" maxlength="200" />
+
+    <label>Fabriqué à</label>
+    <input id="f-fabrique" placeholder="Portugal" maxlength="200" />
+
+    <label>Commission UNEEK (%)</label>
+    <input id="f-commission" type="number" placeholder="12" min="0" max="100" />
+    <p class="modal-note" style="margin-top:2px">Pourcentage prélevé par UNEEK sur chaque vente.</p>
+
+    <label>Variantes (couleurs, etc.)</label>
+    <input id="f-variants" placeholder="ex: Noir, Blanc, Rouge (séparés par des virgules)" oninput="updateSizeGrid()" />
+    <p class="modal-note" style="margin-top:2px">Laisse vide si le produit n'a pas de variante.</p>
+
+    <!-- IMAGE -->
+    <div class="img-section" id="imgSection">
+      <label>Photos du produit</label>
+      <input type="file" id="f-file" accept="image/*" multiple onchange="onFilesChosen(this)" style="padding:6px" />
+      <div class="img-count" id="imgCount">0 / 5</div>
+      <div class="img-thumbs" id="imgPreviews"></div>
+      <p class="modal-note" style="margin-top:8px">La première photo est celle affichée sur la boutique. Clique sur ✕ pour en retirer une.</p>
+      <p class="modal-note" style="margin-top:8px">ou ajoute une photo par lien :</p>
+      <div style="display:flex;gap:6px">
+        <input id="f-img" placeholder="https://..." style="flex:1" />
+        <button type="button" class="btn-add" onclick="addImageUrl()" style="flex-shrink:0">Ajouter</button>
+      </div>
+    </div>
+
+    <!-- STOCK: only for new products -->
+    <div id="stockSection">
+      <label>Tailles disponibles</label>
+      <div class="size-checks" id="sizeChecks">
+        <label class="size-cb"><input type="checkbox" value="XS" onchange="updateSizeGrid()"> XS</label>
+        <label class="size-cb"><input type="checkbox" value="S" checked onchange="updateSizeGrid()"> S</label>
+        <label class="size-cb"><input type="checkbox" value="M" checked onchange="updateSizeGrid()"> M</label>
+        <label class="size-cb"><input type="checkbox" value="L" checked onchange="updateSizeGrid()"> L</label>
+        <label class="size-cb"><input type="checkbox" value="XL" checked onchange="updateSizeGrid()"> XL</label>
+        <label class="size-cb"><input type="checkbox" value="XXL" onchange="updateSizeGrid()"> XXL</label>
+      </div>
+      <label id="stockLabel">Stock initial par taille</label>
+      <div class="size-grid" id="sizeGrid"></div>
+      <p class="modal-note" style="margin-top:6px">Minimum 3 pièces par taille proposée — c'est dans les règles UNEEK. Laisse 0 pour une taille que tu ne proposes pas.</p>
+      <p id="stockError" style="display:none;color:var(--red);font-size:12px;margin-top:6px;font-weight:500"></p>
+    </div>
+
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-submit" onclick="submitProduct()">Soumettre</button>
+    </div>
+    <p class="modal-note" id="modalNote">Soumis pour validation par UNEEK avant publication.</p>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  const API_BASE = '/api';
+  let authToken = null;
+  let currentBrand = null;
+  let creatorName = '';
+  let isEditMode = false;
+  let editProductId = null;
+  let loadedProducts = [];
+  let originalProduct = null;
+
+  // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
+  // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
+  // On compare la version du fichier en ligne a celle chargee ici.
+  const APP_VERSION = '2026-09-02-sans-texte-19';
+
+  async function checkAppVersion() {
+    try {
+      const r = await fetch(location.pathname + '?_v=' + Date.now(), { cache: 'no-store' });
+      const t = await r.text();
+      const m = t.match(/APP_VERSION = '([^']+)'/);
+      if (m && m[1] !== APP_VERSION) {
+        document.getElementById('staleBanner').style.display = 'block';
+        return false;
+      }
+    } catch (e) { /* hors ligne : on ne bloque rien */ }
+    return true;
+  }
+
+  // Echappe le HTML : un nom de produit contenant " < > & ' cassait la ligne du tableau
+  function esc(v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // --- INSCRIPTION PAR CODE D'INVITATION ---
+  function showRegister() {
+    document.getElementById('loginBox').style.display = 'none';
+    document.getElementById('registerBox').style.display = 'block';
+  }
+  function showLogin() {
+    document.getElementById('registerBox').style.display = 'none';
+    document.getElementById('loginBox').style.display = 'block';
+  }
+
+  async function doRegister() {
+    const code = document.getElementById('regCode').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const password2 = document.getElementById('regPassword2').value;
+    const errorEl = document.getElementById('registerError');
+    const successEl = document.getElementById('registerSuccess');
+    errorEl.style.display = 'none';
+    successEl.style.display = 'none';
+
+    if (!code || !email || !password) {
+      errorEl.textContent = 'Tous les champs sont requis';
+      errorEl.style.display = 'block';
+      return;
+    }
+    if (password.length < 6) {
+      errorEl.textContent = 'Le mot de passe doit faire au moins 6 caractères';
+      errorEl.style.display = 'block';
+      return;
+    }
+    if (password !== password2) {
+      errorEl.textContent = 'Les mots de passe ne correspondent pas';
+      errorEl.style.display = 'block';
+      return;
+    }
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRe.test(email)) {
+      errorEl.textContent = 'Adresse email invalide';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    try {
+      const res = await fetch(API_BASE + '/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'register_creator', email, password, invite_code: code.toUpperCase() })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        errorEl.textContent = data.error || 'Erreur lors de la création du compte';
+        errorEl.style.display = 'block';
+        return;
+      }
+      successEl.textContent = 'Compte créé ! Tu peux maintenant te connecter.';
+      successEl.style.display = 'block';
+      document.getElementById('loginEmail').value = email;
+      setTimeout(() => showLogin(), 2000);
+    } catch (err) {
+      errorEl.textContent = 'Erreur de connexion au serveur';
+      errorEl.style.display = 'block';
+    }
+  }
+
+  // --- Details du produit ---------------------------------------------
+  // Meme vocabulaire que le serveur : coupe et entretien sont des listes
+  // fermees, pour que toutes les fiches se ressemblent.
+
+  function lireDetails() {
+    const coches = [];
+    document.querySelectorAll('#f-entretien input[type=checkbox]').forEach(function (c) {
+      if (c.checked) coches.push(c.value);
+    });
+    const val = function (id) { return (document.getElementById(id).value || '').trim(); };
+    const d = {};
+    if (val('f-composition')) d.composition = val('f-composition');
+    if (val('f-coupe')) d.coupe = val('f-coupe');
+    if (coches.length) d.entretien = coches;
+    if (val('f-mannequin')) d.mannequin = val('f-mannequin');
+    if (val('f-fabrique')) d.fabrique = val('f-fabrique');
+    return d;
+  }
+
+  function remplirDetails(d) {
+    d = (d && typeof d === 'object') ? d : {};
+    document.getElementById('f-composition').value = d.composition || '';
+    document.getElementById('f-coupe').value = d.coupe || '';
+    document.getElementById('f-mannequin').value = d.mannequin || '';
+    document.getElementById('f-fabrique').value = d.fabrique || '';
+    const liste = Array.isArray(d.entretien) ? d.entretien : [];
+    document.querySelectorAll('#f-entretien input[type=checkbox]').forEach(function (c) {
+      c.checked = liste.indexOf(c.value) !== -1;
+    });
+  }
+
+  function detailsIncomplets(d) {
+    const manque = [];
+    if (!d.composition) manque.push('la composition');
+    if (!d.coupe) manque.push('la coupe');
+    if (!d.entretien || !d.entretien.length) manque.push('au moins une consigne d\'entretien');
+    return manque;
+  }
+
+  // --- LOGIN ---
+  async function doLogin() {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    const errorEl = document.getElementById('loginError');
+    errorEl.style.display = 'none';
+
+    try {
+      const res = await fetch(API_BASE + '/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'login', email, password })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.user) {
+        errorEl.textContent = data.error || 'Erreur de connexion';
+        errorEl.style.display = 'block';
+        return;
+      }
+      // L'API renvoie la marque DANS user : { user: { name, is_admin, brand } }
+      currentBrand = data.user.brand || data.brand || null;
+      if (!currentBrand) {
+        errorEl.textContent = "Ce compte n'est associé à aucune marque créateur.";
+        errorEl.style.display = 'block';
+        return;
+      }
+      authToken = data.token;
+      creatorName = data.user.name || data.user.contact_name || 'Créateur';
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      document.getElementById('sidebarBrand').textContent = currentBrand?.name || '—';
+      document.getElementById('welcomeTitle').textContent = 'Bonjour, ' + creatorName.split(' ')[0];
+      document.getElementById('welcomeSub').textContent = 'Tableau de bord ' + (currentBrand?.name || '');
+      loadDashboard();
+      checkAppVersion();
+    } catch (err) {
+      errorEl.textContent = 'Erreur de connexion au serveur';
+      errorEl.style.display = 'block';
+    }
+  }
+
+  // --- NAVIGATION ---
+  function showSection(id, el) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
+    document.getElementById('sec-' + id).classList.add('active');
+    if (el) el.classList.add('active');
+    // Les listes n'etaient chargees qu'a la connexion : une demande soumise
+    // depuis n'apparaissait pas tant qu'on ne rechargeait pas toute la page.
+    if (!currentBrand) return;
+    if (id === 'mapage') chargerMaPage();
+    else if (id === 'edits') loadEdits();
+    else if (id === 'products') loadProducts();
+    else if (id === 'orders') loadOrders();
+    else if (id === 'overview') { loadProducts(); loadOrders(); }
+  }
+
+  // Surnom a inscrire sur l'emballage. Mis en evidence : c'est l'information
+  // que le createur doit recopier a la main.
+  function surnomHtml(order) {
+    const v = (order.customer_nickname || '').trim();
+    return v
+      ? '<span class="nickname">' + esc(v) + '</span>'
+      : '<span class="nickname vide">non renseigné</span>';
+  }
+
+  // ---------------------------------------------------------------------
+  // STOCK : deux formes possibles dans la meme colonne sizes_stock
+  //   plate        { "S": 3, "M": 5 }                    produit sans couleur
+  //   par couleur  { "Rouge": { "S": 1 }, "Blanc": {} }  produit a variantes
+  // Detectee a la lecture : aucun ancien produit n'est touche.
+  // ---------------------------------------------------------------------
+  function stockParCouleur(ss) {
+    if (!ss || typeof ss !== 'object') return false;
+    const vals = Object.keys(ss).map(k => ss[k]);
+    if (!vals.length) return false;
+    return vals[0] !== null && typeof vals[0] === 'object' && !Array.isArray(vals[0]);
+  }
+
+  // Liste a plat : [{ couleur|null, taille, qte }]
+  // Ordre d'affichage des tailles.
+  // Les tailles etaient rendues dans l'ordre ou le createur les avait
+  // saisies : la fiche produit montrait "L, M, S, XL". On les range.
+  // Les tailles chiffrees (34, 36, 38) sont triees comme des nombres, et
+  // tout ce qui n'est ni une lettre connue ni un nombre passe a la fin.
+  const ORDRE_TAILLES = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '4XL'];
+
+  function rangTaille(t) {
+    var v = String(t == null ? '' : t).trim().toUpperCase();
+    var i = ORDRE_TAILLES.indexOf(v);
+    if (i !== -1) return [0, i, ''];
+    if (/^[0-9]+([.,][0-9]+)?$/.test(v)) return [1, parseFloat(v.replace(',', '.')), ''];
+    if (v === 'UNIQUE' || v === 'TAILLE UNIQUE') return [3, 0, ''];
+    return [2, 0, v];
+  }
+
+  function comparerTailles(a, b) {
+    var ra = rangTaille(a), rb = rangTaille(b);
+    if (ra[0] !== rb[0]) return ra[0] - rb[0];
+    if (ra[1] !== rb[1]) return ra[1] - rb[1];
+    return ra[2] < rb[2] ? -1 : (ra[2] > rb[2] ? 1 : 0);
+  }
+  function stockLignes(ss) {
+    if (!ss || typeof ss !== 'object') return [];
+    const out = [];
+    if (stockParCouleur(ss)) {
+      Object.keys(ss).forEach(c => {
+        const tailles = ss[c] || {};
+        Object.keys(tailles).forEach(t => {
+          out.push({ couleur: c, taille: t, qte: parseInt(tailles[t]) || 0 });
+        });
+      });
+    } else {
+      Object.keys(ss).forEach(t => {
+        out.push({ couleur: null, taille: t, qte: parseInt(ss[t]) || 0 });
+      });
+    }
+    // On range les tailles sans toucher a l'ordre des couleurs : le createur
+    // choisit l'ordre de ses couleurs, pas celui des tailles.
+    var ordreCouleur = [];
+    out.forEach(function (l) {
+      if (ordreCouleur.indexOf(l.couleur) === -1) ordreCouleur.push(l.couleur);
+    });
+    out.sort(function (a, b) {
+      var ca = ordreCouleur.indexOf(a.couleur), cb = ordreCouleur.indexOf(b.couleur);
+      if (ca !== cb) return ca - cb;
+      return comparerTailles(a.taille, b.taille);
+    });
+    return out;
+  }
+
+  function stockTotal(ss) {
+    return stockLignes(ss).reduce((n, l) => n + l.qte, 0);
+  }
+
+  // Toutes les tailles citees, sans doublon (pour la colonne "sizes")
+  function stockTailles(ss) {
+    const vues = [];
+    stockLignes(ss).forEach(l => { if (vues.indexOf(l.taille) === -1) vues.push(l.taille); });
+    return vues;
+  }
+
+  // Date et heure de la commande, format belge : 24/08 à 14h32.
+  function dateCommande(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    const p = n => String(n).padStart(2, '0');
+    return p(d.getDate()) + '/' + p(d.getMonth() + 1) + ' à ' + p(d.getHours()) + 'h' + p(d.getMinutes());
+  }
+
+  // Taille et couleur dans une seule cellule, pour ne pas alourdir le tableau.
+  function tailleEtCouleur(item) {
+    const t = esc(item.size || '');
+    const c = (item.color || '').trim();
+    return c
+      ? t + '<div style="font-size:11px;color:var(--gray-500);margin-top:1px">' + esc(c) + '</div>'
+      : t;
+  }
+
+  // --- LOAD DATA ---
+  async function loadDashboard() {
+    if (!currentBrand) return;
+    await Promise.all([loadProducts(), loadOrders(), loadEdits()]);
+  }
+
+  async function loadProducts() {
+    try {
+      const res = await fetch(API_BASE + '/creator/products?brand_id=' + currentBrand.id, {
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+      const data = await res.json();
+      const products = data.products || data || [];
+      loadedProducts = products;
+      let html = '';
+      products.forEach(p => {
+        // Stock detaille : rouge des qu'une combinaison passe a 3 ou moins.
+        // Avec variantes, une ligne par couleur ; sans variante, une seule ligne.
+        const lignes = stockLignes(p.sizes_stock);
+        let stockStr;
+        if (!lignes.length) {
+          stockStr = '<span style="color:var(--gray-400)">' + (p.stock || p.stock_quantity || 0) + '</span>';
+        } else if (stockParCouleur(p.sizes_stock)) {
+          const parC = {};
+          lignes.forEach(l => { (parC[l.couleur] = parC[l.couleur] || []).push(l); });
+          stockStr = Object.keys(parC).map(c =>
+            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">'
+            + '<span style="font-size:11px;font-weight:600;min-width:56px">' + esc(c) + '</span>'
+            + '<span style="display:flex;gap:3px;flex-wrap:wrap">'
+            + parC[c].map(l => {
+                const cls = l.qte === 0 ? 'size-chip out' : (l.qte <= 3 ? 'size-chip low' : 'size-chip');
+                return '<span class="' + cls + '"><span class="sz-label">' + esc(l.taille) + '</span><span class="sz-qty">' + l.qte + '</span></span>';
+              }).join('')
+            + '</span></div>').join('');
+        } else {
+          stockStr = lignes.map(l => {
+            const cls = l.qte === 0 ? 'size-chip out' : (l.qte <= 3 ? 'size-chip low' : 'size-chip');
+            return '<span class="' + cls + '"><span class="sz-label">' + esc(l.taille) + '</span><span class="sz-qty">' + l.qte + '</span></span>';
+          }).join('');
+        }
+        const encoded = encodeURIComponent(JSON.stringify({
+          id: p.id, name: p.name, price: p.price, category: p.category, description: p.description,
+          details: p.details || {},
+          commission_percent: p.commission_percent, variants: p.colors || p.variants || [], sizes_stock: p.sizes_stock, image_urls: p.image_urls || []
+        }));
+        // Le statut etait code en dur sur "Publie" : un produit en attente
+        // de validation s'affichait comme publie chez le createur.
+        var badge;
+        if (p.is_pending_review) badge = '<span class="badge badge-orange">Modif. en validation</span>';
+        else if (p.is_published === false) badge = '<span class="badge badge-red">Non publié</span>';
+        else badge = '<span class="badge badge-green">Publié</span>';
+        html += '<tr><td class="bold">' + esc(p.name) + '</td><td>€' + esc(p.price) + '</td><td class="sec">' + esc(p.category || '') + '</td><td class="sec"><div class="stock-sizes">' + stockStr + '</div></td><td>' + badge + '</td><td><button class="btn-edit" onclick="openEditModal(\'' + encoded + '\')">Modifier</button> <button class="btn-delete" onclick="confirmDeleteProduct(\'' + esc(p.id) + '\')">Supprimer</button></td></tr>';
+      });
+      document.getElementById('products-table').innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucun produit</td></tr>';
+      document.getElementById('productCount').textContent = products.length + ' produit' + (products.length > 1 ? 's' : '');
+    } catch (err) {
+      console.error('Error loading products:', err);
+    }
+  }
+
+  async function loadOrders() {
+    try {
+      const res = await fetch(API_BASE + '/creator/orders?brand_id=' + currentBrand.id, {
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+      const data = await res.json();
+      const orders = data.orders || data || [];
+
+      const priority = { 'pending': 0, 'processing': 0, 'shipped': 1, 'delivered': 1, 'returned': 2 };
+      orders.sort((a, b) => (priority[a.shipping_status] || 0) - (priority[b.shipping_status] || 0));
+
+      let overviewHtml = '';
+      let ordersHtml = '';
+      let totalSales = 0;
+      let totalCA = 0;
+      let totalRevenue = 0;
+      let toShip = 0;
+
+      orders.forEach(order => {
+        const items = order.items || [order];
+        const productStr = items.map(i => {
+          const det = [i.size || '?'];
+          if (i.color) det.push(i.color);
+          return (i.product_name || i.name) + ' (' + det.join(' · ') + ')';
+        }).join(' + ');
+        const totalQty = items.reduce((s, i) => s + (i.quantity || 1), 0);
+        const statusBadge = getShippingBadge(order.shipping_status);
+        const isFaded = ['shipped', 'delivered', 'returned'].includes(order.shipping_status);
+        const fadedAttr = isFaded ? ' class="faded"' : '';
+
+        totalSales++;
+        const orderTotal = parseFloat(order.total_amount || items.reduce((s, i) => s + ((i.price || 0) * (i.quantity || 1)), 0));
+        const orderPayout = parseFloat(order.creator_payout || orderTotal * 0.88);
+        totalCA += orderTotal;
+        totalRevenue += orderPayout;
+        if (['pending', 'processing'].includes(order.shipping_status)) toShip++;
+
+        overviewHtml += '<tr' + fadedAttr + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + esc(productStr) + '</td><td>' + totalQty + '</td><td class="sec">' + esc(order.customer_name || '') + '</td><td>' + surnomHtml(order) + '</td><td>' + statusBadge + '</td></tr>';
+
+        if (items.length > 1) {
+          items.forEach((item, idx) => {
+            const rowCls = isFaded ? 'faded grp' : 'grp';
+            if (idx === 0) {
+              ordersHtml += '<tr class="' + rowCls + '"><td class="bold" rowspan="' + items.length + '">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div></td><td class="sec">' + esc(item.product_name || item.name) + '</td><td>' + (item.quantity || 1) + '</td><td>' + tailleEtCouleur(item) + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.customer_name || '') + '</td><td rowspan="' + items.length + '">' + surnomHtml(order) + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.shipping_address || '') + '</td><td rowspan="' + items.length + '">' + statusBadge + '</td><td rowspan="' + items.length + '">' + getActionBtn(order) + '</td></tr>';
+            } else {
+              ordersHtml += '<tr class="' + rowCls + ' grp-sub"><td class="sec">' + esc(item.product_name || item.name) + '</td><td>' + (item.quantity || 1) + '</td><td>' + tailleEtCouleur(item) + '</td></tr>';
+            }
+          });
+        } else {
+          const item = items[0];
+          ordersHtml += '<tr' + fadedAttr + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div></td><td class="sec">' + esc(item.product_name || item.name || '') + '</td><td>' + (item.quantity || 1) + '</td><td>' + tailleEtCouleur(item) + '</td><td class="sec">' + esc(order.customer_name || '') + '</td><td>' + surnomHtml(order) + '</td><td class="sec">' + esc(order.shipping_address || '') + '</td><td>' + statusBadge + '</td><td>' + getActionBtn(order) + '</td></tr>';
+        }
+      });
+
+      document.getElementById('overview-orders').innerHTML = overviewHtml || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
+      document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
+      document.getElementById('stat-sales').textContent = totalSales;
+      document.getElementById('stat-ca').textContent = '€' + totalCA.toFixed(0);
+      document.getElementById('stat-revenue').textContent = '€' + totalRevenue.toFixed(0);
+      document.getElementById('stat-toship').textContent = toShip;
+      // Meme pastille que "En attente" cote admin : masquee quand il n'y a rien.
+      const pastille = document.getElementById('ordersCount');
+      if (pastille) {
+        pastille.textContent = toShip > 0 ? toShip : '';
+        pastille.style.display = toShip > 0 ? '' : 'none';
+      }
+    } catch (err) {
+      console.error('Error loading orders:', err);
+    }
+  }
+
+  async function loadEdits() {
+    try {
+      const res = await fetch(API_BASE + '/creator/edits?brand_id=' + currentBrand.id, {
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+      const data = await res.json();
+      const edits = data.edits || data || [];
+      let html = '';
+      edits.forEach(e => {
+        const c = e.changes || {};
+        const name = c.name || e.products?.name || 'Sans nom';
+        // Detail exact de ce qui a ete demande, valeur avant -> valeur apres
+        let typeBadge;
+        if (e.is_new_product) {
+          typeBadge = '<span class="badge badge-blue">Nouveau produit</span>'
+            + '<div style="margin-top:6px;font-size:12px;color:var(--gray-500);line-height:1.7">'
+            + (c.price !== undefined ? '<div>&rsaquo; Prix : ' + esc(c.price) + ' €</div>' : '')
+            + (c.category ? '<div>&rsaquo; Catégorie : ' + esc(c.category) + '</div>' : '')
+            + (Array.isArray(c.variants) && c.variants.length ? '<div>&rsaquo; Variantes : ' + esc(c.variants.join(', ')) + '</div>' : '')
+            + (c.image_url ? '<div>&rsaquo; Photo fournie</div>' : '<div style="color:var(--red)">&rsaquo; Aucune photo</div>')
+            + '</div>';
+        } else {
+          const diffs = describeChanges(c, e.products);
+          typeBadge = '<span class="badge badge-orange">' + esc(shortChangeLabel(c)) + '</span>'
+            + (diffs.length
+              ? '<div style="margin-top:6px;padding:8px 12px;background:var(--orange-bg);border-radius:8px;font-size:12px;line-height:1.7">'
+                + diffs.map(d => '<div>&rsaquo; ' + esc(d) + '</div>').join('')
+                + '</div>'
+              : '');
+        }
+        const statusMap = {
+          'pending': '<span class="badge badge-orange">En attente</span>',
+          'approved': '<span class="badge badge-green">Approuvé</span>',
+          'rejected': '<span class="badge badge-red">Refusé</span>'
+        };
+        const statusBadge = statusMap[e.status] || '<span class="badge badge-orange">' + e.status + '</span>';
+        const date = e.created_at ? new Date(e.created_at).toLocaleDateString('fr-BE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+        const note = e.admin_note || '—';
+        html += '<tr><td class="bold">' + esc(name) + '</td><td>' + typeBadge + '</td><td class="sec">' + date + '</td><td>' + statusBadge + '</td><td class="sec">' + note + '</td></tr>';
+      });
+      document.getElementById('edits-table').innerHTML = html || '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune demande</td></tr>';
+    } catch (err) {
+      console.error('Error loading edits:', err);
+    }
+  }
+
+  // Decrit precisement ce que le createur demande de changer :
+  // "Prix : 65 EUR -> 69 EUR" plutot qu'un vague "Modification".
+  function describeChanges(c, before) {
+    c = c || {};
+    const b = before || {};
+    const out = [];
+    const money = v => (v === undefined || v === null || v === '') ? '—' : v + ' €';
+    const list = v => (Array.isArray(v) && v.length) ? v.join(', ') : 'aucune';
+    const stock = v => {
+      const l = stockLignes(v);
+      return l.length
+        ? l.map(x => (x.couleur ? x.couleur + ' ' : '') + x.taille + ':' + x.qte).join(' · ')
+        : '—';
+    };
+
+    if (c.name !== undefined && c.name !== b.name) {
+      out.push('Nom : ' + (b.name || '—') + ' → ' + c.name);
+    }
+    if (c.price !== undefined && parseFloat(c.price) !== parseFloat(b.price)) {
+      out.push('Prix : ' + money(b.price) + ' → ' + money(c.price));
+    }
+    if (c.category !== undefined && c.category !== b.category) {
+      out.push('Catégorie : ' + (b.category || '—') + ' → ' + c.category);
+    }
+    if (c.description !== undefined && c.description !== b.description) {
+      out.push('Description modifiée');
+    }
+    const avantPhotos = Array.isArray(b.image_urls) ? b.image_urls.length : 0;
+    if (Array.isArray(c.image_urls)) {
+      if (c.image_urls.length !== avantPhotos) {
+        out.push('Photos : ' + avantPhotos + ' → ' + c.image_urls.length);
+      } else {
+        out.push('Photos : ' + c.image_urls.length + ' (remplacées)');
+      }
+    } else if (c.image_url) {
+      out.push('Photo : nouvelle image proposée');
+    }
+    // Cote produit, les variantes sont stockees dans la colonne colors.
+    const beforeVariants = (b.variants !== undefined && b.variants !== null) ? b.variants : b.colors;
+    if (c.variants !== undefined && list(c.variants) !== list(beforeVariants)) {
+      out.push('Variantes : ' + list(beforeVariants) + ' → ' + list(c.variants));
+    }
+    if (c.commission_percent !== undefined
+        && parseFloat(c.commission_percent) !== parseFloat(b.commission_percent)) {
+      const bc = (b.commission_percent === undefined || b.commission_percent === null)
+        ? '—' : b.commission_percent + ' %';
+      out.push('Commission : ' + bc + ' → ' + c.commission_percent + ' %');
+    }
+    if (c.sizes_stock && stock(c.sizes_stock) !== stock(b.sizes_stock)) {
+      out.push('Stock : ' + stock(b.sizes_stock) + ' → ' + stock(c.sizes_stock));
+    }
+    return out;
+  }
+
+  // Etiquette courte pour le badge : "Modif prix, variantes"
+  function shortChangeLabel(c) {
+    c = c || {};
+    const parts = [];
+    if (c.name !== undefined) parts.push('nom');
+    if (c.price !== undefined) parts.push('prix');
+    if (c.category !== undefined) parts.push('catégorie');
+    if (c.description !== undefined) parts.push('description');
+    if (c.image_urls || c.image_url) parts.push('photos');
+    if (c.variants !== undefined) parts.push('variantes');
+    if (c.commission_percent !== undefined) parts.push('commission');
+    if (c.sizes_stock) parts.push('stock');
+    return parts.length ? 'Modif ' + parts.join(', ') : 'Modification';
+  }
+
+  // --- DIALOGUE GENERIQUE ---
+  function ask(title, msg, okLabel, callback) {
+    document.getElementById('askTitle').textContent = title;
+    document.getElementById('askMsg').textContent = msg;
+    const btn = document.getElementById('askOk');
+    btn.textContent = okLabel;
+    btn.onclick = () => { closeAsk(); callback(); };
+    document.getElementById('askBg').classList.add('show');
+  }
+
+  function closeAsk() {
+    document.getElementById('askBg').classList.remove('show');
+  }
+
+  // --- PHOTOS DU PRODUIT ---
+  const MAX_IMAGES = 5;
+  let selectedImages = [];
+
+  function renderImagePreviews() {
+    const wrap = document.getElementById('imgPreviews');
+    wrap.innerHTML = selectedImages.map((src, i) =>
+      '<div class="img-thumb">' +
+        '<img src="' + src + '" alt="Photo ' + (i + 1) + '">' +
+        '<button type="button" class="x" title="Retirer" onclick="removeImage(' + i + ')">&times;</button>' +
+        (i === 0 ? '<span class="main">Principale</span>' : '') +
+      '</div>').join('');
+    const cnt = document.getElementById('imgCount');
+    cnt.textContent = selectedImages.length + ' / ' + MAX_IMAGES + ' photo' + (selectedImages.length > 1 ? 's' : '');
+    cnt.className = 'img-count' + (selectedImages.length >= MAX_IMAGES ? ' full' : '');
+  }
+
+  function removeImage(i) {
+    selectedImages.splice(i, 1);
+    renderImagePreviews();
+  }
+
+  async function onFilesChosen(input) {
+    const files = Array.from(input.files || []);
+    let refuses = 0;
+    for (const f of files) {
+      if (selectedImages.length >= MAX_IMAGES) { refuses++; continue; }
+      try {
+        selectedImages.push(await resizeAndReadFile(f, 800));
+      } catch (e) {
+        showToast('Image illisible : ' + f.name);
+      }
+    }
+    input.value = '';
+    if (refuses > 0) showToast('Maximum ' + MAX_IMAGES + ' photos — ' + refuses + ' ignorée(s)');
+    renderImagePreviews();
+  }
+
+  function addImageUrl() {
+    const field = document.getElementById('f-img');
+    const v = field.value.trim();
+    if (!v) return;
+    if (selectedImages.length >= MAX_IMAGES) { showToast('Maximum ' + MAX_IMAGES + ' photos'); return; }
+    selectedImages.push(v);
+    field.value = '';
+    renderImagePreviews();
+  }
+
+  // --- PRODUCT MODAL ---
+  function openAddModal() {
+    isEditMode = false;
+    editProductId = null;
+    document.getElementById('modalTitle').textContent = 'Ajouter un produit';
+    document.getElementById('f-name').value = '';
+    document.getElementById('f-price').value = '';
+    document.getElementById('f-desc').value = '';
+    remplirDetails({});
+    document.getElementById('f-img').value = '';
+    document.getElementById('f-file').value = '';
+    selectedImages = [];
+    renderImagePreviews();
+    originalProduct = null;
+    const errEl = document.getElementById('stockError');
+    if (errEl) errEl.style.display = 'none';
+    document.getElementById('f-commission').value = '';
+    document.getElementById('f-variants').value = '';
+    document.getElementById('imgSection').classList.add('show');
+    document.getElementById('stockSection').style.display = '';
+    document.querySelectorAll('#sizeChecks input').forEach((cb, i) => { cb.checked = [1,2,3,4].includes(i); });
+    updateSizeGrid();
+    document.getElementById('modalNote').textContent = 'Soumis pour validation par UNEEK avant publication.';
+    document.getElementById('productModal').classList.add('show');
+  }
+
+  function openEditModal(encoded) {
+    const p = JSON.parse(decodeURIComponent(encoded));
+    isEditMode = true;
+    editProductId = p.id;
+    document.getElementById('modalTitle').textContent = 'Modifier : ' + p.name;
+    document.getElementById('f-name').value = p.name;
+    document.getElementById('f-price').value = p.price;
+    if (p.category) document.getElementById('f-cat').value = p.category;
+    document.getElementById('f-desc').value = p.description || '';
+    remplirDetails(p.details);
+    document.getElementById('f-commission').value = p.commission_percent || '';
+    document.getElementById('f-variants').value = (p.variants || []).join(', ');
+    // Ces deux champs gardaient l'image du produit precedemment ouvert.
+    document.getElementById('f-img').value = '';
+    document.getElementById('f-file').value = '';
+    // On repart des photos actuelles : le createur peut en retirer et en ajouter.
+    selectedImages = Array.isArray(p.image_urls) ? p.image_urls.slice(0, MAX_IMAGES) : [];
+    renderImagePreviews();
+    // Etat de depart : on ne soumettra que ce qui aura reellement change.
+    originalProduct = {
+      name: p.name || '',
+      price: String(p.price === undefined || p.price === null ? '' : p.price),
+      category: p.category || '',
+      description: p.description || '',
+      details: JSON.stringify(lireDetails()),
+      commission: String(p.commission_percent === undefined || p.commission_percent === null ? '' : p.commission_percent),
+      variants: (p.variants || []).join(', '),
+      images: selectedImages.slice(),
+    };
+    document.getElementById('imgSection').classList.add('show');
+    // Le stock etait masque en modification : il est desormais modifiable et
+    // s'applique immediatement, sans validation.
+    document.getElementById('stockSection').style.display = '';
+    const stock = p.sizes_stock || {};
+    // Avec des variantes, les cles de premier niveau sont des couleurs :
+    // on passe par stockTailles() qui renvoie les tailles dans les deux cas.
+    const taillesDuProduit = stockTailles(stock);
+    document.querySelectorAll('#sizeChecks input').forEach(cb => {
+      cb.checked = taillesDuProduit.indexOf(cb.value) !== -1;
+    });
+    updateSizeGrid(stock);
+    document.getElementById('modalNote').innerHTML =
+      "Le <strong>stock</strong> est mis \u00e0 jour imm\u00e9diatement.<br>Les autres changements (nom, prix, photo, variantes\u2026) sont soumis \u00e0 la validation d'UNEEK.";
+    document.getElementById('productModal').classList.add('show');
+  }
+
+  function closeModal() { document.getElementById('productModal').classList.remove('show'); }
+
+  // Redimensionne l image a maxSize px et la compresse en JPEG 0.8
+  // avant de la convertir en data URL (les images sont stockees en base64).
+  // ---------------------------------------------------------------- MA PAGE
+  // Le createur modifie la banniere et le texte de sa page publique.
+  // Publication immediate : l'administrateur est prevenu par e-mail, il ne
+  // valide pas. C'est le choix assume — la fluidite plutot que le controle.
+
+  let maPage = null;          // ce qui est enregistre cote serveur
+  let banniereChoisie = null; // null = inchangee, '' = retiree, sinon la nouvelle
+
+  // 0 = haut de la photo, 50 = centre, 100 = bas. Toute valeur douteuse
+  // retombe au centre : le panneau ne doit jamais afficher un curseur casse.
+  function cadrageValide(v) {
+    const n = parseInt(v, 10);
+    if (isNaN(n)) return 50;
+    return Math.max(0, Math.min(100, n));
+  }
+
+  function banniereCourante() {
+    if (banniereChoisie !== null) return banniereChoisie;
+    return (maPage && maPage.image_url) || '';
+  }
+
+  async function chargerMaPage() {
+    if (maPage) { apercuMaPage(); return; }
+    try {
+      const res = await fetch(API_BASE + '/creator/marque?brand_id=' + encodeURIComponent(currentBrand.id), {
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+      if (!res.ok) throw new Error('chargement impossible');
+      maPage = await res.json();
+      banniereChoisie = null;
+      document.getElementById('mp-cadrage').value = cadrageValide(maPage.banner_position);
+      // Le curseur n'apparait que si la base sait le retenir.
+      document.getElementById('mp-bloc-cadrage').style.display =
+        maPage.cadrage_disponible === false ? 'none' : '';
+      apercuMaPage();
+    } catch (err) {
+      direMaPage('Impossible de charger ta page. Recharge la page du panneau.', 'var(--red)');
+    }
+  }
+
+  async function choisirBanniere(input) {
+    const f = input.files && input.files[0];
+    input.value = '';
+    if (!f) return;
+    try {
+      // 1600 px de large : assez pour un plein ecran, sans envoyer 8 Mo.
+      banniereChoisie = await resizeAndReadFile(f, 1600);
+      apercuMaPage();
+      direMaPage('Image prête — clique sur Publier pour la mettre en ligne.', 'var(--gray-500)');
+    } catch (err) {
+      direMaPage('Cette image n\'a pas pu être lue. Essaie un JPEG ou un PNG.', 'var(--red)');
+    }
+  }
+
+  function retirerBanniere() {
+    banniereChoisie = '';
+    apercuMaPage();
+    direMaPage('Bannière retirée — clique sur Publier pour confirmer.', 'var(--gray-500)');
+  }
+
+  // Redessine l'apercu a partir de ce qui est a l'ecran, pas de ce qui est
+  // enregistre : le createur voit le resultat avant de publier.
+  function apercuMaPage() {
+    const img = banniereCourante();
+    const cadrage = cadrageValide(document.getElementById('mp-cadrage').value);
+    const zone = document.getElementById('mp-apercu-banniere');
+    const vide = document.getElementById('mp-banniere-vide');
+    const hero = document.getElementById('mp-apercu-hero');
+    // "center X%" : exactement ce que la page publique applique a l'image.
+    const fond = img
+      ? 'url(' + JSON.stringify(img) + ') center ' + cadrage + '% / cover no-repeat'
+      : '';
+
+    zone.style.background = img ? fond : '#0A0A0A';
+    vide.style.display = img ? 'none' : 'block';
+    document.getElementById('mp-retirer').style.display = img ? 'inline-block' : 'none';
+
+    // Meme rendu que la page publique : image en fond, assombrie.
+    hero.style.background = img ? fond : '#0A0A0A';
+    hero.style.boxShadow = img ? 'inset 0 0 0 2000px rgba(0,0,0,0.6)' : 'none';
+
+    if (maPage) {
+      document.getElementById('mp-apercu-nom').textContent = maPage.name || '—';
+      const bouts = [];
+      if (maPage.city) bouts.push(maPage.city);
+      if (maPage.year) bouts.push('Est. ' + maPage.year);
+      document.getElementById('mp-apercu-info').textContent = bouts.join('  ·  ');
+    }
+  }
+
+  function direMaPage(texte, couleur) {
+    const m = document.getElementById('mp-msg');
+    m.textContent = texte;
+    m.style.color = couleur;
+    m.style.display = 'block';
+  }
+
+  async function enregistrerMaPage() {
+    const bouton = document.getElementById('mp-enregistrer');
+    const corps = { brand_id: currentBrand.id };
+    if (banniereChoisie !== null) corps.image_url = banniereChoisie;
+    if (maPage && maPage.cadrage_disponible !== false) {
+      corps.banner_position = cadrageValide(document.getElementById('mp-cadrage').value);
+    }
+
+    bouton.disabled = true;
+    direMaPage('Publication…', 'var(--gray-500)');
+    try {
+      const res = await fetch(API_BASE + '/creator/marque', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify(corps)
+      });
+      const data = await res.json();
+      if (!res.ok) { direMaPage(data.error || 'Erreur', 'var(--red)'); return; }
+      maPage = data;
+      banniereChoisie = null;
+      if (data.cadrage_disponible !== false) {
+        document.getElementById('mp-cadrage').value = cadrageValide(data.banner_position);
+      }
+      apercuMaPage();
+      direMaPage(data.inchange ? 'Rien n\'avait changé.' : '\u2713 En ligne.', 'var(--green)');
+    } catch (err) {
+      direMaPage('Erreur réseau, réessaie.', 'var(--red)');
+    } finally {
+      bouton.disabled = false;
+    }
+  }
+
+  function resizeAndReadFile(file, maxSize) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          let w = img.width, h = img.height;
+          if (w > maxSize || h > maxSize) {
+            if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+            else { w = Math.round(w * maxSize / h); h = maxSize; }
+          }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.onerror = () => reject(new Error('Image illisible'));
+        img.src = e.target.result;
+      };
+      reader.onerror = () => reject(new Error('Erreur lecture fichier'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Attache les photos au corps de la requete. image_url reste renseigne
+  // avec la principale : d'anciens appels et d'anciennes lignes s'en servent.
+  function imagesOntChange() {
+    const av = (originalProduct && originalProduct.images) || [];
+    if (selectedImages.length !== av.length) return true;
+    return selectedImages.some((src, i) => src !== av[i]);
+  }
+
+  function attachImages(body, enModification) {
+    if (enModification) {
+      // Les photos n'etaient renvoyees qu'en cas de changement reel : sinon
+      // une simple correction de stock creait une demande "Photos remplacees".
+      if (!imagesOntChange()) return;
+      body.image_urls = selectedImages;
+      body.image_url = selectedImages[0] || '';
+      return;
+    }
+    if (selectedImages.length > 0) {
+      body.image_urls = selectedImages;
+      body.image_url = selectedImages[0];
+    }
+  }
+
+  // Envoi reel du produit. submitProduct sert de garde-fou avant d'y arriver.
+  async function submitProduct() {
+    // Si la page est perimee, ce code n'est pas celui du serveur : on previent.
+    if (!(await checkAppVersion())) {
+      showToast('Page périmée — recharge avant de soumettre');
+      return;
+    }
+    // Poids total : les photos partent en base64, Vercel refuse au-dela de 4,5 Mo.
+    const poids = selectedImages.reduce((n, s) => n + s.length, 0);
+    if (poids > 3500000) {
+      showToast('Photos trop lourdes (' + Math.round(poids / 1048576) + ' Mo) — retires-en une ou deux');
+      return;
+    }
+    if (!isEditMode && selectedImages.length === 0) {
+      ask('Aucune photo sélectionnée',
+          "Ce produit sera soumis sans image et s'affichera sans photo sur le site. Tu peux annuler et en ajouter jusqu'à 5 maintenant.",
+          'Soumettre sans photo',
+          doSubmitProduct);
+      return;
+    }
+    return doSubmitProduct();
+  }
+
+  async function doSubmitProduct() {
+    const name = document.getElementById('f-name').value;
+    const price = document.getElementById('f-price').value;
+    const category = document.getElementById('f-cat').value;
+    const description = document.getElementById('f-desc').value;
+    const commissionVal = document.getElementById('f-commission').value;
+    const variantsRaw = document.getElementById('f-variants').value;
+    const variants = variantsRaw ? variantsRaw.split(',').map(v => v.trim()).filter(v => v) : [];
+
+    if (!name || !price) { showToast('Nom et prix requis'); return; }
+
+    const details = lireDetails();
+    const manqueDetails = detailsIncomplets(details);
+    // A la creation, les trois champs sont exiges. En modification, on ne
+    // bloque que si le createur a commence a les remplir : sinon corriger
+    // le stock d'un ancien produit deviendrait impossible.
+    const dejaRempli = isEditMode && originalProduct
+      && originalProduct.details && originalProduct.details !== '{}';
+    if ((!isEditMode || dejaRempli || Object.keys(details).length > 0) && manqueDetails.length > 0) {
+      showToast('Il manque ' + manqueDetails.join(', '));
+      return;
+    }
+
+    const body = { brand_id: currentBrand.id, name, price: parseFloat(price), category, description };
+    body.details = details;
+
+    if (commissionVal) body.commission_percent = parseFloat(commissionVal);
+    body.variants = variants;
+
+    if (isEditMode) {
+      body.product_id = editProductId;
+      body.edit_type = 'modification';
+      // Tous les champs etaient envoyes systematiquement : la moindre
+      // modification de stock creait donc une demande de validation, avec
+      // un faux "Photos remplacees". On ne garde que ce qui a bouge.
+      const o = originalProduct || {};
+      if (String(name) === String(o.name)) delete body.name;
+      if (String(price) === String(o.price)) delete body.price;
+      if (String(category) === String(o.category)) delete body.category;
+      if (String(description) === String(o.description)) delete body.description;
+      if (JSON.stringify(details) === String(o.details)) delete body.details;
+      if (String(commissionVal) === String(o.commission)) delete body.commission_percent;
+      if (variants.join(', ') === o.variants) delete body.variants;
+      attachImages(body, true);
+      // La regle du minimum 3 ne s'appliquait qu'a la creation : une
+      // modification passait au travers. Elle vaut desormais dans les deux cas.
+      const fautivesEdit = tropPeuDeStock();
+      const errEdit = document.getElementById('stockError');
+      if (fautivesEdit.length > 0) {
+        errEdit.textContent = 'Minimum 3 pièces par taille proposée — à corriger : ' + fautivesEdit.join(', ');
+        errEdit.style.display = 'block';
+        return;
+      }
+      errEdit.style.display = 'none';
+      const editSizes = lireStockSaisi();
+      if (Object.keys(editSizes).length > 0) body.sizes_stock = editSizes;
+    } else {
+      body.edit_type = 'new';
+      attachImages(body, false);
+      // Regle UNEEK : au moins 3 pieces par combinaison proposee.
+      const fautives = tropPeuDeStock();
+      const err = document.getElementById('stockError');
+      if (fautives.length > 0) {
+        err.textContent = 'Minimum 3 pièces par taille — à corriger : ' + fautives.join(', ');
+        err.style.display = 'block';
+        return;
+      }
+      err.style.display = 'none';
+      body.sizes_stock = lireStockSaisi();
+    }
+
+    try {
+      const res = await fetch(API_BASE + '/creator/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        // Le serveur a le dernier mot : s'il refuse, on montre sa raison.
+        const err = document.getElementById('stockError');
+        if (err && data.error && data.error.indexOf('Minimum') === 0) {
+          err.textContent = data.error;
+          err.style.display = 'block';
+        }
+        showToast(data.error || 'Erreur lors de l\'envoi');
+        return;
+      }
+      closeModal();
+      if (!isEditMode) {
+        showToast('✓ Nouveau produit soumis — UNEEK validera avant publication');
+      } else if (data.stock_only) {
+        showToast('✓ Stock mis à jour');
+      } else if (data.stock_applied) {
+        showToast('✓ Stock mis à jour — les autres changements attendent UNEEK');
+      } else {
+        showToast('✓ Modification soumise — UNEEK te notifiera');
+      }
+      setTimeout(() => { loadProducts(); loadEdits(); }, 1000);
+    } catch (err) {
+      showToast('Erreur: ' + err.message);
+    }
+  }
+
+  // Couleurs saisies dans le champ Variantes, nettoyees.
+  function couleursSaisies() {
+    const brut = document.getElementById('f-variants').value;
+    return brut ? brut.split(',').map(v => v.trim()).filter(v => v) : [];
+  }
+
+  // Grille de stock. Sans variante : une case par taille, comme avant.
+  // Avec variantes : une ligne par couleur, une case par taille.
+  function updateSizeGrid(values) {
+    const grid = document.getElementById('sizeGrid');
+    const label = document.getElementById('stockLabel');
+    const couleurs = couleursSaisies();
+
+    // On garde la saisie en cours pour ne rien perdre en cochant une taille
+    const deja = {};
+    grid.querySelectorAll('.stock-cell input').forEach(inp => {
+      deja[(inp.dataset.couleur || '') + '|' + inp.dataset.taille] = inp.value;
+    });
+
+    const tailles = [];
+    document.querySelectorAll('#sizeChecks input:checked').forEach(cb => tailles.push(cb.value));
+
+    label.textContent = couleurs.length
+      ? 'Stock initial par couleur et par taille'
+      : 'Stock initial par taille';
+
+    grid.className = couleurs.length ? 'stock-matrix' : 'size-grid';
+    grid.innerHTML = '';
+
+    const lignes = couleurs.length ? couleurs : [null];
+    lignes.forEach(couleur => {
+      const ligne = document.createElement('div');
+      ligne.className = couleur === null ? 'stock-row sans-couleur' : 'stock-row';
+      if (couleur !== null) {
+        const nom = document.createElement('div');
+        nom.className = 'couleur';
+        nom.textContent = couleur;
+        ligne.appendChild(nom);
+      }
+      const cellules = document.createElement('div');
+      cellules.className = 'cellules';
+      tailles.forEach(t => {
+        const cell = document.createElement('div');
+        cell.className = 'stock-cell';
+        const span = document.createElement('span');
+        span.textContent = t;
+        const input = document.createElement('input');
+        input.type = 'number'; input.min = '0'; input.placeholder = '0';
+        input.dataset.taille = t;
+        if (couleur !== null) input.dataset.couleur = couleur;
+        const cle = (couleur || '') + '|' + t;
+        if (values) {
+          const v = couleur === null ? values[t] : (values[couleur] || {})[t];
+          if (v !== undefined) input.value = v;
+        } else if (deja[cle] !== undefined) {
+          input.value = deja[cle];
+        }
+        cell.appendChild(span); cell.appendChild(input); cellules.appendChild(cell);
+      });
+      ligne.appendChild(cellules);
+      grid.appendChild(ligne);
+    });
+  }
+
+  // Lit la grille et renvoie la forme adaptee : plate ou par couleur.
+  function lireStockSaisi() {
+    const couleurs = couleursSaisies();
+    const out = {};
+    if (couleurs.length) {
+      couleurs.forEach(c => { out[c] = {}; });
+      document.querySelectorAll('#sizeGrid .stock-cell input').forEach(inp => {
+        const c = inp.dataset.couleur;
+        if (c === undefined) return;
+        if (!out[c]) out[c] = {};
+        out[c][inp.dataset.taille] = parseInt(inp.value) || 0;
+      });
+    } else {
+      document.querySelectorAll('#sizeGrid .stock-cell input').forEach(inp => {
+        out[inp.dataset.taille] = parseInt(inp.value) || 0;
+      });
+    }
+    return out;
+  }
+
+  // Regle UNEEK : au moins 3 pieces des qu'une combinaison est proposee.
+  function tropPeuDeStock() {
+    const fautives = [];
+    document.querySelectorAll('#sizeGrid .stock-cell input').forEach(inp => {
+      const q = parseInt(inp.value) || 0;
+      if (q > 0 && q < 3) {
+        const c = inp.dataset.couleur;
+        fautives.push((c ? c + ' ' : '') + inp.dataset.taille + ' (' + q + ')');
+      }
+    });
+    return fautives;
+  }
+
+  // --- SHIP ORDER ---
+  async function markShipped(orderId, btn) {
+    try {
+      await fetch(API_BASE + '/creator/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify({ order_item_id: orderId, action: 'ship' })
+      });
+      showToast('✓ Marqué comme expédié — le client est notifié');
+      setTimeout(() => loadOrders(), 1000);
+    } catch (err) {
+      showToast('Erreur: ' + err.message);
+    }
+  }
+
+  // --- HELPERS ---
+  function shortOrder(num) { return num ? '…' + num.slice(-4) : ''; }
+
+  function getShippingBadge(status) {
+    const map = {
+      'pending': '<span class="badge badge-orange">À expédier</span>',
+      'processing': '<span class="badge badge-orange">À expédier</span>',
+      'shipped': '<span class="badge badge-green">Expédié</span>',
+      'delivered': '<span class="badge badge-green">Expédié</span>',
+      'returned': '<span class="badge badge-red">En retour</span>'
+    };
+    return map[status] || '<span class="badge badge-orange">À expédier</span>';
+  }
+
+  function getActionBtn(order) {
+    if (order.shipping_status === 'returned') return '<span class="return-mark">↩ Retour</span>';
+    if (['shipped', 'delivered'].includes(order.shipping_status)) return '<span class="done-mark">✓</span>';
+    return '<button class="btn-ship" onclick="markShipped(\'' + order.id + '\', this)">Expédié</button>';
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show';
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // --- DELETE PRODUCT ---
+  let deleteTargetId = null;
+
+  function confirmDeleteProduct(productId, productName) {
+    deleteTargetId = productId;
+    if (!productName) {
+      const found = loadedProducts.find(p => String(p.id) === String(productId));
+      productName = found ? found.name : 'ce produit';
+    }
+    document.getElementById('confirmDeleteMsg').textContent = 'Le produit "' + productName + '" sera définitivement supprimé. Cette action est irréversible.';
+    document.getElementById('confirmDeleteBtn').onclick = () => executeDeleteProduct();
+    document.getElementById('confirmDeleteBg').classList.add('show');
+  }
+
+  function closeConfirmDelete() {
+    document.getElementById('confirmDeleteBg').classList.remove('show');
+    deleteTargetId = null;
+  }
+
+  async function executeDeleteProduct() {
+    if (!deleteTargetId) return;
+    closeConfirmDelete();
+    try {
+      const res = await fetch(API_BASE + '/creator/products', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify({ product_id: deleteTargetId, brand_id: currentBrand.id })
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast('Erreur: ' + (data.error || 'Suppression échouée')); return; }
+      showToast('✓ Produit supprimé');
+      setTimeout(() => loadProducts(), 500);
+    } catch (err) {
+      showToast('Erreur: ' + err.message);
+    }
+  }
+
+  // --- SETTINGS: CHANGE EMAIL ---
+  async function changeEmail() {
+    const newEmail = document.getElementById('set-email').value;
+    const password = document.getElementById('set-email-pw').value;
+    const msgEl = document.getElementById('email-msg');
+    if (!newEmail || !password) { showMsg(msgEl, 'Remplis tous les champs', 'var(--red)'); return; }
+
+    try {
+      const res = await fetch(API_BASE + '/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify({ action: 'change_email', new_email: newEmail, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { showMsg(msgEl, data.error || 'Erreur', 'var(--red)'); return; }
+      showMsg(msgEl, '✓ Email mis à jour', 'var(--green)');
+      document.getElementById('set-email').value = '';
+      document.getElementById('set-email-pw').value = '';
+    } catch (err) {
+      showMsg(msgEl, 'Erreur serveur', 'var(--red)');
+    }
+  }
+
+  // --- SETTINGS: CHANGE PASSWORD ---
+  async function changePassword() {
+    const oldPw = document.getElementById('set-old-pw').value;
+    const newPw = document.getElementById('set-new-pw').value;
+    const confirmPw = document.getElementById('set-confirm-pw').value;
+    const msgEl = document.getElementById('pw-msg');
+    if (!oldPw || !newPw || !confirmPw) { showMsg(msgEl, 'Remplis tous les champs', 'var(--red)'); return; }
+    if (newPw !== confirmPw) { showMsg(msgEl, 'Les mots de passe ne correspondent pas', 'var(--red)'); return; }
+    if (newPw.length < 6) { showMsg(msgEl, 'Le mot de passe doit faire au moins 6 caractères', 'var(--red)'); return; }
+
+    try {
+      const res = await fetch(API_BASE + '/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify({ action: 'change_password', old_password: oldPw, new_password: newPw })
+      });
+      const data = await res.json();
+      if (!res.ok) { showMsg(msgEl, data.error || 'Erreur', 'var(--red)'); return; }
+      showMsg(msgEl, '✓ Mot de passe mis à jour', 'var(--green)');
+      document.getElementById('set-old-pw').value = '';
+      document.getElementById('set-new-pw').value = '';
+      document.getElementById('set-confirm-pw').value = '';
+    } catch (err) {
+      showMsg(msgEl, 'Erreur serveur', 'var(--red)');
+    }
+  }
+
+  function showMsg(el, text, color) {
+    el.textContent = text;
+    el.style.color = color;
+    el.style.display = 'block';
+    setTimeout(() => el.style.display = 'none', 4000);
+  }
+
+  // --- LOGOUT ---
+  function doLogout() {
+    authToken = null;
+    currentBrand = null;
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('loginScreen').style.display = '';
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPassword').value = '';
+  }
+
+  // Init
+  updateSizeGrid();
+  document.getElementById('loginPassword').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
+  document.getElementById('regPassword2').addEventListener('keyup', e => { if (e.key === 'Enter') doRegister(); });
+</script>
+<!-- AJOUT : un graphique en plein écran -->
+<div class="zoom-bg" id="zoomEcran">
+  <div class="zoom-tete">
+    <button type="button" class="zoom-retour" id="zoomRetour">&larr; Vue d'ensemble</button>
+    <div class="zoom-titre" id="zoomTitre"></div>
+    <div class="zoom-sous" id="zoomSous"></div>
+  </div>
+  <div class="zoom-zone" id="zoomZone"></div>
+</div>
+
+<!-- AJOUT : écran marque bloquée -->
+<div class="bloq-bg" id="ecranBloque">
+  <div class="bloq-box">
+    <div class="ico">&#9208;</div>
+    <h2>Ta boutique est en pause</h2>
+    <p><span id="bloqMarque">Ta marque</span> a été temporairement suspendue par UNEEK. Tes produits ne sont
+    plus visibles sur le site, et tu ne peux ni en ajouter ni en modifier pour l'instant.</p>
+    <p><b>Tes commandes en cours restent à expédier</b> — tu peux toujours les consulter et les marquer comme
+    envoyées. Ne laisse pas un client attendre.</p>
+    <a class="mail" href="mailto:contact@uneek.store">Écrire à contact@uneek.store</a>
+    <div class="btns">
+      <button class="btn-submit" id="bloqVoirCommandes">Voir mes commandes</button>
+      <button class="btn-cancel" id="bloqDeconnexion">Se déconnecter</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var JOURS = 30;                 // période affichée
+  var RETARD_JOURS = 3;           // au-delà, une commande non expédiée est en retard
+  var SEUIL_STOCK = 3;            // même seuil que les pastilles rouges du v1
+  var MIX = 'taille';
+  var CMD = [];
+  var INK = '#0A0A0A';
+
+  // ---------- plein écran d'un graphique ----------
+  // Le graphique n'est pas recréé : on déplace son conteneur dans l'écran
+  // plein, on le redessine à la nouvelle taille, et on le remet à sa place
+  // en repartant. Le survol et l'infobulle suivent tout seuls.
+  var zoomEnCours = null;
+
+  var TITRES = {
+    ovCourbe: ['Ton revenu net, jour par jour', function () { return libellePeriode(); }],
+    ovBarres: ['Tes produits qui rapportent le plus', function () { return 'revenu net · ' + libellePeriode(); }],
+    ovColonnes: ['Ce qui part le plus', function () { return (MIX === 'taille' ? 'par taille' : 'par couleur') + ' · ' + libellePeriode(); }]
+  };
+
+  // En plein ecran, le repere du SVG epouse la place disponible : la courbe
+  // et les colonnes remplissent vraiment l'ecran au lieu de rester plates.
+  function dimZoom(hote) {
+    if (!hote || !hote.classList || !hote.classList.contains('zoom')) return null;
+    var zone = document.getElementById('zoomZone');
+    var lz = (zone && zone.clientWidth) || 1200;
+    var hz = (zone && zone.clientHeight) || 600;
+    var W = Math.min(1300, lz);
+    var H = Math.max(300, Math.min(900, Math.round(W * hz / Math.max(1, lz))));
+    return { W: W, H: H };
+  }
+
+  function redessiner(id) {
+    var d = decoupe();
+    if (id === 'ovCourbe') sansCasser('courbe', rendreCourbe, d);
+    else if (id === 'ovBarres') sansCasser('barres', rendreBarres, d);
+    else if (id === 'ovColonnes') sansCasser('colonnes', rendreColonnes, d);
+  }
+
+  function agrandir(id) {
+    if (zoomEnCours) return;
+    var hote = document.getElementById(id);
+    var ecran = document.getElementById('zoomEcran');
+    var zone = document.getElementById('zoomZone');
+    if (!hote || !ecran || !zone || !TITRES[id]) return;
+
+    zoomEnCours = { id: id, parent: hote.parentNode, suivant: hote.nextSibling };
+    document.getElementById('zoomTitre').textContent = TITRES[id][0];
+    document.getElementById('zoomSous').textContent = TITRES[id][1]();
+    hote.classList.add('zoom');
+    hote.classList.remove('cliquable');
+    zone.appendChild(hote);
+    ecran.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    redessiner(id);
+  }
+
+  function refermer() {
+    if (!zoomEnCours) return;
+    var z = zoomEnCours; zoomEnCours = null;
+    var hote = document.getElementById(z.id);
+    document.getElementById('zoomEcran').classList.remove('show');
+    document.body.style.overflow = '';
+    if (hote) {
+      hote.classList.remove('zoom');
+      hote.classList.add('cliquable');
+      z.parent.insertBefore(hote, z.suivant);
+      redessiner(z.id);
+    }
+  }
+
+  document.addEventListener('click', function (ev) {
+    if (!ev.target || !ev.target.closest) return;
+    var b = ev.target.closest('.btn-zoom');
+    if (b) { ev.preventDefault(); agrandir(b.getAttribute('data-zoom')); return; }
+    if (ev.target.closest('#zoomRetour')) { refermer(); return; }
+    var c = ev.target.closest('.chart.cliquable');
+    if (c && c.id && TITRES[c.id]) agrandir(c.id);
+  });
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape' && zoomEnCours) refermer();
+  });
+
+  // ---------- animations ----------
+  // Coupées si la personne a demandé à son appareil de réduire les animations.
+  function anime() {
+    try { return !window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+    catch (e) { return true; }
+  }
+  function allumer(elements) {
+    if (!elements || !elements.length) return;
+    if (!anime()) {
+      Array.prototype.forEach.call(elements, function (el) { el.classList.add('anim-on'); });
+      return;
+    }
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        Array.prototype.forEach.call(elements, function (el) { el.classList.add('anim-on'); });
+      });
+    });
+  }
+
+  // Cadres gris pendant que l'API répond : le créateur voit la forme de sa
+  // page tout de suite au lieu d'un écran vide.
+  ['ovCourbe', 'ovBarres', 'ovColonnes'].forEach(function (id) {
+    var e = document.getElementById(id);
+    if (e) e.classList.add('cliquable');
+  });
+
+  function enTeteCompact() {
+    var tete = document.getElementById('ovCmdHead');
+    if (tete && tete.getAttribute('data-compact') !== '1') {
+      tete.innerHTML = '<tr><th class="col-cmd">Commande</th><th class="col-produit">Produit</th>'
+        + '<th class="col-client">Client</th><th class="col-statut">Statut</th></tr>';
+      tete.setAttribute('data-compact', '1');
+    }
+  }
+
+  // Les cadres de la vue d'ensemble se posent l'un après l'autre à la connexion.
+  var cascadeFaite = false;
+  function cascade() {
+    if (cascadeFaite) return;
+    var sec = document.getElementById('sec-overview');
+    if (!sec) return;
+    cascadeFaite = true;
+    var blocs = sec.querySelectorAll('.stat-card, .card');
+    Array.prototype.forEach.call(blocs, function (el, i) {
+      el.classList.add('carte-anim');
+      el.style.transitionDelay = Math.min(i * 55, 400) + 'ms';
+    });
+    allumer(blocs);
+    setTimeout(function () {
+      Array.prototype.forEach.call(blocs, function (el) { el.style.transitionDelay = ''; });
+    }, 1200);
+  }
+
+  var squeletteMontre = false;
+  function squelettes() {
+    if (squeletteMontre) return;
+    squeletteMontre = true;
+    enTeteCompact();
+    var corps = document.getElementById('overview-orders');
+    if (corps && !corps.children.length) {
+      var l = '';
+      for (var i = 0; i < 5; i++) l += '<tr><td colspan="4"><div class="sq sq-ligne"></div></td></tr>';
+      corps.innerHTML = l;
+    }
+    [['ovCourbe', '<div class="sq sq-chart"></div>'],
+     ['ovBarres', '<div class="sq sq-ligne moyenne"></div><div class="sq sq-ligne"></div><div class="sq sq-ligne courte"></div><div class="sq sq-ligne courte"></div>'],
+     ['ovColonnes', '<div class="sq sq-chart" style="height:170px"></div>'],
+     ['ovStock', '<div class="sq sq-ligne moyenne"></div><div class="sq sq-ligne courte"></div>']
+    ].forEach(function (p) {
+      var e = document.getElementById(p[0]);
+      if (e && !e.querySelector('svg') && !e.querySelector('.stock-row')) {
+        var tip = e.querySelector('.tip');
+        e.innerHTML = p[1];
+        if (tip) e.appendChild(tip);
+      }
+    });
+  }
+
+  // ---------- petits outils ----------
+  function euro(v) { return '€' + Math.round(v).toLocaleString('fr-BE'); }
+  function payout(o) {
+    var p = parseFloat(o.creator_payout);
+    if (!isNaN(p)) return p;
+    return parseFloat(o.total_amount || 0) * 0.88;   // même repli que le v1
+  }
+  function minuit(d) { var x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+  function debutDe(n) { var x = minuit(new Date()); x.setDate(x.getDate() - (n - 1)); return x; }
+  function jourCourt(d) { return d.toLocaleDateString('fr-BE', { day: 'numeric', month: 'short' }); }
+  function enAttente(o) { return ['pending', 'processing'].indexOf(o.shipping_status) !== -1; }
+  function enRetard(o) {
+    if (!enAttente(o) || !o.created_at) return false;
+    return (Date.now() - new Date(o.created_at).getTime()) > RETARD_JOURS * 86400000;
+  }
+  function libellePeriode() {
+    return JOURS === 7 ? '7 jours' : (JOURS === 30 ? '30 jours' : '3 mois');
+  }
+
+  // ---------- lecture des commandes ----------
+  // La lecture part EN MEME TEMPS que celle du v1, pas apres : sinon le
+  // createur voit une seconde l'ancien tableau avant le nouveau, et
+  // l'attente est doublee sur une connexion lente.
+  var lecture = null;
+
+  function lancerLecture() {
+    if (!currentBrand) return null;
+    lecture = fetch(API_BASE + '/creator/orders?brand_id=' + currentBrand.id, {
+      headers: { 'Authorization': 'Bearer ' + authToken }
+    }).then(function (res) { return res.json(); })
+      .then(function (data) {
+        // L'API peut renvoyer {orders:[...]}, une liste nue, ou {error:"..."} :
+        // sans ce filtre, un objet d'erreur ferait planter tous les .filter() plus bas.
+        return Array.isArray(data) ? data
+             : (data && Array.isArray(data.orders) ? data.orders : []);
+      })
+      .catch(function () { return []; });
+    return lecture;
+  }
+
+  async function relire() {
+    if (!currentBrand) return;
+    squelettes();
+    try { CMD = await (lecture || lancerLecture()); }
+    catch (e) { CMD = []; }
+    lecture = null;
+    rendreTout();
+  }
+
+  function decoupe() {
+    var debut = debutDe(JOURS);
+    var debutPrec = new Date(debut); debutPrec.setDate(debutPrec.getDate() - JOURS);
+    var cour = [], prec = [];
+    CMD.forEach(function (o) {
+      if (!o.created_at) return;
+      var t = new Date(o.created_at);
+      if (t >= debut) cour.push(o);
+      else if (t >= debutPrec) prec.push(o);
+    });
+    return { debut: debut, cour: cour, prec: prec };
+  }
+
+  // ---------- tuiles ----------
+  function pourcent(a, b) { if (!b) return null; return (a - b) / b * 100; }
+  function chip(v) {
+    if (v === null) return '<span class="delta flat">—</span> pas de période précédente';
+    var cls = v >= 0 ? 'up' : 'down';
+    var fl = v >= 0 ? '↑ +' : '↓ ';
+    return '<span class="delta ' + cls + '">' + fl + Math.round(v) + ' %</span> vs période précédente';
+  }
+  function rendreTuiles(d) {
+    var ventes = d.cour.length, ventesP = d.prec.length;
+    var ca = 0, caP = 0, revenu = 0;
+    d.cour.forEach(function (o) { ca += parseFloat(o.total_amount || 0); revenu += payout(o); });
+    d.prec.forEach(function (o) { caP += parseFloat(o.total_amount || 0); });
+
+    var enCours = CMD.filter(enAttente).length;
+    var retard = CMD.filter(enRetard).length;
+
+    var e;
+    if ((e = document.getElementById('lbl-sales'))) e.textContent = 'Ventes · ' + libellePeriode();
+    if ((e = document.getElementById('lbl-ca'))) e.textContent = "Chiffre d'affaires · " + libellePeriode();
+    if ((e = document.getElementById('lbl-revenue'))) e.textContent = 'Ton revenu · ' + libellePeriode();
+    if ((e = document.getElementById('stat-sales'))) e.textContent = ventes;
+    if ((e = document.getElementById('stat-ca'))) e.textContent = euro(ca);
+    if ((e = document.getElementById('stat-revenue'))) e.textContent = euro(revenu);
+    if ((e = document.getElementById('stat-toship'))) e.textContent = enCours;
+    if ((e = document.getElementById('foot-sales'))) e.innerHTML = chip(pourcent(ventes, ventesP));
+    if ((e = document.getElementById('foot-ca'))) e.innerHTML = chip(pourcent(ca, caP));
+    if ((e = document.getElementById('foot-toship'))) {
+      e.innerHTML = retard
+        ? '<span class="late">' + retard + ' en retard</span> — plus de ' + RETARD_JOURS + ' jours'
+        : 'aucune en retard';
+    }
+  }
+
+  // ---------- courbe ----------
+  function rendreCourbe(d) {
+    var hote = document.getElementById('ovCourbe');
+    var tip = document.getElementById('tipCourbe');
+    if (!hote) return;
+    var sub = document.getElementById('courbeSub');
+    if (sub) sub.textContent = JOURS === 7 ? '7 derniers jours' : (JOURS === 30 ? '30 derniers jours' : '3 derniers mois');
+
+    var jours = [], index = {};
+    for (var i = 0; i < JOURS; i++) {
+      var dd = new Date(d.debut); dd.setDate(dd.getDate() + i);
+      index[dd.toDateString()] = jours.length;
+      jours.push({ date: dd, v: 0 });
+    }
+    d.cour.forEach(function (o) {
+      var k = minuit(new Date(o.created_at)).toDateString();
+      if (index[k] !== undefined) jours[index[k]].v += payout(o);
+    });
+
+    // Le SVG est mis à l'échelle de son cadre : sur un téléphone, un repère de
+    // 1000 de large réduit les libellés à 3 px. On réduit donc le repère lui-même.
+    // Trois tailles de repère : téléphone, demi-colonne, pleine largeur.
+    // Sans ça, dans une colonne de 560 px, les libellés tombaient à 6 px.
+    var l = hote.clientWidth;
+    var etroit = l > 0 && l < 520;
+    var moyen = l >= 520 && l < 780;
+    var W = etroit ? 400 : (moyen ? 520 : 1000);
+    var H = etroit ? 250 : (moyen ? 150 : 230);
+    var PL = etroit ? 42 : 46, PR = 12, PT = 16, PB = 28;
+    var dz = dimZoom(hote);
+    if (dz) { W = dz.W; H = dz.H; PL = 56; PR = 20; PT = 24; PB = 38; etroit = false; moyen = false; }
+    var maxV = Math.max.apply(null, jours.map(function (p) { return p.v; }));
+    var pas = maxV <= 40 ? 10 : (maxV <= 120 ? 25 : (maxV <= 400 ? 50 : 200));
+    var max = Math.max(pas, Math.ceil(maxV / pas) * pas);
+    var x = function (i) { return PL + i * (W - PL - PR) / Math.max(1, jours.length - 1); };
+    var y = function (v) { return PT + (1 - v / max) * (H - PT - PB); };
+
+    var ligne = '', g = '';
+    jours.forEach(function (p, i) { ligne += (i ? ' L' : 'M') + x(i).toFixed(1) + ' ' + y(p.v).toFixed(1); });
+    var aire = 'M' + x(0) + ' ' + y(0) + ' ' + ligne.slice(1) + ' L' + x(jours.length - 1) + ' ' + y(0) + ' Z';
+    for (var k = 0; k <= 4; k++) {
+      var v = max * k / 4, yy = y(v);
+      g += '<line class="gl" x1="' + PL + '" x2="' + (W - PR) + '" y1="' + yy + '" y2="' + yy + '"/>'
+         + '<text class="axv" x="' + (PL - 9) + '" y="' + (yy + 3.5) + '" text-anchor="end">' + (v ? '€' + Math.round(v) : '0') + '</text>';
+    }
+    var saut = Math.ceil(jours.length / (etroit ? 3 : (moyen ? 4 : 6))), xl = '';
+    jours.forEach(function (p, i) {
+      if (i % saut === 0 || i === jours.length - 1) {
+        // premier et dernier libellés ancrés aux bords : sinon ils débordent du cadre
+        var anc = (i === 0) ? 'start' : (i === jours.length - 1 ? 'end' : 'middle');
+        xl += '<text class="ax" x="' + x(i) + '" y="' + (H - 8) + '" text-anchor="' + anc + '">' + jourCourt(p.date) + '</text>';
+      }
+    });
+    var dern = jours.length - 1;
+
+    hote.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '">' + g + xl
+      + '<path class="ov-aire" d="' + aire + '" fill="' + INK + '"/>'
+      + '<path class="ov-trait" d="' + ligne + '" fill="none" stroke="' + INK + '" stroke-width="'
+      + (etroit ? 1.7 : (moyen ? 1.5 : 2)) + '" stroke-linejoin="round" stroke-linecap="round"/>'
+      + '<line id="ovCroix" x1="0" x2="0" y1="' + PT + '" y2="' + (H - PB) + '" stroke="' + INK + '" stroke-width="1" opacity="0"/>'
+      + '<circle id="ovPoint" r="5" fill="' + INK + '" stroke="#fff" stroke-width="2" opacity="0"/>'
+      + '<circle cx="' + x(dern) + '" cy="' + y(jours[dern].v) + '" r="4.5" fill="' + INK + '" stroke="#fff" stroke-width="2"/>'
+      + '<rect id="ovZone" x="' + PL + '" y="0" width="' + (W - PL - PR) + '" height="' + H + '" fill="transparent"/>'
+      + '</svg>';
+    hote.appendChild(tip);
+
+    var svg = hote.querySelector('svg');
+
+    // Le trait se dessine de gauche à droite.
+    var trait = svg.querySelector('.ov-trait');
+    if (trait && anime() && typeof trait.getTotalLength === 'function') {
+      try {
+        var L = trait.getTotalLength();
+        trait.style.strokeDasharray = L;
+        trait.style.strokeDashoffset = L;
+        trait.getBoundingClientRect();                       // force le calcul avant la transition
+        trait.style.transition = 'stroke-dashoffset 700ms cubic-bezier(.3,.8,.35,1)';
+        trait.style.strokeDashoffset = '0';
+      } catch (e) { /* tant pis, le trait s'affiche d'un coup */ }
+    }
+    allumer(svg.querySelectorAll('.ov-aire'));
+
+    var croix = svg.querySelector('#ovCroix'), pt = svg.querySelector('#ovPoint');
+    svg.querySelector('#ovZone').addEventListener('mousemove', function (ev) {
+      var r = svg.getBoundingClientRect();
+      var px = (ev.clientX - r.left) / r.width * W;
+      var i = Math.round((px - PL) / ((W - PL - PR) / Math.max(1, jours.length - 1)));
+      i = Math.max(0, Math.min(jours.length - 1, i));
+      var p = jours[i];
+      croix.setAttribute('x1', x(i)); croix.setAttribute('x2', x(i)); croix.setAttribute('opacity', '.18');
+      pt.setAttribute('cx', x(i)); pt.setAttribute('cy', y(p.v)); pt.setAttribute('opacity', '1');
+      tip.innerHTML = '<b>' + euro(p.v) + '</b> net<br><span class="s">'
+        + p.date.toLocaleDateString('fr-BE', { weekday: 'long', day: 'numeric', month: 'long' }) + '</span>';
+      tip.style.opacity = 1;
+      tip.style.left = Math.min(r.width - 160, Math.max(0, x(i) / W * r.width - 75)) + 'px';
+      tip.style.top = (y(p.v) / H * r.height - 56) + 'px';
+    });
+    svg.addEventListener('mouseleave', function () {
+      tip.style.opacity = 0; croix.setAttribute('opacity', '0'); pt.setAttribute('opacity', '0');
+    });
+  }
+
+  // ---------- barres : produits qui rapportent le plus ----------
+  function rendreBarres(d) {
+    var hote = document.getElementById('ovBarres'), tip = document.getElementById('tipBarres');
+    if (!hote) return;
+    var par = {};
+    d.cour.forEach(function (o) {
+      var items = o.items || [o];
+      var nom = (items[0] && (items[0].product_name || items[0].name)) || o.product_name || 'Sans nom';
+      var q = items.reduce(function (s, it) { return s + (it.quantity || 1); }, 0);
+      if (!par[nom]) par[nom] = { nom: nom, v: 0, q: 0 };
+      par[nom].v += payout(o);
+      par[nom].q += q;
+    });
+    var liste = Object.keys(par).map(function (k) { return par[k]; })
+      .sort(function (a, b) { return b.v - a.v; }).slice(0, 5);
+
+    if (!liste.length) { hote.innerHTML = '<div class="vide-mini">Aucune vente sur la période</div>'; hote.appendChild(tip); return; }
+
+    var etroit = hote.clientWidth > 0 && hote.clientWidth < 520;
+    var W = etroit ? 330 : (hote.clientWidth > 560 ? 640 : 520);
+    var RH = etroit ? 40 : 34, BH = etroit ? 20 : 15, PR = etroit ? 58 : 80;
+    var dzb = dimZoom(hote);
+    if (dzb) { W = dzb.W; RH = Math.max(56, Math.min(110, Math.floor(dzb.H / Math.max(1, liste.length)) - 4)); BH = Math.min(48, RH - 26); PR = 140; }
+    var H = liste.length * RH + 4;
+    var max = Math.max(1, liste[0].v), s = '';   // jamais 0 : sinon largeur = NaN
+    liste.forEach(function (p, i) {
+      var yy = i * RH + 4;
+      var yBarre = yy + 13, yValeur = yy + 13 + BH / 2 + 4;
+      var w = Math.max(4, (p.v / max) * (W - PR));
+      s += '<text class="ax" x="0" y="' + (yy + (dzb ? 4 : 9)) + '" style="fill:var(--black);font-size:' + (dzb ? 19 : 12) + 'px">' + esc(p.nom) + '</text>'
+         + '<rect class="anim-bar" style="transition-delay:' + (i * 60) + 'ms" x="0" y="' + yBarre + '" width="' + w + '" height="' + BH + '" rx="4" fill="' + INK + '"/>'
+         + '<rect class="anim-bar" style="transition-delay:' + (i * 60) + 'ms" x="0" y="' + yBarre + '" width="' + Math.min(w, 5) + '" height="' + BH + '" fill="' + INK + '"/>'
+         + '<text class="ax" x="' + (w + (dzb ? 14 : 9)) + '" y="' + yValeur + '" style="font-size:' + (dzb ? 18 : 11.5) + 'px;fill:var(--gray-600)">' + euro(p.v) + '</text>'
+         + '<rect class="ovbh" data-i="' + i + '" x="0" y="' + yy + '" width="' + W + '" height="' + (RH - 4) + '" fill="transparent"/>';
+    });
+    hote.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '">' + s + '</svg>';
+    hote.appendChild(tip);
+    allumer(hote.querySelectorAll('.anim-bar'));
+    hote.querySelectorAll('.ovbh').forEach(function (el) {
+      el.addEventListener('mousemove', function (ev) {
+        var p = liste[+el.dataset.i], r = hote.getBoundingClientRect();
+        tip.innerHTML = '<b>' + esc(p.nom) + '</b><br>' + p.q + ' pièce' + (p.q > 1 ? 's' : '') + ' vendue' + (p.q > 1 ? 's' : '')
+          + '<br><span class="s">' + euro(p.v) + ' net pour toi</span>';
+        tip.style.opacity = 1;
+        tip.style.left = Math.min(r.width - 200, ev.clientX - r.left + 12) + 'px';
+        tip.style.top = (ev.clientY - r.top - 8) + 'px';
+      });
+      el.addEventListener('mouseleave', function () { tip.style.opacity = 0; });
+    });
+  }
+
+  // ---------- colonnes : tailles / couleurs ----------
+  function rendreColonnes(d) {
+    var hote = document.getElementById('ovColonnes'), tip = document.getElementById('tipColonnes');
+    if (!hote) return;
+    var par = {};
+    d.cour.forEach(function (o) {
+      (o.items || [o]).forEach(function (it) {
+        var cle = MIX === 'taille' ? (it.size || o.size) : (it.color || o.color);
+        if (!cle) cle = MIX === 'taille' ? 'Taille unique' : 'Sans couleur';
+        par[cle] = (par[cle] || 0) + (it.quantity || 1);
+      });
+    });
+    var liste = Object.keys(par).map(function (k) { return [k, par[k]]; })
+      .sort(function (a, b) { return b[1] - a[1]; })
+      .slice(0, (hote.clientWidth > 0 && hote.clientWidth < 520) ? 6 : 10);
+    // Les tailles se lisent dans leur ordre naturel (XS, S, M, L...),
+    // avec la meme fonction de tri que le reste du panneau.
+    if (MIX === 'taille' && typeof comparerTailles === 'function') {
+      liste.sort(function (a, b) { return comparerTailles(a[0], b[0]); });
+    }
+
+    if (!liste.length) { hote.innerHTML = '<div class="vide-mini">Aucune vente sur la période</div>'; hote.appendChild(tip); return; }
+
+    var total = liste.reduce(function (s, x) { return s + x[1]; }, 0);
+    var large = hote.clientWidth > 820;
+    var etroit = hote.clientWidth > 0 && hote.clientWidth < 520;
+    var W = etroit ? 330 : (large ? 1000 : 520);
+    var H = etroit ? 190 : (large ? 250 : 210);
+    var PB = 34, PT = 24, n = liste.length;
+    var dzc = dimZoom(hote);
+    if (dzc) { W = dzc.W; H = dzc.H; PB = 46; PT = 34; }
+    var bande = W / n, bw = Math.min(dzc ? 90 : (large ? 40 : 24), bande - 14);
+    var max = Math.max(1, Math.max.apply(null, liste.map(function (x) { return x[1]; }))), s = '';
+    liste.forEach(function (p, i) {
+      var h = Math.max(3, (p[1] / max) * (H - PT - PB));
+      var xx = i * bande + (bande - bw) / 2, yy = H - PB - h;
+      s += '<rect class="anim-col" style="transition-delay:' + (i * 55) + 'ms" x="' + xx + '" y="' + yy + '" width="' + bw + '" height="' + h + '" rx="4" fill="' + INK + '"/>'
+         + '<rect class="anim-col" style="transition-delay:' + (i * 55) + 'ms" x="' + xx + '" y="' + (H - PB - Math.min(h, 4)) + '" width="' + bw + '" height="' + Math.min(h, 4) + '" fill="' + INK + '"/>'
+         + '<text class="ax" x="' + (xx + bw / 2) + '" y="' + (yy - (dzc ? 12 : 7)) + '" text-anchor="middle" style="fill:var(--black);font-size:' + (dzc ? 18 : 11.5) + 'px;font-weight:500">' + p[1] + '</text>'
+         + '<text class="ax" x="' + (xx + bw / 2) + '" y="' + (H - 14) + '" text-anchor="middle">' + esc(p[0]) + '</text>'
+         + '<rect class="ovch" data-i="' + i + '" x="' + (i * bande) + '" y="0" width="' + bande + '" height="' + (H - PB) + '" fill="transparent"/>';
+    });
+    s += '<line class="gl" x1="0" x2="' + W + '" y1="' + (H - PB) + '" y2="' + (H - PB) + '"/>';
+    hote.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '">' + s + '</svg>';
+    hote.appendChild(tip);
+    allumer(hote.querySelectorAll('.anim-col'));
+    hote.querySelectorAll('.ovch').forEach(function (el) {
+      el.addEventListener('mousemove', function (ev) {
+        var p = liste[+el.dataset.i], r = hote.getBoundingClientRect();
+        tip.innerHTML = '<b>' + esc(p[0]) + '</b> — ' + p[1] + ' pièce' + (p[1] > 1 ? 's' : '')
+          + '<br><span class="s">' + Math.round(p[1] / total * 100) + ' % de tes ventes</span>';
+        tip.style.opacity = 1;
+        tip.style.left = Math.min(r.width - 180, ev.clientX - r.left + 12) + 'px';
+        tip.style.top = (ev.clientY - r.top - 8) + 'px';
+      });
+      el.addEventListener('mouseleave', function () { tip.style.opacity = 0; });
+    });
+  }
+
+  // ---------- stock qui s'epuise ----------
+  function rendreStock() {
+    var hote = document.getElementById('ovStock');
+    if (!hote) return;
+    var prods = (typeof loadedProducts !== 'undefined' && Array.isArray(loadedProducts)) ? loadedProducts : [];
+    if (typeof stockLignes !== 'function') { hote.innerHTML = ''; return; }
+    var lignes = [];
+    prods.forEach(function (p) {
+      stockLignes(p.sizes_stock).forEach(function (l) {
+        if (l.qte <= SEUIL_STOCK) {
+          lignes.push({ nom: p.name, variante: (l.couleur ? l.couleur + ' · ' : '') + l.taille, qte: l.qte });
+        }
+      });
+    });
+    lignes.sort(function (a, b) { return a.qte - b.qte; });
+    if (!lignes.length) {
+      hote.innerHTML = '<div class="vide-mini">Aucun stock sous le seuil de ' + SEUIL_STOCK + ' pièces.</div>';
+      return;
+    }
+    // Tout est affiché : une alerte cachée derrière un « + N autres » ne serait pas vue.
+    var html = lignes.map(function (l) {
+      var couleur = l.qte <= 2 ? 'var(--red)' : 'var(--orange)';
+      var largeur = Math.max(7, (l.qte / (SEUIL_STOCK + 3)) * 100);
+      return '<div class="stock-row">'
+        + '<div class="lab"><div class="p">' + esc(l.nom) + '</div>'
+        + '<div class="v">' + esc(l.variante) + '</div></div>'
+        + '<div class="stock-bar"><i style="width:' + largeur + '%;background:' + couleur + '"></i></div>'
+        + '<div class="stock-n" style="color:' + couleur + '">'
+        + (l.qte === 0 ? 'épuisé' : l.qte + '<span class="u"> restant' + (l.qte > 1 ? 's' : '') + '</span>') + '</div>'
+        + '</div>';
+    }).join('');
+    hote.innerHTML = html;
+  }
+
+  // ---------- commandes récentes : tout ce qui reste à expédier + les 3 dernières envoyées ----------
+  var DERNIERES_ENVOYEES = 2;
+  var MAX_A_FAIRE = 5;        // au-delà, on renvoie vers l'onglet Commandes
+  function rendreCommandes() {
+    var corps = document.getElementById('overview-orders');
+    if (!corps) return;
+    // Si une seule aide du v1 manque, on laisse le tableau d'origine tel quel
+    // plutôt que d'afficher une ligne cassée.
+    if (typeof getShippingBadge !== 'function' || typeof surnomHtml !== 'function'
+        || typeof shortOrder !== 'function' || typeof esc !== 'function') return;
+
+    var parDate = function (a, b) { return new Date(b.created_at) - new Date(a.created_at); };
+    var aFaire = CMD.filter(enAttente).sort(function (a, b) {   // la plus ancienne d'abord : c'est l'urgente
+      return new Date(a.created_at) - new Date(b.created_at);
+    });
+    var envoyees = CMD.filter(function (o) { return !enAttente(o); }).sort(parDate).slice(0, DERNIERES_ENVOYEES);
+
+    var sous = document.getElementById('cmdSub');
+    if (sous) {
+      sous.textContent = aFaire.length
+        ? aFaire.length + (aFaire.length > 1 ? ' à expédier' : ' à expédier') + ' + les ' + DERNIERES_ENVOYEES + ' dernières envoyées'
+        : 'aucune commande à expédier — les ' + DERNIERES_ENVOYEES + ' dernières envoyées';
+    }
+
+    // Quatre colonnes au lieu de six : le tableau doit tenir dans la moitié de
+    // l'écran sans barre de défilement. La quantité rejoint le produit, le
+    // surnom rejoint le client. L'en-tête d'origine reste écrit dans la page :
+    // si ce bloc ne s'exécute pas, on retrouve le tableau du v1 tel quel.
+    enTeteCompact();
+
+    var reste = Math.max(0, aFaire.length - MAX_A_FAIRE);
+    var lignes = aFaire.slice(0, MAX_A_FAIRE).concat(envoyees);
+    if (!lignes.length) {
+      corps.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
+      return;
+    }
+    corps.innerHTML = (reste
+      ? '<tr class="cmd-reste"><td colspan="4">+ ' + reste + ' autre' + (reste > 1 ? 's' : '')
+        + ' à expédier — <span class="lien-doux" id="lienToutesCommandes2">voir toutes les commandes &rarr;</span></td></tr>'
+      : '') + lignes.map(function (o) {
+      var items = o.items || [o];
+      var produit = items.map(function (i) {
+        var det = [i.size || '?'];
+        if (i.color) det.push(i.color);
+        var q = (i.quantity || 1) > 1 ? '<span class="cmd-qte">' + (i.quantity) + '&times; </span>' : '';
+        return q + esc(i.product_name || i.name || '') + ' <span class="sec">(' + esc(det.join(' · ')) + ')</span>';
+      }).join('<br>');
+      var vieille = enRetard(o);
+      var cls = enAttente(o) ? (vieille ? ' class="retard"' : '') : ' class="faded"';
+      var marque = vieille ? ' <span class="pastille-retard">en retard</span>' : '';
+      return '<tr' + cls + '><td class="bold">' + shortOrder(o.order_number)
+        + '<div class="cmd-date">' + (typeof dateCommande === 'function' ? dateCommande(o.created_at) : '') + '</div></td>'
+        + '<td>' + produit + '</td>'
+        + '<td class="cmd-client"><span class="sec">' + esc(o.customer_name || '') + '</span><br>'
+        + surnomHtml(o) + '</td>'
+        + '<td>' + getShippingBadge(o.shipping_status) + marque + '</td></tr>';
+    }).join('');
+  }
+
+  // Chaque bloc est isolé : si l'un échoue sur une donnée inattendue, les autres
+  // s'affichent quand même et le panneau v1 continue de fonctionner normalement.
+  function sansCasser(nom, fn, arg) {
+    try { fn(arg); }
+    catch (e) { if (window.console && console.warn) console.warn('[vue d\'ensemble] ' + nom, e); }
+  }
+
+  function rendreTout() {
+    var d;
+    try { d = decoupe(); } catch (e) { return; }
+    sansCasser('tuiles', rendreTuiles, d);
+    sansCasser('commandes', rendreCommandes, d);
+    sansCasser('courbe', rendreCourbe, d);
+    sansCasser('barres', rendreBarres, d);
+    sansCasser('colonnes', rendreColonnes, d);
+    sansCasser('stock', rendreStock, d);
+  }
+
+  // ---------- branchements ----------
+  var _loadDashboard0 = loadDashboard;
+  loadDashboard = async function () { squelettes(); cascade(); return await _loadDashboard0.apply(this, arguments); };
+
+  var _loadOrders = loadOrders;
+  loadOrders = async function () {
+    lancerLecture();                       // en parallele de la lecture du v1
+    var r = await _loadOrders.apply(this, arguments);
+    // Le v1 vient de remplir le tableau a sa facon : on remet les cadres gris
+    // le temps du rendu, plutot que de laisser clignoter l'ancienne mise en page.
+    var corps = document.getElementById('overview-orders');
+    if (corps) corps.innerHTML = '<tr><td colspan="4"><div class="sq sq-ligne"></div></td></tr>'
+                               + '<tr><td colspan="4"><div class="sq sq-ligne"></div></td></tr>'
+                               + '<tr><td colspan="4"><div class="sq sq-ligne"></div></td></tr>';
+    try { await relire(); } catch (e) { if (window.console) console.warn('[vue d\'ensemble]', e); }
+    return r;
+  };
+
+  var _loadProducts = loadProducts;
+  loadProducts = async function () {
+    var r = await _loadProducts.apply(this, arguments);
+    sansCasser('stock', rendreStock);
+    return r;
+  };
+
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest ? ev.target.closest('#ovPeriode button') : null;
+    if (b) {
+      document.querySelectorAll('#ovPeriode button').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on'); JOURS = parseInt(b.dataset.j, 10); rendreTout(); return;
+    }
+    var m = ev.target.closest ? ev.target.closest('#ovMix button') : null;
+    if (m) {
+      document.querySelectorAll('#ovMix button').forEach(function (x) { x.classList.remove('on'); });
+      m.classList.add('on'); MIX = m.dataset.m; rendreColonnes(decoupe());
+    }
+  });
+
+  window.addEventListener('resize', function () { if (CMD.length) rendreTout(); });
+})();
+
+(function () {
+  document.addEventListener('click', function (ev) {
+    if (typeof showSection !== 'function' || !ev.target || !ev.target.closest) return;
+    if (ev.target.closest('#lienToutesCommandes') || ev.target.closest('#lienToutesCommandes2')) {
+      showSection('orders', document.querySelector('.sidebar a[onclick*="orders"]'));
+    } else if (ev.target.closest('#lienProduits')) {
+      showSection('products', document.querySelector('.sidebar a[onclick*="products"]'));
+    }
+  });
+})();
+</script>
+<script>
+(function () {
+  function bloquee() {
+    var s = currentBrand && (currentBrand.status || currentBrand.statut);
+    return String(s || 'active').toLowerCase() === 'blocked';
+  }
+
+  function refus() {
+    var e = document.getElementById('ecranBloque');
+    if (e) e.classList.add('show');
+  }
+
+  function verrouillerProduits() {
+    if (!bloquee()) return;
+    var add = document.querySelector('#sec-products .btn-add');
+    if (add) {
+      add.classList.add('verrou');
+      add.title = "Boutique en pause : impossible d'ajouter un produit.";
+    }
+    document.querySelectorAll('#products-table .btn-edit, #products-table .btn-delete').forEach(function (b) {
+      b.classList.add('verrou');
+      b.title = 'Boutique en pause : modification impossible.';
+    });
+  }
+
+  function appliquer() {
+    var ecran = document.getElementById('ecranBloque');
+    var bandeau = document.getElementById('bandeauBloque');
+    if (!ecran) return;
+    if (!bloquee()) {
+      ecran.classList.remove('show');
+      if (bandeau) bandeau.classList.remove('show');
+      document.querySelectorAll('.verrou').forEach(function (b) { b.classList.remove('verrou'); b.title = ''; });
+      return;
+    }
+    var nom = document.getElementById('bloqMarque');
+    if (nom && currentBrand && currentBrand.name) nom.textContent = currentBrand.name;
+    ecran.classList.add('show');
+    if (bandeau) bandeau.classList.add('show');
+    verrouillerProduits();
+  }
+
+  // Garde-fous : même si un bouton est forcé, l'action est refusée côté page.
+  // (Le serveur doit refuser aussi — voir la note d'intégration.)
+  var _openAdd = window.openAddModal, _openEdit = window.openEditModal;
+  var _submit = window.submitProduct, _del = window.confirmDeleteProduct;
+  if (_openAdd) window.openAddModal = function () { if (bloquee()) return refus(); return _openAdd.apply(this, arguments); };
+  if (_openEdit) window.openEditModal = function () { if (bloquee()) return refus(); return _openEdit.apply(this, arguments); };
+  if (_submit) window.submitProduct = function () { if (bloquee()) return refus(); return _submit.apply(this, arguments); };
+  if (_del) window.confirmDeleteProduct = function () { if (bloquee()) return refus(); return _del.apply(this, arguments); };
+
+  var _loadDashboard = loadDashboard;
+  loadDashboard = async function () {
+    var r = await _loadDashboard.apply(this, arguments);
+    try { appliquer(); } catch (e) { if (window.console) console.warn('[marque bloquée]', e); }
+    return r;
+  };
+
+  var _loadProducts2 = loadProducts;
+  loadProducts = async function () { var r = await _loadProducts2.apply(this, arguments); verrouillerProduits(); return r; };
+
+  document.addEventListener('click', function (ev) {
+    var t = ev.target;
+    if (!t || !t.closest) return;
+    if (t.closest('#bloqVoirCommandes')) {
+      document.getElementById('ecranBloque').classList.remove('show');
+      if (typeof showSection === 'function') {
+        var lien = document.querySelector('.sidebar a[onclick*="orders"]');
+        showSection('orders', lien);
+      }
+    }
+    if (t.closest('#bloqDeconnexion') && typeof doLogout === 'function') {
+      document.getElementById('ecranBloque').classList.remove('show');
+      doLogout();
+    }
+  });
+
+  // Permet de réévaluer le statut sans recharger la page.
+  window.addEventListener('uneek:statut', appliquer);
+})();
+</script>
+
+</body>
+</html>
