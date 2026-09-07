@@ -1296,11 +1296,18 @@
 <script>
 /* ===========================================================
    AJOUT : mettre une marque en pause depuis l'onglet Marques.
-   Rien du panneau v1 n'est modifie : on enveloppe loadBrands et on
-   retouche les lignes une fois qu'elles sont affichees.
+   Rien du panneau v1 n'est modifie.
+
+   Le v1 reecrit tout le tableau a chaque chargement, ce qui effaçait
+   les boutons. On ne refait plus de requete pour les remettre :
+     - on lit au passage la reponse que le v1 recupere deja ;
+     - un observateur remet les boutons dans la foulee, sans attente.
+   Resultat : plus de clignotement.
    =========================================================== */
 (function () {
-  var ETATS = {};   // id de marque -> is_active
+  var ETATS = {};          // id de marque -> is_active
+  var connus = false;      // a-t-on deja vu une reponse de l'API ?
+  var obs = null;
 
   function texteEtat(actif) {
     return actif
@@ -1308,27 +1315,32 @@
       : '<span class="badge badge-red">En pause</span>';
   }
 
-  // Relit la liste pour connaitre l'etat de chaque marque. Le v1 n'affiche
-  // qu'un badge "Active" ecrit en dur, il ne peut pas nous le dire.
-  async function lireEtats() {
-    // authToken est declare avec "let" : il vit dans la portee globale du
-    // script, pas sur window. On le lit donc directement.
-    if (typeof authToken === 'undefined' || !authToken) return false;
-    try {
-      var res = await fetch(API_BASE + '/admin/brands', {
-        headers: { 'Authorization': 'Bearer ' + authToken }
-      });
-      var data = await res.json();
-      var liste = Array.isArray(data) ? data : (data && Array.isArray(data.brands) ? data.brands : []);
-      if (!liste.length) return false;
-      var vu = false;
-      ETATS = {};
-      liste.forEach(function (b) {
-        if (b && b.id && typeof b.is_active === 'boolean') { ETATS[b.id] = b.is_active; vu = true; }
-      });
-      return vu;   // false = l'API n'est pas encore a jour, on ne touche a rien
-    } catch (e) { return false; }
+  function noter(liste) {
+    if (!Array.isArray(liste) || !liste.length) return;
+    var vu = false, neuf = {};
+    liste.forEach(function (b) {
+      if (b && b.id && typeof b.is_active === 'boolean') { neuf[b.id] = b.is_active; vu = true; }
+    });
+    if (vu) { ETATS = neuf; connus = true; }
   }
+
+  // On ecoute la requete que le v1 fait deja, au lieu d'en faire une seconde.
+  // La reponse est clonee : le v1 lit toujours la sienne, intacte.
+  var _fetch = window.fetch;
+  window.fetch = function (url, opts) {
+    var p = _fetch.apply(this, arguments);
+    try {
+      var u = String(url), m = ((opts && opts.method) || 'GET').toUpperCase();
+      if (m === 'GET' && u.indexOf('/admin/brands') !== -1) {
+        p.then(function (res) {
+          res.clone().json().then(function (d) {
+            noter(Array.isArray(d) ? d : (d && d.brands));
+          }).catch(function () {});
+        }).catch(function () {});
+      }
+    } catch (e) { /* on ne gene jamais la requete d'origine */ }
+    return p;
+  };
 
   function idDeLaLigne(tr) {
     var sup = tr.querySelector('button[onclick*="askDeleteBrand"]');
@@ -1337,29 +1349,47 @@
     return m ? m[1] : null;
   }
 
+  // Synchrone, et sans requete : peut donc etre rejoue autant qu'on veut.
   function retoucher() {
+    if (!connus) return;
     var corps = document.getElementById('brands-table');
     if (!corps) return;
-    Array.prototype.forEach.call(corps.querySelectorAll('tr'), function (tr) {
-      var id = idDeLaLigne(tr);
-      if (!id || !(id in ETATS)) return;
-      var actif = ETATS[id];
-      var cases = tr.querySelectorAll('td');
-      if (cases.length < 6) return;
+    if (obs) obs.disconnect();               // ne pas se declencher soi-meme
+    try {
+      Array.prototype.forEach.call(corps.querySelectorAll('tr'), function (tr) {
+        var id = idDeLaLigne(tr);
+        if (!id || !(id in ETATS)) return;
+        var actif = ETATS[id];
+        var cases = tr.querySelectorAll('td');
+        if (cases.length < 6) return;
 
-      cases[4].innerHTML = texteEtat(actif);
-      tr.classList.toggle('marque-en-pause', !actif);
+        var voulu = texteEtat(actif);
+        if (cases[4].innerHTML !== voulu) cases[4].innerHTML = voulu;
+        tr.classList.toggle('marque-en-pause', !actif);
 
-      if (!tr.querySelector('.btn-pause')) {
-        var nom = (cases[0] && cases[0].textContent) || 'cette marque';
-        var b = document.createElement('button');
-        b.className = 'btn-pause';
-        b.type = 'button';
-        b.addEventListener('click', function () { demander(id, nom, ETATS[id]); });
-        cases[5].insertBefore(b, cases[5].firstChild);
-      }
-      tr.querySelector('.btn-pause').textContent = actif ? 'Mettre en pause' : 'Réactiver';
-    });
+        var b = tr.querySelector('.btn-pause');
+        if (!b) {
+          var nom = (cases[0] && cases[0].textContent) || 'cette marque';
+          b = document.createElement('button');
+          b.className = 'btn-pause';
+          b.type = 'button';
+          b.addEventListener('click', function () { demander(id, nom, ETATS[id]); });
+          cases[5].insertBefore(b, cases[5].firstChild);
+        }
+        var libelle = actif ? 'Mettre en pause' : 'Réactiver';
+        if (b.textContent !== libelle) b.textContent = libelle;
+      });
+    } finally {
+      if (obs) brancher();
+    }
+  }
+
+  // Des que le v1 reecrit le tableau, on remet les boutons dans la foulee.
+  function brancher() {
+    var corps = document.getElementById('brands-table');
+    if (!corps) return;
+    if (!obs) obs = new MutationObserver(function () { retoucher(); });
+    obs.observe(corps, { childList: true });
   }
 
   function demander(id, nom, actif) {
@@ -1404,19 +1434,37 @@
     }
   }
 
-  // On enveloppe la fonction du v1 : elle fait son travail, puis on retouche.
+  // Filet : si la lecture au passage n'a rien donne (un autre script a pu
+  // remplacer fetch entre-temps), on va chercher les etats une seule fois.
+  async function rattraper() {
+    if (connus) return;
+    if (typeof authToken === 'undefined' || !authToken) return;
+    try {
+      var res = await fetch(API_BASE + '/admin/brands', {
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+      var d = await res.json();
+      noter(Array.isArray(d) ? d : (d && d.brands));
+    } catch (e) { /* tant pis, on reessaiera au prochain chargement */ }
+  }
+
+  // On enveloppe la fonction du v1 : elle fait son travail, puis on retouche
+  // tout de suite, avec ce qu'on a deja lu au passage. Aucune attente.
   if (typeof loadBrands === 'function') {
     var _loadBrands = loadBrands;
     loadBrands = async function () {
       var r = await _loadBrands.apply(this, arguments);
       try {
-        if (await lireEtats()) retoucher();
-      } catch (e) {
-        if (window.console) console.warn('[mise en pause]', e);
-      }
+        brancher();
+        if (!connus) await rattraper();
+        retoucher();
+      } catch (e) { if (window.console) console.warn('[mise en pause]', e); }
       return r;
     };
   }
+
+  document.addEventListener('DOMContentLoaded', brancher);
+  brancher();
 })();
 </script>
 </body>
