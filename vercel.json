@@ -1,9 +1,11 @@
 {
   "crons": [
-    { "path": "/api/cron/sauvegarde", "schedule": "0 3 * * *" }
+    { "path": "/api/cron/sauvegarde", "schedule": "0 3 * * *" },
+    { "path": "/api/cron/stripe-transfers", "schedule": "0 2 * * *" }
   ],
   "functions": {
-    "api/cron/sauvegarde.js": { "maxDuration": 60 }
+    "api/cron/sauvegarde.js": { "maxDuration": 60 },
+    "api/cron/stripe-transfers.js": { "maxDuration": 60 }
   },
   "headers": [
     {
