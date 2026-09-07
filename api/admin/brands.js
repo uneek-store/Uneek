@@ -12,7 +12,7 @@ import { envoyer, esc } from "../lib/email.js";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, PATCH, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -28,8 +28,7 @@ export default async function handler(req, res) {
     try {
       const { data, error } = await supabaseAdmin
         .from("brands")
-        .select("id, name, slug, tagline, city, year, image_url, logo_url, email, products(count), creator_accounts(full_name, email)")
-        .eq("is_active", true)
+        .select("id, name, slug, tagline, city, year, image_url, logo_url, email, is_active, products(count), creator_accounts(full_name, email)")
         .order("name");
 
       if (error) {
@@ -50,6 +49,42 @@ export default async function handler(req, res) {
       return res.status(200).json(brands);
     } catch (err) {
       console.error("Admin brands GET error:", err);
+      return res.status(500).json({ error: "Erreur serveur" });
+    }
+  }
+
+  // --- PATCH : mettre une marque en pause, ou la reactiver ---
+  // Rien n'est supprime : on bascule is_active. Une marque en pause reste
+  // dans la liste ci-dessus, sinon l'admin ne pourrait plus la reactiver.
+  if (req.method === "PATCH") {
+    const { brand_id, is_active } = req.body || {};
+    if (!brand_id) return res.status(400).json({ error: "brand_id requis" });
+    if (typeof is_active !== "boolean") {
+      return res.status(400).json({ error: "is_active doit valoir true ou false" });
+    }
+
+    try {
+      const { data, error } = await supabaseAdmin
+        .from("brands")
+        .update({ is_active })
+        .eq("id", brand_id)
+        .select("id, name, is_active")
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error updating brand status:", error);
+        return res.status(500).json({ error: "Erreur serveur" });
+      }
+      if (!data) return res.status(404).json({ error: "Marque introuvable" });
+
+      return res.status(200).json({
+        success: true,
+        brand_id: data.id,
+        is_active: data.is_active,
+        message: data.is_active ? "Marque reactivee" : "Marque mise en pause",
+      });
+    } catch (err) {
+      console.error("Patch brand error:", err);
       return res.status(500).json({ error: "Erreur serveur" });
     }
   }
