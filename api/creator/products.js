@@ -102,6 +102,23 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "brand_id requis" });
     }
 
+    // Marque en pause : on peut encore consulter, plus rien publier ni modifier.
+    // Le panneau createur bloque deja ces boutons ; ceci ferme le passage par
+    // l'API. Si l'etat ne peut pas etre lu, on laisse passer : une panne de
+    // lecture ne doit pas bloquer un createur en regle.
+    if (req.method !== "GET") {
+      const { data: marque } = await supabaseAdmin
+        .from("brands")
+        .select("is_active")
+        .eq("id", brand_id)
+        .maybeSingle();
+      if (marque && marque.is_active === false) {
+        return res.status(403).json({
+          error: "Ta boutique est en pause. Contacte UNEEK pour la reactiver.",
+        });
+      }
+    }
+
     // --- LISTE DES PRODUITS DU CRÉATEUR ---
     if (req.method === "GET") {
       const { data, error } = await supabaseAdmin
