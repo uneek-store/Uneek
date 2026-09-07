@@ -442,7 +442,32 @@ function toggleFav(id) {
   updateFavIcon();
 }
 
+// Combien d'exemplaires de cette variante sont DEJA dans le panier.
+// Le serveur refuse de toute facon (constat 03), mais se faire refuser au
+// paiement apres avoir rempli son adresse, c'est une commande perdue.
+function dejaAuPanier(productId, size, couleur) {
+  return cart.filter((l) => l.id === productId
+    && (l.selectedSize || null) === (size || null)
+    && (l.selectedColor || null) === (couleur || null)).length;
+}
+
+function stockDisponible(product, size, couleur) {
+  const lignes = stockLignes(product && product.sizes_stock);
+  if (!lignes.length) return null; // pas de detail par taille : on ne bloque pas
+  const utiles = lignes.filter((l) => l.taille === size
+    && (couleur ? l.couleur === couleur : true));
+  if (!utiles.length) return 0;
+  return utiles.reduce((n, l) => n + (parseInt(l.qte, 10) || 0), 0);
+}
+
 function addToCart(product, size, couleur) {
+  const dispo = stockDisponible(product, size, couleur);
+  if (dispo !== null && dejaAuPanier(product.id, size, couleur) >= dispo) {
+    showToast(dispo === 0
+      ? 'Cette taille est épuisée'
+      : 'Tu as déjà les ' + dispo + ' exemplaire' + (dispo > 1 ? 's' : '') + ' disponibles dans ton panier');
+    return;
+  }
   const b = getBrand(product);
   cart.push({
     id: product.id,

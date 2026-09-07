@@ -14,12 +14,28 @@ import { supabaseAdmin } from "./lib/supabase.js";
 // a fait disparaitre "story" de la boutique sans que personne le voie pendant
 // deux jours. Retirer nommement ce qu'on ne veut pas ne peut pas produire
 // cette panne-la : une colonne ajoutee en base continue de passer.
-const CHAMPS_PRIVES = ["commission_percent"];
+//
+// DEUX COLONNES, PAS UNE (constate en direct le 7 septembre)
+// La base contient commission_percent ET commission_percentage. Le code ne
+// se sert que de la premiere ; la seconde est une survivance d'un schema
+// plus ancien, que personne ne lit plus — mais qui contenait toujours un
+// vrai taux, et qui sortait donc en clair par select("*"). Retirer une
+// seule des deux ne servait a rien. On retire donc tout ce qui commence par
+// "commission", ce qui couvre aussi la prochaine variante d'orthographe.
+const CHAMPS_PRIVES = ["commission_percent", "commission_percentage"];
+const PREFIXES_PRIVES = ["commission"];
+
+function estPrive(champ) {
+  if (CHAMPS_PRIVES.includes(champ)) return true;
+  return PREFIXES_PRIVES.some((p) => champ.startsWith(p));
+}
 
 function sansChampsPrives(produit) {
   if (!produit || typeof produit !== "object") return produit;
   const copie = { ...produit };
-  for (const champ of CHAMPS_PRIVES) delete copie[champ];
+  for (const champ of Object.keys(copie)) {
+    if (estPrive(champ)) delete copie[champ];
+  }
   return copie;
 }
 

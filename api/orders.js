@@ -66,9 +66,114 @@ function ecrireStock(ss, taille, couleur, valeur) {
   return { ...ss, [taille]: valeur };
 }
 
+// Le total, toutes tailles et toutes couleurs confondues. Sert a tenir a jour
+// la colonne "stock" (constat 16) : les panneaux la lisent quand le detail par
+// taille est vide, et elle n'avait jamais bouge depuis la creation du produit.
+// Releve du 7 septembre : le produit "hoodie poul" annoncait 18 alors que le
+// detail totalisait 17.
+function stockTotal(ss) {
+  if (!ss || typeof ss !== "object") return 0;
+  let total = 0;
+  for (const cle of Object.keys(ss)) {
+    const v = ss[cle];
+    if (v !== null && typeof v === "object") {
+      for (const t of Object.keys(v)) total += parseInt(v[t], 10) || 0;
+    } else {
+      total += parseInt(v, 10) || 0;
+    }
+  }
+  return total;
+}
+
+// CONSTAT 03 — deux exemplaires du meme article passaient avec une piece
+// en stock.
+// Le panier du site ajoute UNE LIGNE par exemplaire : trois fois le meme
+// tee-shirt en M, ce sont trois lignes de quantite 1. La verification se
+// faisait ligne par ligne : chacune voyait "1 disponible >= 1 demande" et
+// passait. Le decrement, lui, relisait a chaque tour le stock d'origine
+// garde en memoire, et ecrivait donc trois fois la meme valeur : trois
+// vendus, un seul decompte.
+// On regroupe donc par article + taille + couleur AVANT de verifier et
+// AVANT de decrementer. Les lignes de la commande, elles, restent telles
+// que le client les a composees : rien ne change de ce qu'il voit.
+function regrouperParVariante(items) {
+  const par = new Map();
+  for (const item of items || []) {
+    const cle = [item.product_id, item.size || "", item.color || ""].join("\u0000");
+    const q = Math.max(1, parseInt(item.quantity, 10) || 1);
+    const deja = par.get(cle);
+    if (deja) deja.quantity += q;
+    else par.set(cle, {
+      product_id: item.product_id,
+      size: item.size || null,
+      color: item.color || null,
+      quantity: q,
+    });
+  }
+  return Array.from(par.values());
+}
+
+// CONSTAT 02 — le stock partait avant le paiement et ne revenait jamais.
+// La reservation est ce qui empeche de vendre deux fois la meme piece entre
+// le panier et le paiement : on la garde. Ce qui manquait, c'est de pouvoir
+// la DEFAIRE. reserverStock rend un journal de ce qu'il a change, valeur
+// d'origine comprise ; restituerStock remet exactement ces valeurs.
+//
+// Le journal contient la valeur AVANT, pas un delta : remettre la valeur
+// d'origine est juste meme si l'ecriture a echoue a mi-chemin, alors qu'un
+// "+ 1" applique deux fois inventerait du stock.
+async function reserverStock(lignes, produits) {
+  const journal = [];
+  for (const ligne of lignes) {
+    const produit = produits.find((p) => p.id === ligne.product_id);
+    if (!ligne.size || !produit || !produit.sizes_stock) continue;
+
+    const avant = produit.sizes_stock;
+    const disponible = lireStock(avant, ligne.size, ligne.color) || 0;
+    const apres = ecrireStock(
+      avant, ligne.size, ligne.color, Math.max(0, disponible - ligne.quantity));
+
+    const { error } = await supabaseAdmin
+      .from("products")
+      .update({ sizes_stock: apres, stock: stockTotal(apres) })
+      .eq("id", produit.id);
+
+    if (error) {
+      // On s'arrete au premier refus : le journal contient exactement ce
+      // qui a ete ecrit jusque-la, et l'appelant peut tout remettre.
+      console.error("[stock] reservation refusee pour", produit.id, ":", error.message);
+      return { ok: false, journal, produit: produit.name || produit.id };
+    }
+
+    journal.push({ product_id: produit.id, sizes_stock_avant: avant });
+    // La copie en memoire suit, sinon deux lignes du meme produit mais de
+    // tailles differentes reliraient toutes les deux le stock d'origine.
+    produit.sizes_stock = apres;
+  }
+  return { ok: true, journal };
+}
+
+async function restituerStock(journal) {
+  for (const entree of (journal || []).slice().reverse()) {
+    const { error } = await supabaseAdmin
+      .from("products")
+      .update({
+        sizes_stock: entree.sizes_stock_avant,
+        stock: stockTotal(entree.sizes_stock_avant),
+      })
+      .eq("id", entree.product_id);
+    if (error) {
+      // Rien d'autre a tenter ici : on le dit fort, pour que ca se voie
+      // dans les journaux Vercel plutot que de disparaitre en silence.
+      console.error("[stock] RESTITUTION IMPOSSIBLE pour", entree.product_id,
+        ":", error.message, "— stock a corriger a la main");
+    }
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -174,28 +279,33 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Erreur récupération produits" });
       }
 
-      // Vérifier le stock AVANT de créer la commande
-      for (const item of items) {
-        const product = products.find((p) => p.id === item.product_id);
+      // Vérifier le stock AVANT de créer la commande.
+      // Sur les TOTAUX par variante, pas ligne par ligne : voir le commentaire
+      // de regrouperParVariante plus haut (constat 03).
+      const demande = regrouperParVariante(items);
+
+      for (const ligne of demande) {
+        const product = products.find((p) => p.id === ligne.product_id);
         if (!product) {
           return res.status(400).json({ error: `Produit introuvable` });
         }
-        if (item.size && product.sizes_stock) {
-          if (stockParCouleur(product.sizes_stock) && !item.color) {
+        if (ligne.size && product.sizes_stock) {
+          if (stockParCouleur(product.sizes_stock) && !ligne.color) {
             return res.status(400).json({
               error: `Couleur requise pour ${product.name}`,
             });
           }
-          const available = lireStock(product.sizes_stock, item.size, item.color);
+          const available = lireStock(product.sizes_stock, ligne.size, ligne.color);
           if (available === null) {
             return res.status(400).json({
-              error: `Combinaison indisponible pour ${product.name} (${item.color || ""} ${item.size})`,
+              error: `Combinaison indisponible pour ${product.name} (${ligne.color || ""} ${ligne.size})`,
             });
           }
-          if (available < (item.quantity || 1)) {
-            const quoi = (item.color ? item.color + " " : "") + item.size;
+          if (available < ligne.quantity) {
+            const quoi = (ligne.color ? ligne.color + " " : "") + ligne.size;
             return res.status(400).json({
-              error: `Stock insuffisant pour ${product.name} ${quoi} (${available} restant(s))`,
+              error: `Stock insuffisant pour ${product.name} ${quoi} (${available} restant(s)`
+                + `, ${ligne.quantity} demandé${ligne.quantity > 1 ? "s" : ""})`,
             });
           }
         }
@@ -268,22 +378,45 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Erreur ajout produits à la commande" });
       }
 
-      // Décrémenter le stock
-      for (const item of items) {
-        const product = products.find((p) => p.id === item.product_id);
-        if (item.size && product?.sizes_stock) {
-          // Decrement cible : la bonne couleur si le produit en a.
-          const currentStock = lireStock(product.sizes_stock, item.size, item.color) || 0;
-          const newStock = Math.max(0, currentStock - (item.quantity || 1));
-          const updatedSizesStock = ecrireStock(
-            product.sizes_stock, item.size, item.color, newStock);
+      // Réserver le stock (constat 02).
+      // La reservation vient APRES l'ecriture de la commande : si la commande
+      // n'a pas pu s'ecrire, aucun stock n'a bouge. Et si c'est la reservation
+      // qui echoue, on remet tout ce qui avait deja ete pris avant de rendre
+      // la main — l'ancien code laissait le stock ampute et le client sans
+      // rien.
+      const reservation = await reserverStock(demande, products);
 
-          await supabaseAdmin
-            .from("products")
-            .update({ sizes_stock: updatedSizesStock })
-            .eq("id", product.id);
+      if (!reservation.ok) {
+        // On remet d'abord ce qui avait ete pris : c'est ce qui compte.
+        await restituerStock(reservation.journal);
+        // La commande existe deja en base ; on la marque plutot que de la
+        // detruire, pour qu'elle reste tracable. Si ce marquage echoue (par
+        // exemple parce que la colonne n'accepte pas cette valeur), on le
+        // dit dans les journaux mais on repond quand meme au client : le
+        // stock, lui, est en ordre.
+        const { error: errMarque } = await supabaseAdmin
+          .from("orders")
+          .update({ status: "cancelled", payment_status: "failed" })
+          .eq("id", order.id);
+        if (errMarque) {
+          console.error("[commande] " + (order.order_number || order.id)
+            + " n'a pas pu etre marquee annulee :", errMarque.message);
         }
+        return res.status(409).json({
+          error: "Le stock de « " + (reservation.produit || "un article")
+            + " » vient de partir. Ta commande n'a pas été validée, rien ne t'a été débité.",
+        });
       }
+
+      // Ce que la reservation a pris, et comment le rendre. Le jour ou le
+      // paiement Stripe s'intercale ici, c'est cette ligne qu'il faut lire :
+      // paiement confirme  -> ne rien faire, la reservation devient la vente
+      // paiement echoue ou abandonne -> restituerStock(journal), puis passer
+      //                                 la commande en payment_status "failed"
+      // Voir aussi PATCH action "annuler" plus bas, qui fait exactement ca a
+      // partir des lignes de la commande.
+      console.log("[stock] reserve pour " + (order.order_number || order.id) + " : "
+        + reservation.journal.map((e) => e.product_id).join(", "));
 
       // --- Notifications par e-mail ---
       // Placees APRES la commande et le decrement de stock, et enfermees dans
@@ -353,6 +486,120 @@ export default async function handler(req, res) {
           total: totalAmount,
           commission: totalCommission,
         },
+      });
+    }
+
+    // --- PATCH : annuler une commande et rendre son stock ---
+    // C'est la contrepartie de la reservation. Aujourd'hui c'est
+    // l'administrateur qui s'en sert ; demain, c'est ce que le retour de
+    // Stripe appellera quand un paiement n'aboutit pas.
+    if (req.method === "PATCH") {
+      const acces = controlerAcces(req, { admin: true, nom: "/api/orders (PATCH)" });
+      if (!acces.ok) return res.status(401).json({ error: "Non autorisé" });
+
+      const { order_id, action } = req.body || {};
+      if (!order_id) return res.status(400).json({ error: "order_id requis" });
+      if (action !== "annuler") {
+        return res.status(400).json({ error: "Action inconnue" });
+      }
+
+      const { data: commande, error: errCommande } = await supabaseAdmin
+        .from("orders")
+        .select("id, order_number, status, payment_status")
+        .eq("id", order_id)
+        .maybeSingle();
+
+      if (errCommande) {
+        console.error("Error reading order:", errCommande);
+        return res.status(500).json({ error: "Erreur serveur" });
+      }
+      if (!commande) return res.status(404).json({ error: "Commande introuvable" });
+
+      // Garde-fou : rendre deux fois le stock d'une meme commande
+      // inventerait des pieces qui n'existent pas.
+      if (commande.status === "cancelled") {
+        return res.status(200).json({
+          success: true, deja_annulee: true,
+          message: "Cette commande était déjà annulée, le stock n'a pas été rendu deux fois.",
+        });
+      }
+
+      const { data: lignes, error: errLignes } = await supabaseAdmin
+        .from("order_items")
+        .select("product_id, size, color, quantity")
+        .eq("order_id", order_id);
+
+      if (errLignes) {
+        console.error("Error reading order items:", errLignes);
+        return res.status(500).json({ error: "Erreur serveur" });
+      }
+
+      // ORDRE VOULU : on marque la commande annulee AVANT de rendre le stock.
+      // L'inverse serait dangereux — si le marquage echouait apres coup, un
+      // second appel repasserait le garde-fou "deja annulee" et rendrait le
+      // stock une deuxieme fois, inventant des pieces qui n'existent pas.
+      // Ici, un marquage qui echoue veut dire qu'aucun stock n'a bouge :
+      // reessayer est sans danger.
+      const { error: errMarquage } = await supabaseAdmin
+        .from("orders")
+        .update({ status: "cancelled", payment_status: "cancelled" })
+        .eq("id", order_id);
+
+      if (errMarquage) {
+        console.error("Error cancelling order:", errMarquage);
+        return res.status(500).json({
+          error: "La commande n'a pas pu être marquée annulée. Rien n'a été touché, tu peux réessayer.",
+        });
+      }
+
+      // On relit le stock actuel et on rajoute les quantites de la commande :
+      // le stock a pu bouger depuis, on ne peut pas simplement reposer une
+      // ancienne valeur.
+      const ids = [...new Set((lignes || []).map((l) => l.product_id).filter(Boolean))];
+      const { data: produits } = ids.length
+        ? await supabaseAdmin.from("products").select("id, name, sizes_stock").in("id", ids)
+        : { data: [] };
+
+      const rendus = [];
+      const manques = [];
+      for (const ligne of regrouperParVariante(lignes || [])) {
+        const produit = (produits || []).find((p) => p.id === ligne.product_id);
+        if (!ligne.size || !produit || !produit.sizes_stock) continue;
+        const actuel = lireStock(produit.sizes_stock, ligne.size, ligne.color) || 0;
+        const rendu = ecrireStock(
+          produit.sizes_stock, ligne.size, ligne.color, actuel + ligne.quantity);
+        const { error } = await supabaseAdmin
+          .from("products")
+          .update({ sizes_stock: rendu, stock: stockTotal(rendu) })
+          .eq("id", produit.id);
+        if (error) {
+          console.error("[stock] restitution refusee pour", produit.id, ":", error.message);
+          manques.push((produit.name || produit.id) + " " + (ligne.color ? ligne.color + " " : "")
+            + ligne.size + " +" + ligne.quantity);
+          continue;
+        }
+        produit.sizes_stock = rendu;
+        rendus.push((produit.name || produit.id) + " " + (ligne.color ? ligne.color + " " : "")
+          + ligne.size + " +" + ligne.quantity);
+      }
+
+      try {
+        const lignesMail = ["Stock rendu : "
+          + (rendus.length ? esc(rendus.join(" · ")) : "aucun article à rendre")];
+        if (manques.length) {
+          lignesMail.push("<strong>À CORRIGER À LA MAIN</strong> — n'a pas pu être rendu : "
+            + esc(manques.join(" · ")));
+        }
+        await alerteAdmin("Commande annulée " + (commande.order_number || ""),
+          lignesMail, "Voir les commandes");
+      } catch (err) {
+        console.error("[email] avis d'annulation ignore :", err && err.message);
+      }
+
+      return res.status(200).json({
+        success: true,
+        stock_rendu: rendus,
+        stock_non_rendu: manques,
       });
     }
 
