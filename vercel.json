@@ -1,21 +1,46 @@
 {
   "crons": [
-    { "path": "/api/cron/sauvegarde", "schedule": "0 3 * * *" },
-    { "path": "/api/cron/stripe-transfers", "schedule": "0 2 * * *" }
+    {
+      "path": "/api/cron/sauvegarde",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/stripe-transfers",
+      "schedule": "0 2 * * *"
+    }
   ],
   "functions": {
-    "api/cron/sauvegarde.js": { "maxDuration": 60 },
-    "api/cron/stripe-transfers.js": { "maxDuration": 60 }
+    "api/cron/sauvegarde.js": {
+      "maxDuration": 60
+    },
+    "api/cron/stripe-transfers.js": {
+      "maxDuration": 60
+    }
   },
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
-        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" },
-        { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=31536000; includeSubDomains"
+        },
         {
           "key": "Content-Security-Policy-Report-Only",
           "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
@@ -23,12 +48,37 @@
       ]
     }
   ],
+  "redirects": [
+    {
+      "source": "/creator.html",
+      "destination": "/creator",
+      "permanent": true
+    }
+  ],
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/robots.txt", "destination": "/api/robots" },
-    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
-    { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/creator", "destination": "/creator-v2.html" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "/api/robots"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin.html"
+    },
+    {
+      "source": "/creator",
+      "destination": "/creator-v2.html"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
   ]
 }
