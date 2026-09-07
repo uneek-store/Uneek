@@ -5,6 +5,24 @@
 
 import { supabaseAdmin } from "./lib/supabase.js";
 
+// Colonnes qui n'ont rien a faire dans une reponse publique (constat 08 de
+// l'audit du 7 septembre). commission_percent, c'est la marge negociee avec
+// chaque marque : lisible par n'importe qui, et par les concurrentes.
+//
+// POURQUOI ON RETIRE PLUTOT QUE DE LISTER LES COLONNES VOULUES
+// Le 31 aout, remplacer un select("*") par une liste explicite sur /api/brands
+// a fait disparaitre "story" de la boutique sans que personne le voie pendant
+// deux jours. Retirer nommement ce qu'on ne veut pas ne peut pas produire
+// cette panne-la : une colonne ajoutee en base continue de passer.
+const CHAMPS_PRIVES = ["commission_percent"];
+
+function sansChampsPrives(produit) {
+  if (!produit || typeof produit !== "object") return produit;
+  const copie = { ...produit };
+  for (const champ of CHAMPS_PRIVES) delete copie[champ];
+  return copie;
+}
+
 export default async function handler(req, res) {
   // Autoriser les requêtes depuis le site
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -31,7 +49,7 @@ export default async function handler(req, res) {
       if (data.brands && data.brands.is_active === false) {
         return res.status(404).json({ error: "Produit non trouvé" });
       }
-      return res.status(200).json(data);
+      return res.status(200).json(sansChampsPrives(data));
     }
 
     // Liste de produits (avec filtres optionnels)
@@ -60,7 +78,7 @@ export default async function handler(req, res) {
 
     // Map image_urls array to image_url for frontend
     const products = visibles.map(p => ({
-      ...p,
+      ...sansChampsPrives(p),
       image_url: (p.image_urls && p.image_urls.length > 0) ? p.image_urls[0] : ''
     }));
     return res.status(200).json(products);

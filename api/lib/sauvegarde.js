@@ -30,6 +30,35 @@ export const TABLES = [
 // alarme qu'on cesse de lire. Le garde-fou verifie qu'aucune table reellement
 // utilisee par le code ne manque a la liste.
 
+// LES EMPREINTES DE MOTS DE PASSE NE SORTENT PAS DE LA BASE
+// (constat 10 de l'audit du 7 septembre)
+// La sauvegarde partait chaque nuit par e-mail vers une boite Gmail, avec
+// dedans password_hash pour chaque compte createur et chaque client. Ces
+// empreintes sont du SHA-256 sans sel : un dictionnaire les retrouve en
+// quelques minutes pour tout mot de passe courant. Une boite mail n'est pas
+// l'endroit ou les ranger, et une sauvegarde n'a pas besoin d'elles pour
+// etre restaurable : au pire, on renvoie un lien de reinitialisation.
+//
+// Ce qui reste a faire, separement : remplacer SHA-256 par un vrai algorithme
+// de mot de passe (bcrypt ou argon2). Ce chantier deconnecte tout le monde
+// une fois, il se decide.
+const CHAMPS_SECRETS = {
+  creator_accounts: ["password_hash"],
+  customers: ["password_hash"],
+};
+
+export function sansSecrets(table, lignes) {
+  const champs = CHAMPS_SECRETS[table];
+  if (!champs) return lignes;
+  return lignes.map((l) => {
+    const copie = { ...l };
+    for (const champ of champs) {
+      if (champ in copie) copie[champ] = "(non sauvegardé — voir sauvegarde.js)";
+    }
+    return copie;
+  });
+}
+
 // Les photos sont stockees en base64 dans la base : elles representent
 // l'essentiel du poids. On peut les exclure pour obtenir un fichier leger,
 // suffisant pour tout ce qui est commandes, clients et comptes.
@@ -68,7 +97,8 @@ export async function construireSauvegarde({ avecImages = true } = {}) {
       echecs.push(table + " (" + error.message + ")");
       continue;
     }
-    const lignes = avecImages ? (data || []) : sansImages(table, data || []);
+    const brutes = sansSecrets(table, data || []);
+    const lignes = avecImages ? brutes : sansImages(table, brutes);
     contenu[table] = lignes;
     resume[table] = lignes.length;
   }
@@ -78,6 +108,7 @@ export async function construireSauvegarde({ avecImages = true } = {}) {
       date: new Date().toISOString(),
       site: "uneek.store",
       photos_incluses: avecImages,
+      empreintes_mots_de_passe: "volontairement exclues",
       lignes_par_table: resume,
       tables_en_echec: echecs,
       comment_restaurer:

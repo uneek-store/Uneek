@@ -81,6 +81,13 @@ export function lireJeton(jeton) {
     return { ok: false, raison: "jeton expire" };
   }
 
+  // Les deux familles de jetons sont signees avec le meme secret. Sans cette
+  // ligne, un jeton client — pourtant valablement signe — serait accepte ici
+  // comme une session de createur, avec un id absent et aucun brand_id.
+  if (charge.cid && !charge.id) {
+    return { ok: false, raison: "jeton client presente comme jeton createur" };
+  }
+
   return { ok: true, session: charge };
 }
 
@@ -88,6 +95,61 @@ export function jetonDeLaRequete(req) {
   const h = req && req.headers && req.headers.authorization;
   if (!h || typeof h !== "string" || !h.startsWith("Bearer ")) return null;
   return h.slice(7).trim();
+}
+
+// --- jetons client ---------------------------------------------------------
+//
+// LE PROBLEME QU'ON CORRIGE (constat 09 de l'audit du 7 septembre)
+// Les comptes createur et admin sont signes depuis le 31 aout. Les clients,
+// eux, recevaient base64("<leur identifiant>:<hasard>"). L'identifiant se
+// lisait en clair et le hasard n'etait verifie nulle part : fabriquer le
+// jeton d'un autre client demandait de connaitre son identifiant, et rien
+// d'autre. Ses commandes et son profil suivaient.
+//
+// Meme repli que pour les createurs : si AUTH_SECRET manque, creerJetonClient
+// renvoie null et l'appelant garde l'ancien jeton. Personne n'est enferme
+// dehors par une variable d'environnement oubliee.
+
+export function creerJetonClient(customerId) {
+  if (!secret() || !customerId) return null;
+  const charge = { cid: String(customerId), exp: Date.now() + DUREE_MS };
+  const corps = Buffer.from(JSON.stringify(charge)).toString("base64url");
+  return corps + "." + signature(corps);
+}
+
+export function lireJetonClient(jeton) {
+  if (!jeton || typeof jeton !== "string") return { ok: false, raison: "aucun jeton fourni" };
+  if (!secret()) return { ok: false, raison: "AUTH_SECRET absente du serveur" };
+
+  const parts = jeton.split(".");
+  if (parts.length !== 2) {
+    return { ok: false, raison: "ancien jeton client, non signe" };
+  }
+
+  const attendue = signature(parts[0]);
+  const a = Buffer.from(parts[1]);
+  const b = Buffer.from(attendue);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return { ok: false, raison: "signature invalide" };
+  }
+
+  let charge;
+  try {
+    charge = JSON.parse(Buffer.from(parts[0], "base64url").toString("utf-8"));
+  } catch {
+    return { ok: false, raison: "contenu du jeton illisible" };
+  }
+
+  // Symetrique de la protection ci-dessus : un jeton de createur ne doit pas
+  // pouvoir se faire passer pour un client.
+  if (!charge || !charge.cid || charge.id) {
+    return { ok: false, raison: "ce n'est pas un jeton client" };
+  }
+  if (!charge.exp || charge.exp < Date.now()) {
+    return { ok: false, raison: "jeton expire" };
+  }
+
+  return { ok: true, customerId: String(charge.cid) };
 }
 
 function marqueDemandee(req) {

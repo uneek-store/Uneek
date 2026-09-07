@@ -496,7 +496,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-08-31-securite-18';
+  const APP_VERSION = '2026-09-07-lot1-securite-20';
 
   async function checkAppVersion() {
     try {
@@ -585,6 +585,15 @@
     return String(v == null ? '' : v)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // Une valeur glissee dans un onclick="..." traverse DEUX analyseurs : le
+  // parseur HTML lit l'attribut, puis le parseur JavaScript lit la chaine.
+  // Il faut donc echapper pour JavaScript d'abord, pour HTML ensuite — dans
+  // cet ordre. esc() seul ne suffit pas : le navigateur redecode &#39; en
+  // apostrophe avant que JavaScript ne voie la chaine.
+  function escJs(v) {
+    return esc(String(v == null ? '' : v).replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
   }
 
   // Decrit precisement ce que le createur demande de changer :
@@ -1102,7 +1111,7 @@
         const creatorName = p.creator_accounts?.full_name || p.creator_name || 'Créateur';
         const category = c.category || p.category || '';
         const sizesStr = c.sizes_stock ? stockTailles(c.sizes_stock).join(', ') : (p.sizes || '');
-        const commissionStr = c.commission_percent ? '<br><span style="color:var(--blue);font-weight:500">Commission: ' + c.commission_percent + '%</span>' : '';
+        const commissionStr = c.commission_percent ? '<br><span style="color:var(--blue);font-weight:500">Commission: ' + esc(c.commission_percent) + '%</span>' : '';
 
         // Pour les modifications, construire un résumé des changements
         // Detail ligne par ligne : ancienne valeur -> nouvelle valeur
@@ -1118,7 +1127,12 @@
           }
         }
 
-        const detail = brandName + ' · par ' + creatorName + (category ? ' · ' + category : '') + (sizesStr ? '<br>Tailles: ' + sizesStr : '') + changesStr + commissionStr + photoWarn;
+        // Tout ce qui vient du createur est echappe : ces lignes s'affichent
+        // AVANT que la demande soit approuvee, dans la page qui detient le
+        // jeton admin. changesStr et photoWarn sont fabriques ici et
+        // contiennent deja du HTML voulu — ils passent donc tels quels, mais
+        // leur contenu variable est deja echappe plus haut.
+        const detail = esc(brandName) + ' · par ' + esc(creatorName) + (category ? ' · ' + esc(category) : '') + (sizesStr ? '<br>Tailles: ' + esc(sizesStr) : '') + changesStr + commissionStr + photoWarn;
         const prodName = c.name || p.products?.name || p.proposed_name || 'Sans nom';
         const prodPrice = c.price || p.proposed_price || '?';
 
@@ -1129,19 +1143,19 @@
           actionHtml = '<span class="badge badge-red">Refusé</span>';
         } else {
           pendingCount++;
-          actionHtml = '<div class="action-btns"><button class="btn-approve" onclick="askHandlePending(\'' + p.id + '\', \'approve\', \'' + prodName.replace(/'/g, "\\'") + '\')">Approuver</button><button class="btn-reject" onclick="askHandlePending(\'' + p.id + '\', \'reject\', \'' + prodName.replace(/'/g, "\\'") + '\')">Refuser</button></div>';
+          actionHtml = '<div class="action-btns"><button class="btn-approve" onclick="askHandlePending(\'' + escJs(p.id) + '\', \'approve\', \'' + escJs(prodName) + '\')">Approuver</button><button class="btn-reject" onclick="askHandlePending(\'' + escJs(p.id) + '\', \'reject\', \'' + escJs(prodName) + '\')">Refuser</button></div>';
         }
 
         html += '<div class="pending-card" id="pending-' + p.id + '"' + (p.status !== 'pending' ? ' style="opacity:0.7"' : '') + '>' +
           (photos.length > 1
           ? '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">'
-              + '<img class="pending-img" src="' + photos[0] + '" onclick="openLightbox(this.src)" alt="Photo 1" />'
+              + '<img class="pending-img" src="' + esc(photos[0]) + '" onclick="openLightbox(this.src)" alt="Photo 1" />'
               + '<div style="display:flex;gap:4px;flex-wrap:wrap;max-width:96px">'
-              + photos.slice(1).map((u, k) => '<img src="' + u + '" onclick="openLightbox(this.src)" alt="Photo ' + (k + 2) + '" style="width:28px;height:36px;object-fit:cover;border-radius:4px;cursor:pointer;border:1px solid var(--gray-200)" />').join('')
+              + photos.slice(1).map((u, k) => '<img src="' + esc(u) + '" onclick="openLightbox(this.src)" alt="Photo ' + (k + 2) + '" style="width:28px;height:36px;object-fit:cover;border-radius:4px;cursor:pointer;border:1px solid var(--gray-200)" />').join('')
               + '</div></div>'
-          : '<img class="pending-img" src="' + imgUrl + '" onclick="openLightbox(this.src)" alt="Photo produit" />') +
+          : '<img class="pending-img" src="' + esc(imgUrl) + '" onclick="openLightbox(this.src)" alt="Photo produit" />') +
           '<div class="pending-info">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span class="pending-name">' + prodName + (isNew ? ' — €' + prodPrice : '') + '</span>' + typeBadge + '</div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><span class="pending-name">' + esc(prodName) + (isNew ? ' — €' + esc(prodPrice) : '') + '</span>' + typeBadge + '</div>' +
           '<div class="pending-detail">' + detail + '</div>' +
           '<div class="pending-bottom"><span class="pending-date">' + formatDate(p.created_at) + '</span>' +
           actionHtml +
@@ -1175,21 +1189,28 @@
           actionHtml = a.invite_code
             ? (a.invite_used
                 ? '<div style="margin-top:8px;color:var(--gray-400);font-size:12px">Code utilisé</div>'
-                : '<div class="invite-code" onclick="copyCode(this,\'' + a.invite_code + '\')" title="Cliquer pour copier">' + a.invite_code + ' <span style="font-size:11px;font-weight:400">copier</span></div>')
+                : '<div class="invite-code" onclick="copyCode(this,\'' + escJs(a.invite_code) + '\')" title="Cliquer pour copier">' + esc(a.invite_code) + ' <span style="font-size:11px;font-weight:400">copier</span></div>')
             : '';
         } else if (a.status === 'rejected') {
           statusBadge = '<span class="badge badge-red">Refusé</span>';
           actionHtml = '';
         } else {
           statusBadge = a.status === 'new' ? '<span class="badge badge-blue">Nouveau</span>' : '<span class="badge badge-orange">En review</span>';
-          const safeBrand = String(a.brand_name || 'cette marque').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-          actionHtml = '<div class="action-btns"><button class="btn-approve" onclick="askHandleApplication(\'' + a.id + '\', \'accept\', \'' + safeBrand + '\')">Accepter</button><button class="btn-reject" onclick="askHandleApplication(\'' + a.id + '\', \'reject\', \'' + safeBrand + '\')">Refuser</button></div>';
+          // safeBrand echappait pour JavaScript mais pas pour HTML : un
+          // guillemet double dans le nom de marque fermait l'attribut onclick
+          // et ce qui suivait devenait du code. escJs fait les deux.
+          const safeBrand = escJs(a.brand_name || 'cette marque');
+          actionHtml = '<div class="action-btns"><button class="btn-approve" onclick="askHandleApplication(\'' + escJs(a.id) + '\', \'accept\', \'' + safeBrand + '\')">Accepter</button><button class="btn-reject" onclick="askHandleApplication(\'' + escJs(a.id) + '\', \'reject\', \'' + safeBrand + '\')">Refuser</button></div>';
         }
         const faded = ['accepted', 'rejected'].includes(a.status) ? ' style="opacity:0.75"' : '';
         html += '<div class="cand-card" id="app-' + a.id + '"' + faded + '>' +
-          '<div class="cand-top"><span class="cand-name">' + a.brand_name + '</span>' + statusBadge + '</div>' +
-          '<div class="cand-meta">' + a.contact_name + ' · ' + a.email + (a.instagram ? ' · ' + a.instagram : '') + (a.website ? ' · ' + a.website : '') + '</div>' +
-          (a.message ? '<div class="cand-message">"' + a.message + '"</div>' : '') +
+          // Ces six valeurs viennent du formulaire public de candidature :
+          // n'importe qui sur internet ecrit dedans. Sans echappement, le
+          // code depose s'executait a l'ouverture de l'onglet Candidatures,
+          // dans la page qui detient le jeton admin.
+          '<div class="cand-top"><span class="cand-name">' + esc(a.brand_name) + '</span>' + statusBadge + '</div>' +
+          '<div class="cand-meta">' + esc(a.contact_name) + ' · ' + esc(a.email) + (a.instagram ? ' · ' + esc(a.instagram) : '') + (a.website ? ' · ' + esc(a.website) : '') + '</div>' +
+          (a.message ? '<div class="cand-message">"' + esc(a.message) + '"</div>' : '') +
           actionHtml +
         '</div>';
       });

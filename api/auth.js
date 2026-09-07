@@ -2,7 +2,8 @@
 // POST → connexion créateur ou admin, changement email/mot de passe
 
 import { supabaseAdmin } from "./lib/supabase.js";
-import { creerJeton, lireJeton, jetonDeLaRequete } from "./lib/session.js";
+import { creerJeton, lireJeton, jetonDeLaRequete,
+  creerJetonClient, lireJetonClient } from "./lib/session.js";
 import { limiter } from "./lib/limite.js";
 import crypto from "crypto";
 
@@ -22,7 +23,9 @@ function generateCustomerToken(customerId) {
   return Buffer.from(`${customerId}:${random}`).toString("base64");
 }
 
-// Parser un token client
+// Ancien format de jeton client, conserve pour memoire : il n'est plus
+// accepte nulle part depuis le 7 septembre (constat 09). Ne pas s'en servir.
+// eslint-disable-next-line no-unused-vars
 function parseCustomerToken(token) {
   try {
     const decoded = Buffer.from(token, "base64").toString("utf-8");
@@ -156,13 +159,28 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Nouvel email et mot de passe requis" });
       }
 
-      // Récupérer l'identité via le token Authorization
-      const authHeader = req.headers.authorization;
-      // Pour l'instant, on vérifie le mot de passe via l'email actuel
-      // On cherche un compte avec ce mot de passe
+      // AVANT (jusqu'au 7 septembre) : le compte etait retrouve par le SEUL
+      // mot de passe, sans jamais regarder qui envoyait la requete. Deviner
+      // le mot de passe de n'importe quel compte suffisait donc a en changer
+      // l'adresse e-mail — c'est-a-dire a le prendre. L'en-tete Authorization
+      // etait lue dans une variable qui n'etait ensuite jamais utilisee.
+      //
+      // MAINTENANT : il faut un jeton signe valide, et on ne touche qu'au
+      // compte de ce jeton. Volontairement independant d'AUTH_MODE : une
+      // prise de controle de compte ne doit jamais "passer en cas de doute".
+      const lecture = lireJeton(jetonDeLaRequete(req));
+      if (!lecture.ok || !lecture.session || !lecture.session.id) {
+        console.warn("[auth] change_email refuse — " + (lecture.raison || "sans session"));
+        return res.status(401).json({
+          error: "Reconnecte-toi avant de changer ton adresse e-mail",
+        });
+      }
+
+      // Le mot de passe est verifie par la base, sur CE compte precis.
       const { data: accounts } = await supabaseAdmin
         .from("creator_accounts")
         .select("id, email")
+        .eq("id", lecture.session.id)
         .eq("password_hash", hashPassword(password));
 
       if (!accounts || accounts.length === 0) {
@@ -205,24 +223,25 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Le mot de passe doit faire au moins 6 caractères" });
       }
 
-      // Le compte etait retrouve par le SEUL mot de passe : deux personnes
-      // ayant choisi le meme mot de passe pouvaient changer celui de l'autre,
-      // au hasard de l'ordre des resultats. On restreint donc au compte
-      // effectivement connecte.
-      const sessionMdp = lireJeton(jetonDeLaRequete(req)).session;
-
-      let requeteCompte = supabaseAdmin
-        .from("creator_accounts")
-        .select("id")
-        .eq("password_hash", hashPassword(old_password));
-
-      if (sessionMdp && sessionMdp.id) {
-        requeteCompte = requeteCompte.eq("id", sessionMdp.id);
-      } else {
-        console.warn("[auth] changement de mot de passe sans session identifiee");
+      // Le compte etait retrouve par le SEUL mot de passe. Le 31 aout j'ai
+      // ajoute la restriction au compte connecte, mais avec un repli
+      // permissif : sans session, on continuait quand meme. Ce repli etait la
+      // faille — il suffisait de deviner un mot de passe, n'importe lequel,
+      // pour en prendre le compte. Constate exploitable en direct le 7
+      // septembre. Il n'y a plus de repli.
+      const lectureMdp = lireJeton(jetonDeLaRequete(req));
+      if (!lectureMdp.ok || !lectureMdp.session || !lectureMdp.session.id) {
+        console.warn("[auth] change_password refuse — " + (lectureMdp.raison || "sans session"));
+        return res.status(401).json({
+          error: "Reconnecte-toi avant de changer ton mot de passe",
+        });
       }
 
-      const { data: accounts } = await requeteCompte;
+      const { data: accounts } = await supabaseAdmin
+        .from("creator_accounts")
+        .select("id")
+        .eq("id", lectureMdp.session.id)
+        .eq("password_hash", hashPassword(old_password));
 
       if (!accounts || accounts.length === 0) {
         return res.status(401).json({ error: "Mot de passe actuel incorrect" });
@@ -371,7 +390,9 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: "Erreur création compte" });
       }
 
-      const token = generateCustomerToken(customer.id);
+      // Jeton signe, comme pour les createurs. generateCustomerToken ne sert
+      // plus que de repli si AUTH_SECRET venait a manquer.
+      const token = creerJetonClient(customer.id) || generateCustomerToken(customer.id);
 
       return res.status(201).json({
         success: true,
@@ -403,7 +424,7 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: "Email ou mot de passe incorrect" });
       }
 
-      const token = generateCustomerToken(customer.id);
+      const token = creerJetonClient(customer.id) || generateCustomerToken(customer.id);
 
       return res.status(200).json({
         success: true,
@@ -420,15 +441,15 @@ export default async function handler(req, res) {
 
     // --- CUSTOMER PROFILE (profil client) ---
     if (action === "customer_profile") {
-      const authHeader = req.headers.authorization;
-      if (!authHeader?.startsWith("Bearer ")) {
-        return res.status(401).json({ error: "Non authentifié" });
+      const lectureClient = lireJetonClient(jetonDeLaRequete(req));
+      if (!lectureClient.ok) {
+        console.warn("[auth] customer_profile refuse — " + lectureClient.raison);
+        return res.status(401).json({
+          error: "Session expirée. Reconnecte-toi.",
+          reconnexion: true,
+        });
       }
-
-      const customerId = parseCustomerToken(authHeader.split(" ")[1]);
-      if (!customerId) {
-        return res.status(401).json({ error: "Token invalide" });
-      }
+      const customerId = lectureClient.customerId;
 
       const { data: customer, error } = await supabaseAdmin
         .from("customers")
@@ -456,15 +477,15 @@ export default async function handler(req, res) {
 
     // --- CUSTOMER UPDATE PROFILE (modification du profil client) ---
     if (action === "customer_update_profile") {
-      const authHeader = req.headers.authorization;
-      if (!authHeader?.startsWith("Bearer ")) {
-        return res.status(401).json({ error: "Non authentifié" });
+      const lectureMaj = lireJetonClient(jetonDeLaRequete(req));
+      if (!lectureMaj.ok) {
+        console.warn("[auth] customer_update_profile refuse — " + lectureMaj.raison);
+        return res.status(401).json({
+          error: "Session expirée. Reconnecte-toi.",
+          reconnexion: true,
+        });
       }
-
-      const customerId = parseCustomerToken(authHeader.split(" ")[1]);
-      if (!customerId) {
-        return res.status(401).json({ error: "Token invalide" });
-      }
+      const customerId = lectureMaj.customerId;
 
       const { first_name, last_name, nickname } = req.body;
       const updates = {};

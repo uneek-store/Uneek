@@ -79,6 +79,44 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "order_item_id requis" });
       }
 
+      // AVANT (jusqu'au 7 septembre) : cet appel ne portait qu'un
+      // order_item_id. Le controle d'acces plus haut compare bien la marque
+      // demandee a celle du jeton — mais il ne peut comparer que ce qu'on lui
+      // donne, et le corps de cette requete ne contenait aucun brand_id. Un
+      // createur pouvait donc marquer expedie l'article d'une autre marque,
+      // et le client de cette marque recevait un "ton colis est parti".
+      //
+      // MAINTENANT : la marque vient du jeton signe, jamais de la requete —
+      // le meme modele que api/creator/marque.js. L'administrateur, lui,
+      // reste autorise partout.
+      const session = acces.session || {};
+      const marqueDuJeton = session.brand_id || null;
+
+      const { data: ligneCible, error: errLigne } = await supabaseAdmin
+        .from("order_items")
+        .select("id, brand_id")
+        .eq("id", order_item_id)
+        .maybeSingle();
+
+      if (errLigne) {
+        console.error("Error reading order item:", errLigne);
+        return res.status(500).json({ error: "Erreur serveur" });
+      }
+      if (!ligneCible) {
+        return res.status(404).json({ error: "Article introuvable" });
+      }
+
+      if (!session.admin) {
+        if (!marqueDuJeton) {
+          return res.status(403).json({ error: "Aucune marque associée à ce compte" });
+        }
+        if (String(ligneCible.brand_id || "") !== String(marqueDuJeton)) {
+          console.warn("[auth] REFUS — expedition d'un article d'une autre marque"
+            + " — jeton " + marqueDuJeton + " / article " + ligneCible.brand_id);
+          return res.status(403).json({ error: "Cet article n'appartient pas à ta marque" });
+        }
+      }
+
       const newStatus = action === "ship" ? "shipped" : "shipped";
 
       const { error } = await supabaseAdmin
