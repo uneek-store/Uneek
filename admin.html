@@ -130,6 +130,13 @@
     .badge-orange { background: var(--orange-bg); color: var(--orange); }
     .badge-blue { background: var(--blue-bg); color: var(--blue); }
     .badge-red { background: var(--red-bg); color: var(--red); }
+    /* AJOUT : mise en pause d'une marque */
+    .btn-pause { background: transparent; border: 1px solid var(--gray-200); border-radius: 7px;
+      font-family: inherit; font-size: 12px; color: var(--gray-600); padding: 5px 10px;
+      cursor: pointer; margin-right: 6px; }
+    .btn-pause:hover { border-color: var(--black); color: var(--black); }
+    tr.marque-en-pause td { opacity: .55; }
+    tr.marque-en-pause td:last-child, tr.marque-en-pause td:nth-child(5) { opacity: 1; }
 
     /* BUTTONS */
     .btn-approve { padding: 5px 14px; background: var(--green); color: var(--white); border: none; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: var(--font-body); }
@@ -1285,6 +1292,132 @@
 
   // Allow Enter key on login
   document.getElementById('loginPassword').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
+</script>
+<script>
+/* ===========================================================
+   AJOUT : mettre une marque en pause depuis l'onglet Marques.
+   Rien du panneau v1 n'est modifie : on enveloppe loadBrands et on
+   retouche les lignes une fois qu'elles sont affichees.
+   =========================================================== */
+(function () {
+  var ETATS = {};   // id de marque -> is_active
+
+  function texteEtat(actif) {
+    return actif
+      ? '<span class="badge badge-green">Active</span>'
+      : '<span class="badge badge-red">En pause</span>';
+  }
+
+  // Relit la liste pour connaitre l'etat de chaque marque. Le v1 n'affiche
+  // qu'un badge "Active" ecrit en dur, il ne peut pas nous le dire.
+  async function lireEtats() {
+    // authToken est declare avec "let" : il vit dans la portee globale du
+    // script, pas sur window. On le lit donc directement.
+    if (typeof authToken === 'undefined' || !authToken) return false;
+    try {
+      var res = await fetch(API_BASE + '/admin/brands', {
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+      var data = await res.json();
+      var liste = Array.isArray(data) ? data : (data && Array.isArray(data.brands) ? data.brands : []);
+      if (!liste.length) return false;
+      var vu = false;
+      ETATS = {};
+      liste.forEach(function (b) {
+        if (b && b.id && typeof b.is_active === 'boolean') { ETATS[b.id] = b.is_active; vu = true; }
+      });
+      return vu;   // false = l'API n'est pas encore a jour, on ne touche a rien
+    } catch (e) { return false; }
+  }
+
+  function idDeLaLigne(tr) {
+    var sup = tr.querySelector('button[onclick*="askDeleteBrand"]');
+    if (!sup) return null;
+    var m = /askDeleteBrand\('([^']*)'/.exec(sup.getAttribute('onclick') || '');
+    return m ? m[1] : null;
+  }
+
+  function retoucher() {
+    var corps = document.getElementById('brands-table');
+    if (!corps) return;
+    Array.prototype.forEach.call(corps.querySelectorAll('tr'), function (tr) {
+      var id = idDeLaLigne(tr);
+      if (!id || !(id in ETATS)) return;
+      var actif = ETATS[id];
+      var cases = tr.querySelectorAll('td');
+      if (cases.length < 6) return;
+
+      cases[4].innerHTML = texteEtat(actif);
+      tr.classList.toggle('marque-en-pause', !actif);
+
+      if (!tr.querySelector('.btn-pause')) {
+        var nom = (cases[0] && cases[0].textContent) || 'cette marque';
+        var b = document.createElement('button');
+        b.className = 'btn-pause';
+        b.type = 'button';
+        b.addEventListener('click', function () { demander(id, nom, ETATS[id]); });
+        cases[5].insertBefore(b, cases[5].firstChild);
+      }
+      tr.querySelector('.btn-pause').textContent = actif ? 'Mettre en pause' : 'Réactiver';
+    });
+  }
+
+  function demander(id, nom, actif) {
+    if (typeof showConfirm !== 'function') return;
+    if (actif) {
+      showConfirm(
+        'Mettre cette marque en pause ?',
+        'Les produits de « ' + nom + ' » ne seront plus visibles sur la boutique, et le créateur ne pourra plus en ajouter ni en modifier. '
+        + 'Rien n\'est supprimé : ses produits, son compte et ses commandes restent en place, et tu peux la réactiver quand tu veux. '
+        + 'Les commandes déjà passées restent à expédier.',
+        'orange',
+        function () { basculer(id, false); }
+      );
+    } else {
+      showConfirm(
+        'Réactiver cette marque ?',
+        '« ' + nom + ' » redeviendra visible sur la boutique et le créateur pourra à nouveau publier.',
+        'green',
+        function () { basculer(id, true); }
+      );
+    }
+  }
+
+  async function basculer(id, versActif) {
+    try {
+      var res = await fetch(API_BASE + '/admin/brands', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify({ brand_id: id, is_active: versActif })
+      });
+      var data = await res.json();
+      if (!res.ok || !data.success) {
+        showToast('Erreur : ' + ((data && data.error) || 'échec'), 'red');
+        return;
+      }
+      showToast(versActif ? '✓ Marque réactivée' : '✓ Marque mise en pause', 'green');
+      ETATS[id] = data.is_active;
+      retoucher();
+      if (typeof loadProducts === 'function') loadProducts();
+    } catch (err) {
+      showToast('Erreur : ' + err.message, 'red');
+    }
+  }
+
+  // On enveloppe la fonction du v1 : elle fait son travail, puis on retouche.
+  if (typeof loadBrands === 'function') {
+    var _loadBrands = loadBrands;
+    loadBrands = async function () {
+      var r = await _loadBrands.apply(this, arguments);
+      try {
+        if (await lireEtats()) retoucher();
+      } catch (e) {
+        if (window.console) console.warn('[mise en pause]', e);
+      }
+      return r;
+    };
+  }
+})();
 </script>
 </body>
 </html>
