@@ -21,19 +21,23 @@ export default async function handler(req, res) {
     if (id) {
       const { data, error } = await supabaseAdmin
         .from("products")
-        .select("*, brands(name, slug, tagline, city, year, image_url)")
+        .select("*, brands(name, slug, tagline, city, year, image_url, is_active)")
         .eq("id", id)
         .eq("is_published", true)
         .single();
 
       if (error || !data) return res.status(404).json({ error: "Produit non trouvé" });
+      // Marque en pause : le produit n'existe plus pour le public.
+      if (data.brands && data.brands.is_active === false) {
+        return res.status(404).json({ error: "Produit non trouvé" });
+      }
       return res.status(200).json(data);
     }
 
     // Liste de produits (avec filtres optionnels)
     let query = supabaseAdmin
       .from("products")
-      .select("*, brands(name, slug, tagline, city)")
+      .select("*, brands(name, slug, tagline, city, is_active)")
       .eq("is_published", true)
       .order("created_at", { ascending: false });
 
@@ -47,8 +51,15 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Erreur serveur" });
     }
 
+    // Marques en pause : leurs produits sortent de la liste publique.
+    // Filtre en JavaScript plutot que dans la requete : un filtre PostgREST
+    // sur une table jointe ne retire pas la ligne parente.
+    const visibles = (data || []).filter(
+      (p) => !(p.brands && p.brands.is_active === false)
+    );
+
     // Map image_urls array to image_url for frontend
-    const products = (data || []).map(p => ({
+    const products = visibles.map(p => ({
       ...p,
       image_url: (p.image_urls && p.image_urls.length > 0) ? p.image_urls[0] : ''
     }));

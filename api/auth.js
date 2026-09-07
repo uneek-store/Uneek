@@ -85,10 +85,14 @@ export default async function handler(req, res) {
       if (account.brand_id) {
         const { data } = await supabaseAdmin
           .from("brands")
-          .select("id, name, slug")
+          .select("id, name, slug, is_active")
           .eq("id", account.brand_id)
           .single();
-        brand = data;
+        // is_active dit si la boutique est en pause. Le panneau createur lit
+        // "status" : on lui donne les deux, on ne retire rien.
+        brand = data
+          ? { ...data, status: data.is_active === false ? "blocked" : "active" }
+          : data;
       }
 
       // Jeton signe : le serveur pourra verifier qu'il vient bien de lui.
