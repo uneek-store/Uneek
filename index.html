@@ -1370,8 +1370,8 @@ function checkoutPage() {
           </div>
           <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:24px">Paiement</div>
           <div style="padding:32px;border:1px solid var(--gray-200);text-align:center;border-radius:var(--radius);margin-bottom:24px">
-            <div style="font-size:14px;color:var(--gray-400);font-weight:300">Paiement sécurisé (Stripe — bientôt)</div>
-            <div style="font-size:12px;color:var(--gray-300);margin-top:8px">(Simulation — aucun paiement réel)</div>
+            <div style="font-size:14px;color:var(--gray-400);font-weight:300">Paiement sécurisé Stripe — Mode Test</div>
+            <div style="font-size:12px;color:var(--gray-300);margin-top:8px">(Aucun argent réel n'est débité)</div>
           </div>
         </div>
         <div class="co-summary" style="background:var(--gray-100);padding:36px;border-radius:var(--radius-lg);position:sticky;top:96px">
@@ -1404,8 +1404,6 @@ async function confirmOrder() {
   const pays = document.getElementById('co-pays')?.value || 'Belgique';
   const nickname = document.getElementById('co-nickname')?.value;
   if (!p || !n || !e || !a || !v || !c) { showToast('Remplis tous les champs'); return; }
-  // Le surnom est ecrit a la main sur l'emballage : sans lui, le createur ne
-  // sait pas quoi inscrire.
   if (!nickname || !nickname.trim()) {
     showToast('Ajoute un surnom — il sera écrit sur ton colis');
     document.getElementById('co-nickname')?.focus();
@@ -1413,13 +1411,19 @@ async function confirmOrder() {
   }
 
   const btn = document.getElementById('co-btn');
-  btn.textContent = 'Traitement...'; btn.disabled = true; btn.style.opacity = '0.5';
+  btn.textContent = 'Redirection vers le paiement...'; btn.disabled = true; btn.style.opacity = '0.5';
 
   try {
+    // Calculate total
+    const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0);
+    const amountInCents = Math.round(total * 100);
+
+    // Prepare order data
     const orderData = {
       customer: {
+        firstName: p,
+        lastName: n,
         email: e,
-        name: `${p} ${n}`,
         nickname: nickname.trim(),
         address: `${a}, ${c} ${v}, ${pays}`
       },
@@ -1427,40 +1431,30 @@ async function confirmOrder() {
         product_id: item.id,
         quantity: 1,
         size: item.selectedSize,
-        color: item.selectedColor || null
-      }))
+        color: item.selectedColor || null,
+        name: item.name,
+        price: item.price
+      })),
+      amount: amountInCents,
+      total: total
     };
 
-    const headers = { 'Content-Type': 'application/json' };
-    if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+    // Store order data in localStorage to pass to payment form
+    localStorage.setItem('pendingOrderData', JSON.stringify(orderData));
+    
+    // Redirect to payment form
+    window.location.href = '/stripe-checkout.html?amount=' + amountInCents + '&redirect=true';
 
-    const res = await fetch(API + '/api/orders', {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(orderData)
-    });
-    const data = await res.json();
-
-    if (data.success) {
-      cart = []; saveCart(); renderCart();
-      document.getElementById('app').innerHTML = `<div style="min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px">
-        <div style="width:80px;height:80px;border-radius:50%;background:var(--gradient);display:flex;align-items:center;justify-content:center;margin-bottom:32px">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
-        </div>
-        <h2 style="font-family:var(--font-display);font-size:32px;font-weight:700;margin-bottom:16px">Commande confirmée !</h2>
-        <p style="font-size:16px;color:var(--gray-500);font-weight:300;max-width:480px;line-height:1.7;margin-bottom:8px">Merci ${p} ! Ta commande <strong>${data.order.order_number}</strong> est en cours de préparation.</p>
-        <p style="font-size:14px;color:var(--gray-400);font-weight:300;margin-bottom:40px">Total : ${data.order.total} &euro;</p>
-        <button class="btn btn-dark" onclick="navigate('shop')">Continuer le shopping &rarr;</button>
-      </div>${footerHTML()}`;
-    } else {
-      showToast(data.error || 'Erreur lors de la commande');
-      btn.textContent = 'Confirmer la commande →'; btn.disabled = false; btn.style.opacity = '1';
-    }
-  } catch (err) {
-    showToast('Erreur réseau, réessaie.');
-    btn.textContent = 'Confirmer la commande →'; btn.disabled = false; btn.style.opacity = '1';
+  } catch (error) {
+    console.error('Erreur:', error);
+    showToast('Erreur lors de la préparation du paiement');
+    btn.textContent = 'Confirmer la commande →';
+    btn.disabled = false;
+    btn.style.opacity = '1';
   }
 }
+
+
 
 // ==========================================
 // AUTH PAGES
