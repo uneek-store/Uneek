@@ -293,20 +293,66 @@ const API = '';
 // STATE
 let BRANDS = [];
 let PRODUCTS = [];
-let cart = JSON.parse(localStorage.getItem('uneek_cart') || '[]');
-let favorites = JSON.parse(localStorage.getItem('uneek_favs') || '[]');
-let currentUser = JSON.parse(localStorage.getItem('uneek_user') || 'null');
-let authToken = localStorage.getItem('uneek_token') || null;
+// CONSTAT 12 — la page entiere disparaissait si le stockage etait refuse.
+// Ces quatre lignes s'executent avant tout le reste. Elles supposaient deux
+// choses qui ne sont pas garanties : que localStorage existe (navigation
+// privee stricte, cookies bloques, iframe restreinte — l'ACCES LUI-MEME
+// leve une exception, avant meme la lecture), et que ce qu'on y a range est
+// toujours du JSON valide (une ecriture interrompue, une extension, une
+// version plus ancienne du site). Dans les deux cas l'exception remontait
+// jusqu'en haut du script, aucune fonction n'etait definie, et le visiteur
+// voyait une page blanche — sans message, et de facon persistante.
+//
+// Maintenant, le pire qui puisse arriver est de repartir d'un panier vide.
+function lireStockage(cle, defaut) {
+  try {
+    const brut = localStorage.getItem(cle);
+    if (brut === null || brut === undefined) return defaut;
+    const valeur = JSON.parse(brut);
+    return valeur === null || valeur === undefined ? defaut : valeur;
+  } catch (err) {
+    console.warn('[stockage] ' + cle + ' illisible, on repart de zero :', err && err.message);
+    try { localStorage.removeItem(cle); } catch (e) { /* meme ca peut echouer */ }
+    return defaut;
+  }
+}
+
+function ecrireStockage(cle, valeur) {
+  try {
+    localStorage.setItem(cle, typeof valeur === 'string' ? valeur : JSON.stringify(valeur));
+    return true;
+  } catch (err) {
+    // Quota depasse, ou stockage refuse. Le site continue de fonctionner
+    // pour la visite en cours ; c'est la memoire entre deux visites qui est
+    // perdue, pas la boutique.
+    console.warn('[stockage] impossible d\'enregistrer ' + cle + ' :', err && err.message);
+    return false;
+  }
+}
+
+function effacerStockage(cle) {
+  try { localStorage.removeItem(cle); } catch (err) { /* rien a faire */ }
+}
+
+// Un panier doit etre une liste, des favoris aussi : une valeur d'un autre
+// type ferait planter .filter() ou .push() plus loin.
+const _cartLu = lireStockage('uneek_cart', []);
+let cart = Array.isArray(_cartLu) ? _cartLu : [];
+const _favsLu = lireStockage('uneek_favs', []);
+let favorites = Array.isArray(_favsLu) ? _favsLu : [];
+let currentUser = lireStockage('uneek_user', null);
+let authToken = null;
+try { authToken = localStorage.getItem('uneek_token') || null; } catch (err) { authToken = null; }
 let currentPage = 'home', pageData = null;
 let dataLoaded = false;
 
 // PERSIST
-function saveCart() { localStorage.setItem('uneek_cart', JSON.stringify(cart)); }
-function saveFavs() { localStorage.setItem('uneek_favs', JSON.stringify(favorites)); }
+function saveCart() { ecrireStockage('uneek_cart', cart); }
+function saveFavs() { ecrireStockage('uneek_favs', favorites); }
 function saveAuth(user, token) {
   currentUser = user; authToken = token;
-  if (user) { localStorage.setItem('uneek_user', JSON.stringify(user)); localStorage.setItem('uneek_token', token); }
-  else { localStorage.removeItem('uneek_user'); localStorage.removeItem('uneek_token'); }
+  if (user) { ecrireStockage('uneek_user', user); ecrireStockage('uneek_token', token); }
+  else { effacerStockage('uneek_user'); effacerStockage('uneek_token'); }
 }
 
 // FETCH DATA
@@ -1577,6 +1623,15 @@ async function loadProfileOrders() {
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
       body: JSON.stringify({ action: 'customer_profile' })
     });
+    // Depuis le 7 septembre les jetons client sont signes : un jeton de
+    // l'ancien format est refuse. Sans ce test, le visiteur restait sur une
+    // page "connecte" qui n'affichait plus rien, sans comprendre pourquoi.
+    if (res.status === 401) {
+      saveAuth(null, null);
+      showToast('Ta session a expiré, reconnecte-toi');
+      navigate('login');
+      return;
+    }
     const data = await res.json();
     if (data.success && data.orders) {
       const countEl = document.getElementById('prof-orders-count');
@@ -1614,6 +1669,13 @@ async function updateProfile() {
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
       body: JSON.stringify({ action: 'customer_update_profile', first_name, last_name, nickname })
     });
+    if (res.status === 401) {
+      saveAuth(null, null);
+      showToast('Ta session a expiré, reconnecte-toi');
+      navigate('login');
+      btn.textContent = 'Sauvegarder'; btn.disabled = false;
+      return;
+    }
     const data = await res.json();
     if (data.success) {
       saveAuth(data.customer, authToken);

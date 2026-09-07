@@ -8,7 +8,7 @@ import { controlerAcces } from "../lib/session.js";
 // Elle contournait donc le filtre des adresses fictives : supprimer une marque
 // inventee aurait ecrit a une vraie personne. Elle utilisait aussi un autre
 // expediteur (onboarding@resend.dev). Tout passe par le module commun.
-import { envoyer, esc } from "../lib/email.js";
+import { envoyer, alerteAdmin, esc } from "../lib/email.js";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -113,48 +113,108 @@ export default async function handler(req, res) {
       const creatorName = creator?.full_name || 'Créateur';
       const brandName = brand?.name || 'Votre marque';
 
-      // 1. Supprimer les pending_edits liés aux produits de cette marque
-      const { data: products } = await supabaseAdmin
+      // CONSTAT 15 — ON REGARDE AVANT DE DETRUIRE
+      //
+      // L'ancienne version enchainait quatre suppressions sans jamais lire
+      // le resultat des trois premieres. supabase-js ne leve pas d'erreur :
+      // il renvoie { error }. Une suppression refusee passait donc pour
+      // reussie et on continuait.
+      //
+      // Le cas concret : une marque qui a deja vendu. Ses produits sont
+      // references par des lignes de commande, la base refuse de les
+      // supprimer — mais le compte createur, lui, n'est reference par rien
+      // et disparaissait pour de bon. Resultat : la marque et ses produits
+      // restaient en ligne, le createur n'avait plus de compte pour y
+      // toucher, et il ne recevait meme pas l'e-mail (on rendait la main
+      // avant). Etat impossible a rattraper sans passer par la base.
+      //
+      // Maintenant : on verifie d'abord que tout est supprimable. Si une
+      // seule chose bloque, on ne touche a RIEN et on explique pourquoi.
+
+      const { data: products, error: errLecture } = await supabaseAdmin
         .from("products")
-        .select("id")
+        .select("id, name")
         .eq("brand_id", brand_id);
 
-      if (products && products.length > 0) {
-        const productIds = products.map(p => p.id);
-        await supabaseAdmin
-          .from("product_edits")
-          .delete()
-          .in("product_id", productIds);
+      if (errLecture) {
+        console.error("Error reading brand products:", errLecture);
+        return res.status(500).json({ error: "Erreur serveur" });
       }
 
-      // 1b. Supprimer aussi les product_edits directement liés à la marque
-      //     (nouveaux produits en attente avec product_id NULL)
-      await supabaseAdmin
-        .from("product_edits")
-        .delete()
-        .eq("brand_id", brand_id);
+      const productIds = (products || []).map((p) => p.id);
 
-      // 2. Supprimer les produits de la marque
-      await supabaseAdmin
-        .from("products")
-        .delete()
-        .eq("brand_id", brand_id);
+      // Une piece deja vendue interdit la suppression du produit. Autant le
+      // dire tout de suite, plutot que de le decouvrir a mi-parcours.
+      if (productIds.length > 0) {
+        const { data: vendus, error: errVentes } = await supabaseAdmin
+          .from("order_items")
+          .select("id, product_name")
+          .in("product_id", productIds);
 
-      // 3. Supprimer les comptes créateurs liés
-      await supabaseAdmin
-        .from("creator_accounts")
-        .delete()
-        .eq("brand_id", brand_id);
+        if (errVentes) {
+          console.error("Error checking sales:", errVentes);
+          return res.status(500).json({ error: "Erreur serveur" });
+        }
 
-      // 4. Supprimer la marque
-      const { error } = await supabaseAdmin
-        .from("brands")
-        .delete()
-        .eq("id", brand_id);
+        if (vendus && vendus.length > 0) {
+          return res.status(409).json({
+            error: "Cette marque a déjà vendu : ses produits sont rattachés à "
+              + vendus.length + " ligne(s) de commande et ne peuvent pas être supprimés "
+              + "sans effacer l'historique des ventes. Mets-la plutôt en pause : "
+              + "elle disparaît du site, et tout reste en ordre.",
+            a_vendu: true,
+            lignes_de_commande: vendus.length,
+          });
+        }
+      }
 
-      if (error) {
-        console.error("Error deleting brand:", error);
-        return res.status(500).json({ error: "Erreur suppression de la marque" });
+      // A partir d'ici, chaque suppression est verifiee. La premiere qui
+      // echoue arrete tout : ce qui a deja ete supprime l'a ete dans l'ordre
+      // des dependances, donc l'etat reste coherent, et on dit exactement ou
+      // on s'est arrete.
+      const etapes = [
+        productIds.length > 0
+          ? { quoi: "les modifications en attente des produits",
+              faire: () => supabaseAdmin.from("product_edits").delete().in("product_id", productIds) }
+          : null,
+        { quoi: "les modifications en attente de la marque",
+          faire: () => supabaseAdmin.from("product_edits").delete().eq("brand_id", brand_id) },
+        { quoi: "les produits",
+          faire: () => supabaseAdmin.from("products").delete().eq("brand_id", brand_id) },
+        { quoi: "le compte créateur",
+          faire: () => supabaseAdmin.from("creator_accounts").delete().eq("brand_id", brand_id) },
+        { quoi: "la marque",
+          faire: () => supabaseAdmin.from("brands").delete().eq("id", brand_id) },
+      ].filter(Boolean);
+
+      const faites = [];
+      for (const etape of etapes) {
+        const { error: errEtape } = await etape.faire();
+        if (errEtape) {
+          console.error("[suppression marque] arret sur « " + etape.quoi + " » :", errEtape.message);
+          try {
+            await alerteAdmin("Suppression de marque interrompue",
+              [
+                "<strong>" + esc(brandName) + "</strong>",
+                "Arrêté sur : " + esc(etape.quoi),
+                "Déjà supprimé : " + esc(faites.join(" · ") || "rien"),
+                "Raison : " + esc(errEtape.message || ""),
+              ],
+              "Ouvrir le panneau admin");
+          } catch (e) {
+            console.error("[email] alerte suppression ignoree :", e && e.message);
+          }
+          return res.status(500).json({
+            error: "La suppression s'est arrêtée sur « " + etape.quoi + " ». "
+              + (faites.length
+                  ? "Ce qui précède a bien été supprimé : " + faites.join(", ") + ". "
+                  : "Rien n'a été supprimé. ")
+              + "Rien d'autre n'a été touché.",
+            etape_bloquante: etape.quoi,
+            deja_supprime: faites,
+          });
+        }
+        faites.push(etape.quoi);
       }
 
       // 5. Notifier le créateur par email
