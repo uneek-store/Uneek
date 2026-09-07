@@ -3,6 +3,7 @@
 // POST → créer une nouvelle commande (checkout)
 
 import { supabaseAdmin } from "./lib/supabase.js";
+import { stockParCouleur, lireStock, ecrireStock, stockTotal } from "./lib/stock.js";
 import { controlerAcces } from "./lib/session.js";
 import { limiter } from "./lib/limite.js";
 import crypto from "crypto";
@@ -36,54 +37,12 @@ function parseToken(token) {
 }
 
 
-// sizes_stock a deux formes : plate { S: 3 } ou par couleur { Rouge: { S: 3 } }.
-// Ces deux fonctions lisent et ecrivent indifferemment dans l'une ou l'autre.
-function stockParCouleur(ss) {
-  if (!ss || typeof ss !== "object") return false;
-  const vals = Object.keys(ss).map((k) => ss[k]);
-  if (!vals.length) return false;
-  return vals[0] !== null && typeof vals[0] === "object" && !Array.isArray(vals[0]);
-}
-
-function lireStock(ss, taille, couleur) {
-  if (!ss || !taille) return null;
-  if (stockParCouleur(ss)) {
-    if (!couleur) {
-      // Pas de couleur precisee : on additionne toutes les couleurs.
-      return Object.keys(ss).reduce((n, c) => n + (parseInt((ss[c] || {})[taille]) || 0), 0);
-    }
-    if (!ss[couleur]) return null;
-    return parseInt(ss[couleur][taille]) || 0;
-  }
-  return parseInt(ss[taille]) || 0;
-}
-
-function ecrireStock(ss, taille, couleur, valeur) {
-  if (stockParCouleur(ss)) {
-    if (!couleur || !ss[couleur]) return ss;
-    return { ...ss, [couleur]: { ...ss[couleur], [taille]: valeur } };
-  }
-  return { ...ss, [taille]: valeur };
-}
-
-// Le total, toutes tailles et toutes couleurs confondues. Sert a tenir a jour
-// la colonne "stock" (constat 16) : les panneaux la lisent quand le detail par
-// taille est vide, et elle n'avait jamais bouge depuis la creation du produit.
-// Releve du 7 septembre : le produit "hoodie poul" annoncait 18 alors que le
-// detail totalisait 17.
-function stockTotal(ss) {
-  if (!ss || typeof ss !== "object") return 0;
-  let total = 0;
-  for (const cle of Object.keys(ss)) {
-    const v = ss[cle];
-    if (v !== null && typeof v === "object") {
-      for (const t of Object.keys(v)) total += parseInt(v[t], 10) || 0;
-    } else {
-      total += parseInt(v, 10) || 0;
-    }
-  }
-  return total;
-}
+// La regle de stock vit maintenant dans api/lib/stock.js — une seule fois
+// pour tout le projet (constat 19). Elle etait recopiee ici a l'identique.
+// stockTotal sert a tenir a jour la colonne "stock" (constat 16) : les
+// panneaux la lisent quand le detail par taille est vide, et elle n'avait
+// jamais bouge depuis la creation du produit. Releve du 7 septembre : le
+// produit "hoodie poul" annoncait 18 alors que le detail totalisait 17.
 
 // CONSTAT 03 — deux exemplaires du meme article passaient avec une piece
 // en stock.
