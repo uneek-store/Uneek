@@ -198,6 +198,9 @@ a{text-decoration:none;}
   .manifesto-section{padding:48px 16px;}
 }
 </style>
+<!-- Stripe.js : affiche le formulaire de paiement (carte, Bancontact, Apple Pay...)
+     directement dans le checkout. Doit etre charge depuis js.stripe.com. -->
+<script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
 
@@ -345,6 +348,65 @@ let authToken = null;
 try { authToken = localStorage.getItem('uneek_token') || null; } catch (err) { authToken = null; }
 let currentPage = 'home', pageData = null;
 let dataLoaded = false;
+
+// ==========================================
+// STRIPE — paiement integre au checkout
+// ==========================================
+// Cle publique (pk_test_ = mode test, aucun argent reel). Pour passer en
+// production, remplacer par la cle pk_live_ et mettre sk_live_ dans Vercel.
+const STRIPE_PUBLIC_KEY = 'pk_test_51UD1LJRvJcYktN3V9MrCCEjsz6MqNylPNQ2HN0UB7XUYrzU42PfOiQcGSNNbvSrxOxym1ksfsC06HMfcvcfVeXZY005OuRJkyz';
+let stripeClient = null;
+let stripeElements = null;
+let stripePaymentElement = null;
+
+// Monte le formulaire de paiement dans #payment-element. Appele a chaque
+// affichage du checkout : le HTML est regenere, donc l'ancien element est
+// perdu et il faut en remonter un. Le montant est celui du panier ; il
+// doit correspondre a celui du PaymentIntent cree au moment de confirmer.
+function initStripe() {
+  const container = document.getElementById('payment-element');
+  if (!container) return;
+  if (typeof Stripe !== 'function') {
+    montrerErreurPaiement('Le module de paiement n\'a pas pu se charger. Vérifie ta connexion et recharge la page.');
+    return;
+  }
+  try {
+    if (!stripeClient) stripeClient = Stripe(STRIPE_PUBLIC_KEY);
+    const total = cart.reduce((s, i) => s + (parseFloat(i.price) || 0), 0);
+    const amountInCents = Math.round(total * 100);
+    stripeElements = stripeClient.elements({
+      mode: 'payment',
+      amount: amountInCents,
+      currency: 'eur',
+      locale: 'fr',
+      appearance: {
+        theme: 'stripe',
+        variables: {
+          colorPrimary: '#0a0a0a',
+          colorText: '#0a0a0a',
+          borderRadius: '8px',
+          fontFamily: 'inherit',
+          spacingUnit: '4px'
+        }
+      }
+    });
+    stripePaymentElement = stripeElements.create('payment', { layout: 'tabs' });
+    stripePaymentElement.mount('#payment-element');
+    stripePaymentElement.on('change', function (ev) {
+      if (!ev.error) montrerErreurPaiement('');
+    });
+  } catch (err) {
+    console.error('Stripe init error:', err);
+    montrerErreurPaiement('Impossible d\'afficher le formulaire de paiement.');
+  }
+}
+
+function montrerErreurPaiement(msg) {
+  const el = document.getElementById('payment-errors');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.display = msg ? 'block' : 'none';
+}
 
 // PERSIST
 function saveCart() { ecrireStockage('uneek_cart', cart); }
@@ -1369,9 +1431,13 @@ function checkoutPage() {
             </div>
           </div>
           <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:24px">Paiement</div>
-          <div style="padding:32px;border:1px solid var(--gray-200);text-align:center;border-radius:var(--radius);margin-bottom:24px">
-            <div style="font-size:14px;color:var(--gray-400);font-weight:300">Paiement sécurisé Stripe — Mode Test</div>
-            <div style="font-size:12px;color:var(--gray-300);margin-top:8px">(Aucun argent réel n'est débité)</div>
+          <div style="padding:24px;border:1px solid var(--gray-200);border-radius:var(--radius);margin-bottom:24px;background:var(--white)">
+            <div id="payment-element"></div>
+            <div id="payment-errors" role="alert" style="display:none;margin-top:12px;font-size:13px;color:#c0392b"></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:16px;font-size:12px;color:var(--gray-400);font-weight:300">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              Paiement sécurisé par Stripe${STRIPE_PUBLIC_KEY.indexOf('pk_test_') === 0 ? ' &mdash; mode test, aucun argent réel n\'est débité' : ''}
+            </div>
           </div>
         </div>
         <div class="co-summary" style="background:var(--gray-100);padding:36px;border-radius:var(--radius-lg);position:sticky;top:96px">
@@ -1410,48 +1476,178 @@ async function confirmOrder() {
     return;
   }
 
+  if (!stripeClient || !stripeElements) {
+    montrerErreurPaiement('Le formulaire de paiement n\'est pas prêt. Recharge la page et réessaie.');
+    return;
+  }
+
   const btn = document.getElementById('co-btn');
-  btn.textContent = 'Redirection vers le paiement...'; btn.disabled = true; btn.style.opacity = '0.5';
+  const boutonNormal = function () {
+    btn.textContent = 'Confirmer la commande →'; btn.disabled = false; btn.style.opacity = '1';
+  };
+  btn.textContent = 'Paiement en cours...'; btn.disabled = true; btn.style.opacity = '0.5';
+  montrerErreurPaiement('');
+
+  const total = cart.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+  const amountInCents = Math.round(total * 100);
+  const orderData = {
+    customer: {
+      email: e,
+      name: `${p} ${n}`,
+      nickname: nickname.trim(),
+      address: `${a}, ${c} ${v}, ${pays}`
+    },
+    items: cart.map(item => ({
+      product_id: item.id,
+      quantity: 1,
+      size: item.selectedSize,
+      color: item.selectedColor || null
+    }))
+  };
 
   try {
-    // Calculate total
-    const total = cart.reduce((sum, item) => sum + parseFloat(item.price), 0);
-    const amountInCents = Math.round(total * 100);
+    // 1. Stripe valide ce que le client a tape dans le formulaire.
+    const { error: erreurSaisie } = await stripeElements.submit();
+    if (erreurSaisie) {
+      montrerErreurPaiement(erreurSaisie.message || 'Vérifie les informations de paiement.');
+      boutonNormal();
+      return;
+    }
 
-    // Prepare order data
-    const orderData = {
-      customer: {
-        firstName: p,
-        lastName: n,
+    // 2. Le serveur cree le PaymentIntent (montant calcule ici, verifie la-bas).
+    const resPI = await fetch(API + '/api/stripe/payment-intent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount: amountInCents,
         email: e,
-        nickname: nickname.trim(),
-        address: `${a}, ${c} ${v}, ${pays}`
+        name: `${p} ${n}`,
+        description: 'Commande UNEEK — ' + cart.map(i => i.name).join(', ').slice(0, 200)
+      })
+    });
+    const dataPI = await resPI.json().catch(() => ({}));
+    if (!resPI.ok || !dataPI.clientSecret) {
+      montrerErreurPaiement(dataPI.error || 'Impossible de préparer le paiement. Réessaie dans un instant.');
+      boutonNormal();
+      return;
+    }
+
+    // 3. Certains moyens de paiement (Bancontact, iDEAL...) quittent la page
+    //    puis reviennent. On garde la commande sous le coude pour la creer
+    //    au retour (voir finaliserPaiementAuRetour).
+    try { localStorage.setItem('uneek_pending_order', JSON.stringify(orderData)); } catch (err) {}
+
+    // 4. Confirmation du paiement, sans quitter la page quand c'est possible.
+    const { error: erreurPaiement, paymentIntent } = await stripeClient.confirmPayment({
+      elements: stripeElements,
+      clientSecret: dataPI.clientSecret,
+      confirmParams: {
+        return_url: location.origin + '/checkout',
+        receipt_email: e
       },
-      items: cart.map(item => ({
-        product_id: item.id,
-        quantity: 1,
-        size: item.selectedSize,
-        color: item.selectedColor || null,
-        name: item.name,
-        price: item.price
-      })),
-      amount: amountInCents,
-      total: total
-    };
+      redirect: 'if_required'
+    });
 
-    // Store order data in localStorage to pass to payment form
-    localStorage.setItem('pendingOrderData', JSON.stringify(orderData));
-    
-    // Redirect to payment form
-    window.location.href = '/stripe-checkout.html?amount=' + amountInCents + '&redirect=true';
+    if (erreurPaiement) {
+      try { localStorage.removeItem('uneek_pending_order'); } catch (err) {}
+      montrerErreurPaiement(erreurPaiement.message || 'Le paiement a été refusé.');
+      boutonNormal();
+      return;
+    }
 
-  } catch (error) {
-    console.error('Erreur:', error);
-    showToast('Erreur lors de la préparation du paiement');
-    btn.textContent = 'Confirmer la commande →';
-    btn.disabled = false;
-    btn.style.opacity = '1';
+    if (!paymentIntent || (paymentIntent.status !== 'succeeded' && paymentIntent.status !== 'processing')) {
+      try { localStorage.removeItem('uneek_pending_order'); } catch (err) {}
+      montrerErreurPaiement('Le paiement n\'a pas abouti (' + (paymentIntent ? paymentIntent.status : 'inconnu') + ').');
+      boutonNormal();
+      return;
+    }
+
+    // 5. Paiement OK : on enregistre la commande.
+    btn.textContent = 'Enregistrement de la commande...';
+    await enregistrerCommandePayee(orderData, paymentIntent.id, p);
+
+  } catch (err) {
+    console.error('Erreur checkout:', err);
+    montrerErreurPaiement('Erreur réseau, réessaie.');
+    boutonNormal();
   }
+}
+
+// Ecrit la commande en base apres un paiement reussi, puis affiche la
+// confirmation. Si l'ecriture echoue alors que le paiement est passe, on le
+// dit clairement au client avec la reference Stripe : il ne doit pas repayer.
+async function enregistrerCommandePayee(orderData, paymentIntentId, prenom) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+
+  let data = null;
+  try {
+    const res = await fetch(API + '/api/orders', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(Object.assign({}, orderData, { payment_intent_id: paymentIntentId }))
+    });
+    data = await res.json();
+  } catch (err) {
+    data = { success: false, error: 'Erreur réseau' };
+  }
+
+  try { localStorage.removeItem('uneek_pending_order'); } catch (err) {}
+
+  if (data && data.success) {
+    cart = []; saveCart(); renderCart();
+    document.getElementById('app').innerHTML = `<div style="min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px">
+      <div style="width:80px;height:80px;border-radius:50%;background:var(--gradient);display:flex;align-items:center;justify-content:center;margin-bottom:32px">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <h2 style="font-family:var(--font-display);font-size:32px;font-weight:700;margin-bottom:16px">Commande confirmée !</h2>
+      <p style="font-size:16px;color:var(--gray-500);font-weight:300;max-width:480px;line-height:1.7;margin-bottom:8px">Merci ${prenom || ''} ! Ta commande <strong>${data.order.order_number}</strong> est en cours de préparation.</p>
+      <p style="font-size:14px;color:var(--gray-400);font-weight:300;margin-bottom:40px">Total : ${data.order.total} &euro; &mdash; paiement accepté</p>
+      <button class="btn btn-dark" onclick="navigate('shop')">Continuer le shopping &rarr;</button>
+    </div>${footerHTML()}`;
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    return;
+  }
+
+  // Paiement passe, commande non ecrite : cas rare mais il faut le traiter.
+  const ref = paymentIntentId || '';
+  document.getElementById('app').innerHTML = `<div style="min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px">
+    <h2 style="font-family:var(--font-display);font-size:28px;font-weight:700;margin-bottom:16px">Ton paiement est passé, mais la commande n'a pas pu être enregistrée</h2>
+    <p style="font-size:15px;color:var(--gray-500);font-weight:300;max-width:520px;line-height:1.7;margin-bottom:8px">${(data && data.error) ? data.error : 'Erreur serveur'}.</p>
+    <p style="font-size:15px;color:var(--gray-500);font-weight:300;max-width:520px;line-height:1.7;margin-bottom:8px"><strong>Ne repaie pas.</strong> Écris-nous à <a href="mailto:contact@uneek.store" style="text-decoration:underline">contact@uneek.store</a> avec cette référence, on règle ça tout de suite :</p>
+    <p style="font-family:monospace;font-size:14px;background:var(--gray-100);padding:10px 16px;border-radius:8px;margin-bottom:40px">${ref}</p>
+    <button class="btn btn-dark" onclick="navigate('shop')">Retour au shop &rarr;</button>
+  </div>${footerHTML()}`;
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+// Retour d'un paiement avec redirection (Bancontact, iDEAL...). Stripe
+// renvoie sur /checkout?payment_intent=...&redirect_status=succeeded.
+async function finaliserPaiementAuRetour() {
+  const params = new URLSearchParams(location.search);
+  const statut = params.get('redirect_status');
+  const piId = params.get('payment_intent');
+  if (!statut || !piId) return false;
+
+  // On nettoie l'adresse pour qu'un rechargement ne rejoue pas la commande.
+  history.replaceState({ page: 'checkout', data: null }, '', '/checkout');
+
+  let orderData = null;
+  try { orderData = JSON.parse(localStorage.getItem('uneek_pending_order') || 'null'); } catch (err) { orderData = null; }
+
+  if (statut !== 'succeeded') {
+    try { localStorage.removeItem('uneek_pending_order'); } catch (err) {}
+    showToast('Le paiement n\'a pas abouti. Tu peux réessayer.');
+    return false;
+  }
+  if (!orderData) {
+    // Paiement reussi mais on a perdu le panier (autre navigateur, stockage vide).
+    await enregistrerCommandePayee({ customer: {}, items: [] }, piId, '');
+    return true;
+  }
+  const prenom = (orderData.customer && orderData.customer.name) ? orderData.customer.name.split(' ')[0] : '';
+  await enregistrerCommandePayee(orderData, piId, prenom);
+  return true;
 }
 
 
@@ -1725,7 +1921,7 @@ function renderPage() {
     case 'brand': app.innerHTML = brandPage(); break;
     case 'manifesto': app.innerHTML = manifestoPage(); break;
     case 'partner': app.innerHTML = partnerPage(); break;
-    case 'checkout': app.innerHTML = checkoutPage(); break;
+    case 'checkout': app.innerHTML = checkoutPage(); initStripe(); break;
     case 'login': app.innerHTML = loginPage(); break;
     case 'register': app.innerHTML = registerPage(); break;
     case 'profile': app.innerHTML = profilePage(); if (currentUser) loadProfileOrders(); break;
@@ -1749,6 +1945,10 @@ async function init() {
   renderPage(); // show real content
   majTitre(currentPage, pageData);
   renderCart();
+  // Retour d'un paiement Stripe avec redirection : on termine la commande.
+  if (currentPage === 'checkout') {
+    try { await finaliserPaiementAuRetour(); } catch (err) { console.error(err); }
+  }
 }
 
 init();

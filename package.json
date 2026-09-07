@@ -7,7 +7,8 @@
     "build": "echo 'Site HTML statique : rien a construire.'"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0"
+    "@supabase/supabase-js": "^2.45.0",
+    "stripe": "^22.6.1"
   },
   "_note": "Ce site est du HTML statique servi tel quel par Vercel, plus des fonctions serverless dans api/. Il n'y a AUCUNE etape de construction. Le 'build: vite build' d'origine, herite d'un prototype React abandonne (dossier src/, retire le 7 septembre 2026), aurait produit un dossier dist/ et masque le vrai site le jour ou quelqu'un l'aurait lance."
 }
