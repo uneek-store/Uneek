@@ -203,15 +203,24 @@
     .fin-seg { display: flex; align-items: center; justify-content: center; min-width: 3px; color: #FFFFFF; font-family: var(--font-display); font-size: 12px; font-weight: 700; overflow: hidden; }
     .fin-seg:first-child { border-radius: 6px 0 0 6px; }
     .fin-seg:last-child { border-radius: 0 6px 6px 0; }
-    .fin-legende { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px 28px; }
-    .fin-cle { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
-    .fin-dot { width: 10px; height: 10px; border-radius: 3px; flex: none; align-self: center; }
-    .fin-cle-nom { font-size: 13px; color: var(--gray-600); white-space: nowrap; }
-    .fin-cle-val { margin-left: auto; font-family: var(--font-display); font-size: 15px; font-weight: 600; white-space: nowrap; }
-    .fin-cle-pct { font-size: 12px; color: var(--gray-400); white-space: nowrap; }
-    .fin-mini { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 18px; padding: 16px 18px; }
-    .fin-mini-lab { font-size: 10px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
-    .fin-mini-val { font-family: var(--font-display); font-size: 20px; font-weight: 600; }
+    /* La legende est un petit tableau, pas une ligne etiree sur toute la
+       largeur : le montant doit rester colle a ce qu'il designe. */
+    .fin-legende { display: inline-grid; grid-template-columns: auto auto auto auto; gap: 9px 14px; align-items: baseline; }
+    .fin-dot { width: 10px; height: 10px; border-radius: 3px; align-self: center; }
+    .fin-cle-nom { font-size: 14px; color: var(--gray-800); }
+    .fin-cle-val { font-family: var(--font-display); font-size: 15px; font-weight: 700; text-align: right; }
+    .fin-cle-pct { font-size: 13px; color: var(--gray-400); text-align: right; }
+
+    /* Une ligne = un montant, ce qu'il est, et quand il bouge. */
+    .fin-ligne { display: grid; grid-template-columns: 130px 1fr; gap: 4px 20px; padding: 14px 18px; border-bottom: 1px solid var(--gray-200); align-items: baseline; }
+    .fin-ligne:last-child { border-bottom: none; }
+    .fin-ligne-val { font-family: var(--font-display); font-size: 22px; font-weight: 700; text-align: right; }
+    .fin-ligne-nom { font-size: 14px; font-weight: 500; }
+    .fin-ligne-quand { grid-column: 2; font-size: 12px; color: var(--gray-500); }
+    @media (max-width: 900px) {
+      .fin-ligne { grid-template-columns: 100px 1fr; }
+      .fin-ligne-val { font-size: 18px; }
+    }
     /* Signale l'argent du a un createur mais suivi nulle part : sans ce
        bandeau, la somme manquante serait simplement absente des totaux. */
     .fin-alerte { display: none; background: var(--orange-bg); border: 1px solid var(--orange); color: var(--gray-800); border-radius: 10px; padding: 12px 16px; font-size: 13px; margin-bottom: 20px; line-height: 1.5; }
@@ -355,6 +364,7 @@
       <div class="page-title">Finances</div>
       <div class="page-sub">Sur les commandes encaiss&eacute;es</div>
       <div class="card">
+        <div class="card-header">O&ugrave; va l'argent des ventes</div>
         <div class="fin-corps">
           <div class="fin-hero">
             <div class="fin-hero-val" id="fin-volume">&euro;0</div>
@@ -366,19 +376,28 @@
       </div>
       <div class="fin-alerte" id="fin-alerte"></div>
       <div class="card">
-        <div class="card-header">Aux cr&eacute;ateurs</div>
-        <div class="fin-mini">
-          <div><div class="fin-mini-lab">&Agrave; verser</div><div class="fin-mini-val" id="fin-a-verser">&euro;0</div></div>
-          <div><div class="fin-mini-lab">Exigible maintenant</div><div class="fin-mini-val" id="fin-exigible">&euro;0</div></div>
-          <div><div class="fin-mini-lab">D&eacute;j&agrave; vers&eacute;</div><div class="fin-mini-val" id="fin-verse">&euro;0</div></div>
+        <div class="card-header">L'argent que tu dois aux cr&eacute;ateurs</div>
+        <div class="fin-ligne">
+          <div class="fin-ligne-val" id="fin-bloque">&euro;0</div>
+          <div class="fin-ligne-nom">Pas encore envoy&eacute;</div>
+          <div class="fin-ligne-quand" id="fin-bloque-quand">&nbsp;</div>
         </div>
-        <div class="stat-note" style="padding:0 18px 16px">Chaque part part toute seule 14 jours apr&egrave;s sa commande.</div>
+        <div class="fin-ligne">
+          <div class="fin-ligne-val" id="fin-exigible">&euro;0</div>
+          <div class="fin-ligne-nom">Part la nuit prochaine</div>
+          <div class="fin-ligne-quand">Ces parts ont d&eacute;pass&eacute; les 14 jours d'attente.</div>
+        </div>
+        <div class="fin-ligne">
+          <div class="fin-ligne-val" id="fin-verse">&euro;0</div>
+          <div class="fin-ligne-nom">D&eacute;j&agrave; envoy&eacute;</div>
+          <div class="fin-ligne-quand">Arriv&eacute; sur le compte bancaire des cr&eacute;ateurs.</div>
+        </div>
       </div>
       <div class="card">
         <div class="card-header">Par marque</div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Marque</th><th>Compte</th><th>Ventes</th><th>Ta part</th><th>&Agrave; verser</th><th>Vers&eacute;</th></tr></thead>
+            <thead><tr><th>Marque</th><th>Compte bancaire</th><th>Ventes</th><th>Pour toi</th><th>En attente</th><th>Envoy&eacute;</th><th>&Agrave; envoyer &agrave; la main</th></tr></thead>
             <tbody id="finances-table"></tbody>
           </table>
         </div>
@@ -986,24 +1005,36 @@
       const r = d.resume || {};
       document.getElementById('stat-revenue').textContent = euros(r.commission_cents);
       document.getElementById('fin-volume').textContent = euros(r.volume_cents);
-      document.getElementById('fin-a-verser').textContent = euros(r.a_verser_cents);
       document.getElementById('fin-exigible').textContent = euros(r.exigible_cents);
       document.getElementById('fin-verse').textContent = euros(r.deja_verse_cents);
+      document.getElementById('fin-bloque').textContent =
+        euros((r.a_verser_cents || 0) - (r.exigible_cents || 0));
       document.getElementById('fin-commandes').textContent = 'encaissés sur '
         + (r.commandes_payees || 0) + (r.commandes_payees === 1 ? ' commande' : ' commandes');
+
+      // Une date, pas un statut : "libéré le 22 septembre" se comprend seul.
+      const quand = document.getElementById('fin-bloque-quand');
+      if (r.prochaine_liberation) {
+        const j = new Date(r.prochaine_liberation);
+        quand.textContent = 'Le premier virement partira le '
+          + j.toLocaleDateString('fr-BE', { day: 'numeric', month: 'long' })
+          + '. UNEEK garde chaque part 14 jours, le temps des retours.';
+      } else {
+        quand.textContent = 'UNEEK garde chaque part 14 jours, le temps des retours.';
+      }
 
       // La barre : une seule echelle, celle du volume encaisse. Les frais
       // Stripe n'apparaissent que si on les connait tous — un segment
       // incomplet fausserait la lecture de "ce qui te reste".
       const parts = r.frais_cents === null || r.frais_cents === undefined
         ? [
-            { nom: 'Aux créateurs', v: r.du_cents, c: '#7C3AED' },
-            { nom: 'Ta part', v: r.commission_cents, c: '#059669' }
+            { nom: 'Pour les créateurs', v: r.du_cents, c: '#7C3AED' },
+            { nom: 'Pour toi', v: r.commission_cents, c: '#059669' }
           ]
         : [
-            { nom: 'Aux créateurs', v: r.du_cents, c: '#7C3AED' },
-            { nom: 'Frais Stripe', v: r.frais_cents, c: '#B45309' },
-            { nom: 'Ta part, nette', v: r.net_cents, c: '#059669' }
+            { nom: 'Pour les créateurs', v: r.du_cents, c: '#7C3AED' },
+            { nom: 'Pris par Stripe', v: r.frais_cents, c: '#B45309' },
+            { nom: 'Il te reste', v: r.net_cents, c: '#059669' }
           ];
       const total = parts.reduce(function (s, p) { return s + (p.v || 0); }, 0);
       const pct = function (v) { return total ? (v / total) * 100 : 0; };
@@ -1032,8 +1063,11 @@
       const alerte = document.getElementById('fin-alerte');
       const perdu = (r.non_inscrit_cents || 0) + (r.orphelins_cents || 0);
       if (perdu > 0) {
-        alerte.innerHTML = '<b>' + euros(perdu) + ' dus à des créateurs ne partiront pas tout seuls.</b>'
-          + ' Ventes conclues avant que le créateur ne relie son compte — à régler à la main.';
+        // Ce bandeau parle d'argent qui ne partira jamais tout seul : il doit
+        // dire quoi faire, pas decrire un etat interne.
+        alerte.innerHTML = '<b>' + euros(perdu) + ' à envoyer toi-même.</b>'
+          + ' Ces ventes ont été payées avant que le créateur ne relie son compte bancaire :'
+          + ' le virement automatique ne les prendra pas. Vois la colonne « à envoyer à la main » ci-dessous.';
         alerte.style.display = 'block';
       } else {
         alerte.style.display = 'none';
@@ -1044,18 +1078,20 @@
         const relie = m.compte_relie
           ? '<span class="badge badge-green">Relié</span>'
           : '<span class="badge badge-red">Non relié</span>';
-        const aVerser = m.non_inscrit_cents > 0
-          ? euros(m.a_verser_cents) + '<div style="font-size:11px;color:var(--orange)">+ ' + euros(m.non_inscrit_cents) + ' non suivis</div>'
-          : euros(m.a_verser_cents);
+        // La colonne "a la main" est celle qui demande une action : elle est
+        // en couleur quand elle n'est pas vide, neutre quand tout va bien.
+        const main = m.non_inscrit_cents > 0
+          ? '<span style="color:var(--orange);font-weight:600">' + euros(m.non_inscrit_cents) + '</span>'
+          : '<span class="sec">—</span>';
         return '<tr><td class="bold">' + esc(m.nom)
           + (m.createur ? '<div style="font-size:11px;font-weight:400;color:var(--gray-400)">' + esc(m.createur) + '</div>' : '')
           + '</td><td>' + relie + '</td><td class="sec">' + euros(m.ventes_cents) + '</td><td class="sec">'
-          + euros(m.commission_cents) + '</td><td>' + aVerser + '</td><td class="sec">'
-          + euros(m.deja_verse_cents) + '</td></tr>';
-      }).join('') : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune vente encaissée</td></tr>';
+          + euros(m.commission_cents) + '</td><td class="sec">' + euros(m.a_verser_cents) + '</td><td class="sec">'
+          + euros(m.deja_verse_cents) + '</td><td>' + main + '</td></tr>';
+      }).join('') : '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune vente encaissée</td></tr>';
     } catch (err) {
       console.error('Error loading versements:', err);
-      corps.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Chiffres indisponibles pour le moment</td></tr>';
+      corps.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400)">Chiffres indisponibles pour le moment</td></tr>';
     }
   }
 

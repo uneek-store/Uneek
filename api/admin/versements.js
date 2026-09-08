@@ -126,6 +126,10 @@ export default async function handler(req, res) {
 
     const limite = Date.now() - JOURS_AVANT_VIREMENT * 24 * 60 * 60 * 1000;
     let orphelins_cents = 0; // virements dont on ne retrouve pas la marque
+    // Date a laquelle la plus proche part encore bloquee sera liberee. Dire
+    // "bloque jusqu'au 22 septembre" est comprehensible ; dire "non encore
+    // exigible" ne l'est pas.
+    let prochaineLiberation = null;
 
     for (const v of virements || []) {
       const brandId = marqueDuCreateur.get(v.creator_id);
@@ -139,7 +143,15 @@ export default async function handler(req, res) {
         m.deja_verse_cents += montant;
       } else if (v.status === "pending") {
         m.a_verser_cents += montant;
-        if (new Date(v.created_at).getTime() < limite) m.exigible_cents += montant;
+        const ne = new Date(v.created_at).getTime();
+        if (ne < limite) {
+          m.exigible_cents += montant;
+        } else {
+          const liberation = ne + JOURS_AVANT_VIREMENT * 24 * 60 * 60 * 1000;
+          if (prochaineLiberation === null || liberation < prochaineLiberation) {
+            prochaineLiberation = liberation;
+          }
+        }
       }
     }
 
@@ -187,6 +199,9 @@ export default async function handler(req, res) {
     return res.status(200).json({
       resume: {
         frais_cents,
+        prochaine_liberation: prochaineLiberation === null
+          ? null
+          : new Date(prochaineLiberation).toISOString(),
         net_cents: frais_cents === null ? null : commission_cents - frais_cents,
         commandes_payees: idsPayees.length,
         volume_cents: somme("ventes_cents"),
