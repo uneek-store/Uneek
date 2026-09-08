@@ -90,6 +90,13 @@ a{text-decoration:none;}
 .btn-primary:hover{background:var(--gray-200);transform:translateY(-2px);}
 .btn-dark{background:var(--black);color:var(--white);}
 .btn-dark:hover{background:var(--gray-800);transform:translateY(-2px);}
+/* AJOUT : le bouton de commande tourne pendant le paiement. */
+#co-btn[disabled]{cursor:default;transform:none;}
+.rondelle{width:13px;height:13px;border-radius:50%;display:inline-block;
+  border:2px solid rgba(255,255,255,.35);border-top-color:#fff;
+  animation:rondelle-tourne .6s linear infinite;margin-right:8px;vertical-align:-2px;}
+@keyframes rondelle-tourne{to{transform:rotate(360deg);}}
+@media (prefers-reduced-motion:reduce){.rondelle{animation-duration:2s;}}
 .btn-outline{background:transparent;color:var(--black);border:1px solid var(--gray-300);}
 .btn-sm{padding:10px 20px;font-size:11px;}
 /* HERO */
@@ -1602,9 +1609,12 @@ async function confirmOrder() {
 
   const btn = document.getElementById('co-btn');
   const boutonNormal = function () {
-    btn.textContent = 'Confirmer la commande →'; btn.disabled = false; btn.style.opacity = '1';
+    btn.innerHTML = 'Confirmer la commande &rarr;'; btn.disabled = false; btn.style.opacity = '1';
   };
-  btn.textContent = 'Paiement en cours...'; btn.disabled = true; btn.style.opacity = '0.5';
+  // Le paiement prend une a trois secondes : le bouton tourne pendant ce
+  // temps, plutot que de laisser la page figee sans rien dire.
+  btn.innerHTML = '<span class="rondelle"></span>Paiement en cours…';
+  btn.disabled = true; btn.style.opacity = '0.75';
   montrerErreurPaiement('');
 
   try {

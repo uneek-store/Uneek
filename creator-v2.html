@@ -88,6 +88,15 @@
     .btn-add:hover { background: var(--gray-800); }
     .btn-ship { padding: 5px 14px; background: var(--green); color: var(--white); border: none; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: var(--font-body); }
     .btn-ship:hover { background: #16A34A; }
+    /* AJOUT : le bouton tourne pendant l'envoi, au lieu de rester fige. */
+    .btn-ship { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-width: 78px; }
+    .btn-ship[disabled] { cursor: default; opacity: 1; }
+    .btn-ship[disabled]:hover { background: var(--green); }
+    .rondelle { width: 12px; height: 12px; border-radius: 50%; display: inline-block;
+      border: 2px solid rgba(255,255,255,.35); border-top-color: #fff;
+      animation: rondelle-tourne .6s linear infinite; }
+    @keyframes rondelle-tourne { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .rondelle { animation-duration: 2s; } }
     .btn-edit { padding: 5px 14px; background: transparent; color: var(--blue); border: 1px solid var(--gray-200); border-radius: 6px; font-size: 12px; cursor: pointer; font-family: var(--font-body); }
     .btn-edit:hover { background: var(--blue-bg); }
     .done-mark { color: var(--gray-400); font-size: 12px; }
@@ -1991,16 +2000,34 @@
 
   // --- SHIP ORDER ---
   async function markShipped(orderId, btn) {
+    // Pendant l'envoi le bouton tourne : l'API previent aussi le client par
+    // e-mail, ce qui prend une seconde ou deux. Sans ca, rien ne bouge et on
+    // clique deux fois.
+    const repos = btn ? btn.innerHTML : null;
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="rondelle"></span>';
+    }
     try {
-      await fetch(API_BASE + '/creator/orders', {
+      const res = await fetch(API_BASE + '/creator/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
         body: JSON.stringify({ order_item_id: orderId, action: 'ship' })
       });
+      // Le v1 annoncait "expedie" meme quand le serveur refusait : on ne le
+      // dit plus que si c'est vrai.
+      let data = null;
+      try { data = await res.json(); } catch (e) {}
+      if (!res.ok) {
+        showToast('Erreur : ' + ((data && data.error) || 'expédition non enregistrée'));
+        if (btn) { btn.disabled = false; btn.innerHTML = repos; }
+        return;
+      }
       showToast('✓ Marqué comme expédié — le client est notifié');
       setTimeout(() => loadOrders(), 1000);
     } catch (err) {
       showToast('Erreur: ' + err.message);
+      if (btn) { btn.disabled = false; btn.innerHTML = repos; }
     }
   }
 
