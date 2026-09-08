@@ -664,6 +664,18 @@
       <div class="page-title">Paramètres</div>
       <div class="page-sub">Gère ton compte créateur</div>
 
+      <!-- Raccordement Stripe : sans lui, les ventes du createur ne peuvent
+           pas lui etre virees. Place en premier dans les parametres, c'est
+           l'action la plus consequente de cette page. -->
+      <div class="settings-card">
+        <div class="settings-title">Recevoir mes paiements</div>
+        <div id="stripe-etat" style="font-size:13px;color:var(--gray-500);margin-bottom:14px">
+          Vérification…
+        </div>
+        <button class="btn-save" id="stripe-btn" onclick="relierStripe()" style="display:none"></button>
+        <div id="stripe-msg" style="font-size:12px;margin-top:10px;display:none"></div>
+      </div>
+
       <div class="settings-card">
         <div class="settings-title">Changer l'adresse email</div>
         <label>Nouvel email</label>
@@ -1002,6 +1014,13 @@
       document.getElementById('welcomeSub').textContent = 'Tableau de bord ' + (currentBrand?.name || '');
       loadDashboard();
       checkAppVersion();
+      // Retour depuis Stripe : on ouvre directement les Paramètres, sinon le
+      // créateur atterrit sur la vue d'ensemble sans savoir si ça a marché.
+      if (/[?&]stripe=/.test(location.search)) {
+        const lien = document.querySelector('.sidebar a[onclick*="settings"]');
+        showSection('settings', lien);
+        history.replaceState(null, '', location.pathname);
+      }
     } catch (err) {
       errorEl.textContent = 'Erreur de connexion au serveur';
       errorEl.style.display = 'block';
@@ -1130,7 +1149,66 @@
   // --- LOAD DATA ---
   async function loadDashboard() {
     if (!currentBrand) return;
-    await Promise.all([loadProducts(), loadOrders(), loadEdits()]);
+    await Promise.all([loadProducts(), loadOrders(), loadEdits(), chargerEtatStripe()]);
+  }
+
+  // --- PAIEMENTS (Stripe) ---
+  // Le createur relie son compte bancaire chez Stripe, pas ici : UNEEK ne
+  // voit jamais son IBAN. On n'affiche que l'etat renvoye par Stripe.
+  async function chargerEtatStripe() {
+    const etatEl = document.getElementById('stripe-etat');
+    const btn = document.getElementById('stripe-btn');
+    if (!etatEl || !btn) return;
+    try {
+      const res = await fetch(API_BASE + '/creator/stripe-connect', {
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'indisponible');
+
+      if (!d.relie) {
+        etatEl.innerHTML = '<strong style="color:var(--red)">Compte bancaire non relié.</strong>'
+          + '<br>Tant que ce n\'est pas fait, tes ventes ne peuvent pas t\'être versées.';
+        btn.textContent = 'Relier mon compte bancaire';
+        btn.style.display = '';
+        return;
+      }
+      if (d.virements_actifs) {
+        etatEl.innerHTML = '<strong style="color:var(--green,#00b341)">Compte relié.</strong>'
+          + '<br>Tes ventes te sont versées automatiquement 14 jours après chaque commande.';
+        btn.textContent = 'Modifier mes informations bancaires';
+        btn.style.display = '';
+        return;
+      }
+      // Compte cree mais dossier incomplet : Stripe attend encore des pieces.
+      etatEl.innerHTML = '<strong style="color:#b8860b">Dossier incomplet.</strong>'
+        + '<br>Stripe a encore besoin d\'informations avant de pouvoir te verser tes ventes.';
+      btn.textContent = 'Terminer mon inscription';
+      btn.style.display = '';
+    } catch (err) {
+      etatEl.textContent = 'État des paiements indisponible pour le moment.';
+      btn.style.display = 'none';
+    }
+  }
+
+  async function relierStripe() {
+    const btn = document.getElementById('stripe-btn');
+    const msg = document.getElementById('stripe-msg');
+    const texte = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Ouverture de Stripe…';
+    msg.style.display = 'none';
+    try {
+      const res = await fetch(API_BASE + '/creator/stripe-connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken }
+      });
+      const d = await res.json();
+      if (!res.ok || !d.url) throw new Error(d.error || 'Stripe injoignable');
+      window.location.href = d.url;
+    } catch (err) {
+      showMsg(msg, err.message || 'Erreur, réessaie.', 'var(--red)');
+      btn.disabled = false; btn.textContent = texte;
+    }
   }
 
   async function loadProducts() {

@@ -63,7 +63,10 @@ export default async function handler(req, res) {
 
         const stripeTransfer = await stripe.transfers.create({
           amount: totalAmount,
-          currency: 'usd',
+          // Les commandes sont encaissees en euros. Virer en dollars ferait
+          // echouer le transfert faute de solde dans cette devise, ou le
+          // convertirait aux frais d'UNEEK.
+          currency: 'eur',
           destination: accountId,
           description: `UNEEK payout - ${transfers.length} orders`,
           metadata: {

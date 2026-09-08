@@ -50,6 +50,76 @@ async function verifierPaiement(paymentIntentId, montantAttenduEnCents) {
   }
 }
 
+// Inscrit la part qui revient a chaque createur sur la liste des virements.
+// Le robot de /api/cron/stripe-transfers viendra la lire 14 jours plus tard
+// et executera le virement. Sans cette etape, l'argent encaisse reste chez
+// UNEEK indefiniment.
+//
+// UNE LIGNE PAR CREATEUR, PAS PAR ARTICLE
+// Une commande peut contenir des pieces de plusieurs marques. On regroupe
+// donc les montants par createur : deux articles de la meme marque donnent
+// une seule ligne, et le createur recoit un virement propre.
+//
+// LES CREATEURS SANS COMPTE STRIPE SONT IGNORES, ET SIGNALES
+// Le robot vire vers un identifiant de compte : sans lui, la ligne serait
+// inexploitable et bloquerait la file a chaque passage. On la saute donc, en
+// l'ecrivant en clair dans les logs pour pouvoir regulariser une fois le
+// createur inscrit.
+async function inscrireVirements(order, orderItems, chargeId) {
+  // Cumuler les parts par marque.
+  const parMarque = new Map();
+  for (const item of orderItems) {
+    if (!item.brand_id) continue;
+    const cents = Math.round((parseFloat(item.creator_payout) || 0) * 100);
+    if (cents <= 0) continue;
+    parMarque.set(item.brand_id, (parMarque.get(item.brand_id) || 0) + cents);
+  }
+  if (parMarque.size === 0) return;
+
+  // Retrouver le createur de chaque marque et son compte Stripe.
+  const { data: comptes, error } = await supabaseAdmin
+    .from("creator_accounts")
+    .select("id, email, brand_id, stripe_account_id")
+    .in("brand_id", [...parMarque.keys()]);
+
+  if (error) throw new Error("lecture des comptes createurs : " + error.message);
+
+  const lignes = [];
+  for (const [brandId, montant] of parMarque) {
+    const compte = (comptes || []).find((c) => c.brand_id === brandId);
+    if (!compte) {
+      console.error("[virements] aucun compte createur pour la marque", brandId,
+        "— part de", montant / 100, "EUR non inscrite (commande", order.order_number + ")");
+      continue;
+    }
+    if (!compte.stripe_account_id) {
+      console.warn("[virements]", compte.email,
+        "n'a pas encore relie son compte Stripe — part de", montant / 100,
+        "EUR en attente (commande", order.order_number + ")");
+      continue;
+    }
+    lignes.push({
+      order_id: order.id,
+      creator_id: compte.id,
+      stripe_account_id: compte.stripe_account_id,
+      charge_id: chargeId || null,
+      amount: montant, // en centimes, comme l'attend le robot
+      status: "pending",
+    });
+  }
+
+  if (lignes.length === 0) return;
+
+  const { error: erreurEcriture } = await supabaseAdmin
+    .from("pending_transfers")
+    .insert(lignes);
+
+  if (erreurEcriture) throw new Error("ecriture des virements : " + erreurEcriture.message);
+
+  console.log("[virements]", lignes.length, "part(s) inscrite(s) pour la commande",
+    order.order_number, "-", lignes.reduce((s, l) => s + l.amount, 0) / 100, "EUR");
+}
+
 function generateOrderNumber() {
   const date = new Date();
   const y = date.getFullYear();
@@ -381,6 +451,24 @@ export default async function handler(req, res) {
       if (itemsError) {
         console.error("Error creating order items:", itemsError);
         return res.status(500).json({ error: "Erreur ajout produits à la commande" });
+      }
+
+      // Inscrire la part de chaque createur sur la liste des virements.
+      // C'est ce que le robot des 14 jours viendra lire. Sans cette etape,
+      // l'argent reste indefiniment chez UNEEK.
+      // Volontairement sans jamais faire echouer la commande : le client a
+      // paye, sa commande doit exister. Une part manquante se rattrape a la
+      // main ; une commande perdue, non. Tout echec est donc trace en clair.
+      if (paye) {
+        try {
+          await inscrireVirements(order, orderItems, paiement && paiement.chargeId);
+        } catch (err) {
+          console.error("[virements] echec pour la commande",
+            order.order_number, ":", err && err.message);
+        }
+      } else {
+        console.warn("[virements] commande", order.order_number,
+          "non payee a la creation : parts createurs a inscrire plus tard");
       }
 
       // Réserver le stock (constat 02).
