@@ -358,6 +358,8 @@ const STRIPE_PUBLIC_KEY = 'pk_test_51UD1LJRvJcYktN3V9MrCCEjsz6MqNylPNQ2HN0UB7XUY
 let stripeClient = null;
 let stripeElements = null;
 let stripePaymentElement = null;
+let stripeExpressElements = null;
+let stripeExpressElement = null;
 
 // Monte le formulaire de paiement dans #payment-element. Appele a chaque
 // affichage du checkout : le HTML est regenere, donc l'ancien element est
@@ -395,9 +397,59 @@ function initStripe() {
     stripePaymentElement.on('change', function (ev) {
       if (!ev.error) montrerErreurPaiement('');
     });
+    initExpressCheckout(amountInCents);
   } catch (err) {
     console.error('Stripe init error:', err);
     montrerErreurPaiement('Impossible d\'afficher le formulaire de paiement.');
+  }
+}
+
+// Bouton Apple Pay / Google Pay au-dessus du formulaire carte.
+// Volontairement monte sur un groupe Elements DISTINCT : submit() et
+// confirmPayment() n'y touchent que ce bouton, donc meme si Apple Pay
+// echoue, le paiement par carte plus bas continue de fonctionner.
+function initExpressCheckout(amountInCents) {
+  const box = document.getElementById('express-checkout-element');
+  if (!box || box.childElementCount > 0) return;
+  try {
+    stripeExpressElements = stripeClient.elements({
+      mode: 'payment',
+      amount: amountInCents,
+      currency: 'eur',
+      locale: 'fr',
+      appearance: { theme: 'stripe', variables: { borderRadius: '8px', fontFamily: 'inherit' } }
+    });
+    stripeExpressElement = stripeExpressElements.create('expressCheckout', {
+      // applePay 'always' : Stripe affiche le bouton meme si aucune carte
+      // n'est encore enregistree dans le Wallet (Apple propose alors d'en
+      // ajouter une). Le reste est deja propose dans l'onglet du dessous.
+      paymentMethods: {
+        applePay: 'always',
+        googlePay: 'auto',
+        link: 'never',
+        paypal: 'never',
+        amazonPay: 'never',
+        klarna: 'never'
+      },
+      buttonTheme: { applePay: 'black', googlePay: 'black' },
+      buttonHeight: 48
+    });
+    stripeExpressElement.on('ready', function (ev) {
+      const dispo = ev.availablePaymentMethods;
+      const wrap = document.getElementById('express-checkout-wrap');
+      if (wrap && dispo && (dispo.applePay || dispo.googlePay)) wrap.style.display = 'block';
+    });
+    stripeExpressElement.on('click', function (ev) {
+      // Apple exige que sa fenetre s'ouvre pendant le clic lui-meme : la
+      // verification du formulaire doit rester synchrone. Sans resolve(),
+      // la fenetre ne s'ouvre pas et le client voit le message manquant.
+      if (!validerCommande()) return;
+      ev.resolve();
+    });
+    stripeExpressElement.on('confirm', paiementExpress);
+    stripeExpressElement.mount('#express-checkout-element');
+  } catch (err) {
+    console.error('Express Checkout indisponible:', err);
   }
 }
 
@@ -1432,6 +1484,17 @@ function checkoutPage() {
           </div>
           <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:24px">Paiement</div>
           <div style="padding:24px;border:1px solid var(--gray-200);border-radius:var(--radius);margin-bottom:24px;background:var(--white)">
+            <!-- Boutons Apple Pay / Google Pay. Reste masque tant que Stripe n'a
+                 pas confirme qu'au moins un des deux est disponible sur cet
+                 appareil : pas de trou blanc chez ceux qui ne les ont pas. -->
+            <div id="express-checkout-wrap" style="display:none">
+              <div id="express-checkout-element"></div>
+              <div style="display:flex;align-items:center;gap:12px;margin:20px 0 4px">
+                <div style="flex:1;height:1px;background:var(--gray-200)"></div>
+                <span style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--gray-400)">ou payer autrement</span>
+                <div style="flex:1;height:1px;background:var(--gray-200)"></div>
+              </div>
+            </div>
             <div id="payment-element"></div>
             <div id="payment-errors" role="alert" style="display:none;margin-top:12px;font-size:13px;color:#c0392b"></div>
             <div style="display:flex;align-items:center;gap:8px;margin-top:16px;font-size:12px;color:var(--gray-400);font-weight:300">
@@ -1460,7 +1523,11 @@ function checkoutPage() {
   </div>`;
 }
 
-async function confirmOrder() {
+// Lit et verifie le formulaire de livraison. Renvoie les donnees de la
+// commande, ou null si un champ manque (le client a deja vu le message).
+// Doit rester synchrone : le clic Apple Pay s'en sert avant d'ouvrir sa
+// fenetre, et Apple n'autorise pas d'attente a ce moment-la.
+function validerCommande() {
   const p = document.getElementById('co-prenom')?.value;
   const n = document.getElementById('co-nom')?.value;
   const e = document.getElementById('co-email')?.value;
@@ -1469,12 +1536,64 @@ async function confirmOrder() {
   const c = document.getElementById('co-code')?.value;
   const pays = document.getElementById('co-pays')?.value || 'Belgique';
   const nickname = document.getElementById('co-nickname')?.value;
-  if (!p || !n || !e || !a || !v || !c) { showToast('Remplis tous les champs'); return; }
+  if (!p || !n || !e || !a || !v || !c) { showToast('Remplis tous les champs'); return null; }
   if (!nickname || !nickname.trim()) {
     showToast('Ajoute un surnom — il sera écrit sur ton colis');
     document.getElementById('co-nickname')?.focus();
-    return;
+    return null;
   }
+  const total = cart.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+  return {
+    prenom: p,
+    amountInCents: Math.round(total * 100),
+    orderData: {
+      customer: {
+        email: e,
+        name: `${p} ${n}`,
+        nickname: nickname.trim(),
+        address: `${a}, ${c} ${v}, ${pays}`
+      },
+      items: cart.map(item => ({
+        product_id: item.id,
+        quantity: 1,
+        size: item.selectedSize,
+        color: item.selectedColor || null
+      }))
+    }
+  };
+}
+
+// Demande au serveur de preparer le paiement. Renvoie le clientSecret, ou
+// null (le message d'erreur est deja affiche).
+async function creerPaymentIntent(cmd) {
+  let data = {};
+  let res;
+  try {
+    res = await fetch(API + '/api/stripe/payment-intent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount: cmd.amountInCents,
+        email: cmd.orderData.customer.email,
+        name: cmd.orderData.customer.name,
+        description: 'Commande UNEEK — ' + cart.map(i => i.name).join(', ').slice(0, 200)
+      })
+    });
+    data = await res.json().catch(() => ({}));
+  } catch (err) {
+    montrerErreurPaiement('Erreur réseau, réessaie.');
+    return null;
+  }
+  if (!res.ok || !data.clientSecret) {
+    montrerErreurPaiement(data.error || 'Impossible de préparer le paiement. Réessaie dans un instant.');
+    return null;
+  }
+  return data.clientSecret;
+}
+
+async function confirmOrder() {
+  const cmd = validerCommande();
+  if (!cmd) return;
 
   if (!stripeClient || !stripeElements) {
     montrerErreurPaiement('Le formulaire de paiement n\'est pas prêt. Recharge la page et réessaie.');
@@ -1488,23 +1607,6 @@ async function confirmOrder() {
   btn.textContent = 'Paiement en cours...'; btn.disabled = true; btn.style.opacity = '0.5';
   montrerErreurPaiement('');
 
-  const total = cart.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
-  const amountInCents = Math.round(total * 100);
-  const orderData = {
-    customer: {
-      email: e,
-      name: `${p} ${n}`,
-      nickname: nickname.trim(),
-      address: `${a}, ${c} ${v}, ${pays}`
-    },
-    items: cart.map(item => ({
-      product_id: item.id,
-      quantity: 1,
-      size: item.selectedSize,
-      color: item.selectedColor || null
-    }))
-  };
-
   try {
     // 1. Stripe valide ce que le client a tape dans le formulaire.
     const { error: erreurSaisie } = await stripeElements.submit();
@@ -1515,35 +1617,21 @@ async function confirmOrder() {
     }
 
     // 2. Le serveur cree le PaymentIntent (montant calcule ici, verifie la-bas).
-    const resPI = await fetch(API + '/api/stripe/payment-intent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        amount: amountInCents,
-        email: e,
-        name: `${p} ${n}`,
-        description: 'Commande UNEEK — ' + cart.map(i => i.name).join(', ').slice(0, 200)
-      })
-    });
-    const dataPI = await resPI.json().catch(() => ({}));
-    if (!resPI.ok || !dataPI.clientSecret) {
-      montrerErreurPaiement(dataPI.error || 'Impossible de préparer le paiement. Réessaie dans un instant.');
-      boutonNormal();
-      return;
-    }
+    const clientSecret = await creerPaymentIntent(cmd);
+    if (!clientSecret) { boutonNormal(); return; }
 
     // 3. Certains moyens de paiement (Bancontact, iDEAL...) quittent la page
     //    puis reviennent. On garde la commande sous le coude pour la creer
     //    au retour (voir finaliserPaiementAuRetour).
-    try { localStorage.setItem('uneek_pending_order', JSON.stringify(orderData)); } catch (err) {}
+    try { localStorage.setItem('uneek_pending_order', JSON.stringify(cmd.orderData)); } catch (err) {}
 
     // 4. Confirmation du paiement, sans quitter la page quand c'est possible.
     const { error: erreurPaiement, paymentIntent } = await stripeClient.confirmPayment({
       elements: stripeElements,
-      clientSecret: dataPI.clientSecret,
+      clientSecret: clientSecret,
       confirmParams: {
         return_url: location.origin + '/checkout',
-        receipt_email: e
+        receipt_email: cmd.orderData.customer.email
       },
       redirect: 'if_required'
     });
@@ -1564,12 +1652,66 @@ async function confirmOrder() {
 
     // 5. Paiement OK : on enregistre la commande.
     btn.textContent = 'Enregistrement de la commande...';
-    await enregistrerCommandePayee(orderData, paymentIntent.id, p);
+    await enregistrerCommandePayee(cmd.orderData, paymentIntent.id, cmd.prenom);
 
   } catch (err) {
     console.error('Erreur checkout:', err);
     montrerErreurPaiement('Erreur réseau, réessaie.');
     boutonNormal();
+  }
+}
+
+// Paiement lance depuis le bouton Apple Pay / Google Pay. Meme parcours que
+// confirmOrder, mais sur le groupe Elements du bouton. En cas d'echec on
+// previent Apple/Google avec paymentFailed pour que leur fenetre se ferme
+// proprement, et le client peut toujours payer par carte juste en dessous.
+async function paiementExpress(ev) {
+  const cmd = validerCommande();
+  if (!cmd) { ev.paymentFailed({ reason: 'fail' }); return; }
+  montrerErreurPaiement('');
+  try {
+    const { error: erreurSaisie } = await stripeExpressElements.submit();
+    if (erreurSaisie) {
+      ev.paymentFailed({ reason: 'fail' });
+      montrerErreurPaiement(erreurSaisie.message || 'Paiement impossible.');
+      return;
+    }
+
+    const clientSecret = await creerPaymentIntent(cmd);
+    if (!clientSecret) { ev.paymentFailed({ reason: 'fail' }); return; }
+
+    try { localStorage.setItem('uneek_pending_order', JSON.stringify(cmd.orderData)); } catch (err) {}
+
+    const { error: erreurPaiement, paymentIntent } = await stripeClient.confirmPayment({
+      elements: stripeExpressElements,
+      clientSecret: clientSecret,
+      confirmParams: {
+        return_url: location.origin + '/checkout',
+        receipt_email: cmd.orderData.customer.email
+      },
+      redirect: 'if_required'
+    });
+
+    if (erreurPaiement) {
+      try { localStorage.removeItem('uneek_pending_order'); } catch (err) {}
+      ev.paymentFailed({ reason: 'fail' });
+      montrerErreurPaiement(erreurPaiement.message || 'Le paiement a été refusé.');
+      return;
+    }
+
+    if (!paymentIntent || (paymentIntent.status !== 'succeeded' && paymentIntent.status !== 'processing')) {
+      try { localStorage.removeItem('uneek_pending_order'); } catch (err) {}
+      ev.paymentFailed({ reason: 'fail' });
+      montrerErreurPaiement('Le paiement n\'a pas abouti.');
+      return;
+    }
+
+    await enregistrerCommandePayee(cmd.orderData, paymentIntent.id, cmd.prenom);
+
+  } catch (err) {
+    console.error('Erreur Apple Pay / Google Pay:', err);
+    ev.paymentFailed({ reason: 'fail' });
+    montrerErreurPaiement('Erreur réseau, réessaie.');
   }
 }
 
