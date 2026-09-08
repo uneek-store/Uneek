@@ -21,6 +21,14 @@ export const TABLES = [
   "order_items",
   "partner_applications",
   "product_edits",
+  // Ajoutee le 8 septembre. pending_transfers enregistre CE QU'UNEEK DOIT A
+  // CHAQUE CREATEUR pour chaque vente encaissee : c'est elle que lit le
+  // virement automatique a 14 jours (api/cron/stripe-transfers.js).
+  // Elle etait absente de cette liste depuis le branchement de Stripe : la
+  // sauvegarde nocturne ne la contenait pas. En cas de perte de la base, on
+  // aurait retrouve les commandes et l'argent encaisse, mais plus aucune
+  // trace de ce qui restait a reverser. Trouve par le garde-fou.
+  "pending_transfers",
 ];
 
 // Volontairement absente de la liste : "admin_notifications". La sauvegarde du
