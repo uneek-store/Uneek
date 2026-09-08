@@ -186,6 +186,32 @@
     /* FINANCES */
     .stats-3 { grid-template-columns: repeat(3, 1fr); }
     .stat-note { font-size: 11px; color: var(--gray-400); margin-top: 4px; }
+
+    /* FINANCES — une seule barre a l'echelle du volume encaisse.
+       Les trois couleurs sont un jeu categoriel verifie (bandes de clarte,
+       chroma, separation daltonisme, contraste) : elles restent distinctes
+       pour un deuteranope comme a l'impression. */
+    /* .card n'a pas de marge interieure : seul .card-header en pose une.
+       Les blocs sans en-tete portent donc la leur. */
+    .fin-corps { padding: 18px; }
+    .fin-hero { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+    .fin-hero-val { font-family: var(--font-display); font-size: 38px; font-weight: 700; letter-spacing: -1.2px; line-height: 1; }
+    .fin-hero-sub { font-size: 13px; color: var(--gray-500); }
+    /* 2px d'espace entre les segments : la coupure se lit meme quand deux
+       couleurs voisines sont proches. */
+    .fin-bar { display: flex; gap: 2px; height: 46px; margin-bottom: 16px; }
+    .fin-seg { display: flex; align-items: center; justify-content: center; min-width: 3px; color: #FFFFFF; font-family: var(--font-display); font-size: 12px; font-weight: 700; overflow: hidden; }
+    .fin-seg:first-child { border-radius: 6px 0 0 6px; }
+    .fin-seg:last-child { border-radius: 0 6px 6px 0; }
+    .fin-legende { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px 28px; }
+    .fin-cle { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+    .fin-dot { width: 10px; height: 10px; border-radius: 3px; flex: none; align-self: center; }
+    .fin-cle-nom { font-size: 13px; color: var(--gray-600); white-space: nowrap; }
+    .fin-cle-val { margin-left: auto; font-family: var(--font-display); font-size: 15px; font-weight: 600; white-space: nowrap; }
+    .fin-cle-pct { font-size: 12px; color: var(--gray-400); white-space: nowrap; }
+    .fin-mini { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 18px; padding: 16px 18px; }
+    .fin-mini-lab { font-size: 10px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+    .fin-mini-val { font-family: var(--font-display); font-size: 20px; font-weight: 600; }
     /* Signale l'argent du a un createur mais suivi nulle part : sans ce
        bandeau, la somme manquante serait simplement absente des totaux. */
     .fin-alerte { display: none; background: var(--orange-bg); border: 1px solid var(--orange); color: var(--gray-800); border-radius: 10px; padding: 12px 16px; font-size: 13px; margin-bottom: 20px; line-height: 1.5; }
@@ -327,35 +353,36 @@
     <!-- FINANCES -->
     <div id="sec-finances" class="section">
       <div class="page-title">Finances</div>
-      <div class="page-sub">Uniquement les commandes r&eacute;ellement encaiss&eacute;es. Stripe affiche le total ; ici tu vois le partage.</div>
-      <div class="stats stats-3">
-        <div class="stat-card">
-          <div class="stat-label">&Agrave; verser aux cr&eacute;ateurs</div>
-          <div class="stat-value" id="fin-a-verser">&euro;0</div>
-          <div class="stat-note" id="fin-exigible">&nbsp;</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Ta commission</div>
-          <div class="stat-value" id="fin-revenue">&euro;0</div>
-          <div class="stat-note">avant les frais Stripe</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Volume encaiss&eacute;</div>
-          <div class="stat-value" id="fin-volume">&euro;0</div>
-          <div class="stat-note" id="fin-commandes">&nbsp;</div>
+      <div class="page-sub">Sur les commandes encaiss&eacute;es</div>
+      <div class="card">
+        <div class="fin-corps">
+          <div class="fin-hero">
+            <div class="fin-hero-val" id="fin-volume">&euro;0</div>
+            <div class="fin-hero-sub" id="fin-commandes">&nbsp;</div>
+          </div>
+          <div class="fin-bar" id="fin-bar"></div>
+          <div class="fin-legende" id="fin-legende"></div>
         </div>
       </div>
       <div class="fin-alerte" id="fin-alerte"></div>
       <div class="card">
+        <div class="card-header">Aux cr&eacute;ateurs</div>
+        <div class="fin-mini">
+          <div><div class="fin-mini-lab">&Agrave; verser</div><div class="fin-mini-val" id="fin-a-verser">&euro;0</div></div>
+          <div><div class="fin-mini-lab">Exigible maintenant</div><div class="fin-mini-val" id="fin-exigible">&euro;0</div></div>
+          <div><div class="fin-mini-lab">D&eacute;j&agrave; vers&eacute;</div><div class="fin-mini-val" id="fin-verse">&euro;0</div></div>
+        </div>
+        <div class="stat-note" style="padding:0 18px 16px">Chaque part part toute seule 14 jours apr&egrave;s sa commande.</div>
+      </div>
+      <div class="card">
         <div class="card-header">Par marque</div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Marque</th><th>Compte bancaire</th><th>Ventes</th><th>Ta commission</th><th>&Agrave; verser</th><th>D&eacute;j&agrave; vers&eacute;</th></tr></thead>
+            <thead><tr><th>Marque</th><th>Compte</th><th>Ventes</th><th>Ta part</th><th>&Agrave; verser</th><th>Vers&eacute;</th></tr></thead>
             <tbody id="finances-table"></tbody>
           </table>
         </div>
       </div>
-      <div class="page-sub" style="margin-top:14px">Chaque part part automatiquement 14 jours apr&egrave;s la commande, la nuit &agrave; 2 h. Le d&eacute;lai couvre les retours : une fois vers&eacute;e, une part est difficile &agrave; r&eacute;cup&eacute;rer.</div>
     </div>
 
     <!-- CANDIDATURES -->
@@ -958,14 +985,46 @@
 
       const r = d.resume || {};
       document.getElementById('stat-revenue').textContent = euros(r.commission_cents);
-      document.getElementById('fin-a-verser').textContent = euros(r.a_verser_cents);
-      document.getElementById('fin-revenue').textContent = euros(r.commission_cents);
       document.getElementById('fin-volume').textContent = euros(r.volume_cents);
-      document.getElementById('fin-exigible').textContent = r.exigible_cents
-        ? 'dont ' + euros(r.exigible_cents) + ' exigible maintenant'
-        : 'rien n\'a encore ' + (d.delai_jours || 14) + ' jours';
-      document.getElementById('fin-commandes').textContent =
-        (r.commandes_payees || 0) + (r.commandes_payees === 1 ? ' commande payée' : ' commandes payées');
+      document.getElementById('fin-a-verser').textContent = euros(r.a_verser_cents);
+      document.getElementById('fin-exigible').textContent = euros(r.exigible_cents);
+      document.getElementById('fin-verse').textContent = euros(r.deja_verse_cents);
+      document.getElementById('fin-commandes').textContent = 'encaissés sur '
+        + (r.commandes_payees || 0) + (r.commandes_payees === 1 ? ' commande' : ' commandes');
+
+      // La barre : une seule echelle, celle du volume encaisse. Les frais
+      // Stripe n'apparaissent que si on les connait tous — un segment
+      // incomplet fausserait la lecture de "ce qui te reste".
+      const parts = r.frais_cents === null || r.frais_cents === undefined
+        ? [
+            { nom: 'Aux créateurs', v: r.du_cents, c: '#7C3AED' },
+            { nom: 'Ta part', v: r.commission_cents, c: '#059669' }
+          ]
+        : [
+            { nom: 'Aux créateurs', v: r.du_cents, c: '#7C3AED' },
+            { nom: 'Frais Stripe', v: r.frais_cents, c: '#B45309' },
+            { nom: 'Ta part, nette', v: r.net_cents, c: '#059669' }
+          ];
+      const total = parts.reduce(function (s, p) { return s + (p.v || 0); }, 0);
+      const pct = function (v) { return total ? (v / total) * 100 : 0; };
+
+      document.getElementById('fin-bar').innerHTML = total
+        ? parts.map(function (p) {
+            const part = pct(p.v);
+            // Le montant n'est ecrit dans le segment que s'il y tient ;
+            // sinon la legende juste dessous le porte.
+            return '<div class="fin-seg" style="flex:' + Math.max(p.v || 0, 0)
+              + ';background:' + p.c + '" title="' + esc(p.nom) + ' — ' + euros(p.v) + '">'
+              + (part >= 12 ? euros(p.v) : '') + '</div>';
+          }).join('')
+        : '<div class="fin-seg" style="flex:1;background:var(--gray-200)"></div>';
+
+      document.getElementById('fin-legende').innerHTML = parts.map(function (p) {
+        return '<div class="fin-cle"><span class="fin-dot" style="background:' + p.c + '"></span>'
+          + '<span class="fin-cle-nom">' + esc(p.nom) + '</span>'
+          + '<span class="fin-cle-val">' + euros(p.v) + '</span>'
+          + '<span class="fin-cle-pct">' + pct(p.v).toFixed(0) + '&nbsp;%</span></div>';
+      }).join('');
 
       // L'ecart entre ce qui est du et ce qui est suivi. C'est la seule
       // somme qui ne partira jamais toute seule : elle merite un bandeau,
@@ -973,9 +1032,8 @@
       const alerte = document.getElementById('fin-alerte');
       const perdu = (r.non_inscrit_cents || 0) + (r.orphelins_cents || 0);
       if (perdu > 0) {
-        alerte.innerHTML = '<b>' + euros(perdu) + ' dus à des créateurs ne sont suivis nulle part.</b>'
-          + ' Ces parts ne partiront pas toutes seules : elles viennent de ventes conclues avant que'
-          + ' le créateur ne relie son compte bancaire. Elles sont à régler à la main.';
+        alerte.innerHTML = '<b>' + euros(perdu) + ' dus à des créateurs ne partiront pas tout seuls.</b>'
+          + ' Ventes conclues avant que le créateur ne relie son compte — à régler à la main.';
         alerte.style.display = 'block';
       } else {
         alerte.style.display = 'none';

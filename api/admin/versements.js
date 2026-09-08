@@ -20,6 +20,7 @@
 // centimes. On ramene tout en centimes ici pour ne jamais additionner deux
 // unites differentes ; l'affichage divise par 100 une seule fois.
 
+import Stripe from "stripe";
 import { supabaseAdmin } from "../lib/supabase.js";
 import { controlerAcces } from "../lib/session.js";
 
@@ -48,7 +49,7 @@ export default async function handler(req, res) {
     //    rien a personne : l'inclure gonflerait la dette envers les createurs.
     const { data: commandes, error: erreurCommandes } = await supabaseAdmin
       .from("orders")
-      .select("id, total_amount, created_at")
+      .select("id, total_amount, created_at, stripe_charge_id")
       .eq("payment_status", "paid");
 
     if (erreurCommandes) throw new Error("commandes : " + erreurCommandes.message);
@@ -153,8 +154,40 @@ export default async function handler(req, res) {
 
     const somme = (champ) => rangs.reduce((s, m) => s + m[champ], 0);
 
+    // 5. Les frais reellement preleves par Stripe, pour que "ta part" soit ce
+    //    qui reste et non une commission theorique. On les demande a Stripe
+    //    plutot que de les estimer : le tarif depend de la carte du client.
+    //    Une seule page de transactions suffit tant que le volume est modeste ;
+    //    si on n'a pas TOUS les frais, on ne renvoie rien du tout — un total
+    //    partiel presente comme complet serait pire que pas de chiffre.
+    const empreintes = new Set((commandes || []).map((c) => c.stripe_charge_id).filter(Boolean));
+    let frais_cents = null;
+    if (process.env.STRIPE_SECRET_KEY && empreintes.size) {
+      try {
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+        const lot = await stripe.balanceTransactions.list({ type: "charge", limit: 100 });
+        let total = 0;
+        let trouvees = 0;
+        for (const t of lot.data || []) {
+          const source = typeof t.source === "string" ? t.source : (t.source && t.source.id);
+          if (source && empreintes.has(source)) {
+            total += t.fee || 0;
+            trouvees++;
+          }
+        }
+        if (trouvees === empreintes.size) frais_cents = total;
+        else console.warn("[versements] frais Stripe partiels :", trouvees, "/", empreintes.size);
+      } catch (err) {
+        console.warn("[versements] frais Stripe indisponibles :", err && err.message);
+      }
+    }
+
+    const commission_cents = somme("commission_cents");
+
     return res.status(200).json({
       resume: {
+        frais_cents,
+        net_cents: frais_cents === null ? null : commission_cents - frais_cents,
         commandes_payees: idsPayees.length,
         volume_cents: somme("ventes_cents"),
         commission_cents: somme("commission_cents"),
