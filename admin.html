@@ -1022,8 +1022,84 @@
     if (s) s.addEventListener('click', function () { bouge(1); });
   })();
 
+  // Un chargeur qui echoue ne doit pas emporter les autres. Avec Promise.all,
+  // une seule erreur laissait tout le panneau vide sans rien dire ; ici chaque
+  // section se remplit independamment et l'echec est nomme dans la console.
   async function loadDashboard() {
-    await Promise.all([loadOrders(), loadProducts(), loadBrands(), loadPending(), loadApplications(), loadVersements()]);
+    const chargeurs = {
+      commandes: loadOrders,
+      produits: loadProducts,
+      marques: loadBrands,
+      'en attente': loadPending,
+      candidatures: loadApplications,
+      finances: loadVersements,
+    };
+    const noms = Object.keys(chargeurs);
+    const issues = await Promise.allSettled(noms.map((n) => chargeurs[n]()));
+    issues.forEach((issue, i) => {
+      if (issue.status === 'rejected') {
+        console.error('[admin] chargement de « ' + noms[i] + ' » échoué :', issue.reason);
+      }
+    });
+  }
+
+  async function loadOrders() {
+    try {
+      const res = await fetch(API_BASE + '/orders', { headers: { 'Authorization': 'Bearer ' + authToken } });
+      const data = await res.json();
+      const orders = data.orders || [];
+
+      const priority = { 'pending': 0, 'processing': 0, 'shipped': 1, 'delivered': 1, 'returned': 1 };
+      orders.sort((a, b) => (priority[a.shipping_status] || 0) - (priority[b.shipping_status] || 0));
+
+      let overviewHtml = '';
+      let ordersHtml = '';
+      let totalRevenue = 0;
+      let totalCommission = 0;
+
+      orders.forEach(order => {
+        const items = order.items || [];
+        const statusBadge = getShippingBadge(order.shipping_status);
+        const faded = ['shipped', 'delivered', 'returned'].includes(order.shipping_status) ? ' class="faded"' : '';
+
+        items.forEach(item => {
+          // La couleur etait enregistree mais jamais affichee : impossible de
+          // savoir quelle variante avait ete commandee.
+          const det = [];
+          if (item.size) det.push(item.size);
+          if (item.color) det.push(item.color);
+          const prodLabel = item.product_name + (det.length ? ' (' + det.join(' · ') + ')' : '');
+          // L'API renvoie le prix sous le nom "price" ; admin.html lisait
+          // "product_price", inexistant : chaque ligne affichait 0 EUR.
+          const unitPrice = parseFloat(item.price !== undefined ? item.price : item.product_price) || 0;
+          const itemTotal = unitPrice * (item.quantity || 1);
+          const itemCommission = parseFloat(item.commission_amount) || 0;
+
+          // Colonne Marque ajoutee : sur la vue d'ensemble on ne savait pas de
+          // quelle marque venait la commande. brand_name est deja renvoye par
+          // /api/orders, il n'etait simplement pas affiche ici.
+          // esc() applique aussi au client et au produit, comme dans le tableau
+          // complet juste en dessous qui le faisait deja.
+          overviewHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div></td><td class="sec">' + esc(order.customer_name) + '</td><td class="sec">' + esc(prodLabel) + '</td><td class="sec">' + esc(item.brand_name || '') + '</td><td>' + (item.quantity || 1) + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
+
+          ordersHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div></td><td class="sec">' + esc(order.customer_name) + '</td><td>' + surnomHtml(order) + '</td><td class="sec">' + esc(prodLabel) + '</td><td>' + (item.quantity || 1) + '</td><td class="sec">' + (item.brand_name || '') + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>€' + itemCommission.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
+
+          totalCommission += itemCommission;
+        });
+
+        totalRevenue += parseFloat(order.total_amount || 0);
+      });
+
+      document.getElementById('overview-orders').innerHTML = overviewHtml || '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
+      document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
+      document.getElementById('stat-orders').textContent = orders.length;
+      // Les chiffres d'argent (ici et dans Finances) sont remplis par
+      // loadVersements(). Ils etaient calcules ici sur TOUTES les commandes,
+      // payees ou non : une commande abandonnee au paiement gonflait le
+      // revenu affiche. Seul l'encaisse compte.
+    } catch (err) {
+      console.error('Error loading orders:', err);
+    }
   }
 
   // --- FINANCES ---
