@@ -2,6 +2,7 @@
 // GET  → liste toutes les commandes (admin)
 // POST → créer une nouvelle commande (checkout)
 
+import Stripe from "stripe";
 import { supabaseAdmin } from "./lib/supabase.js";
 import { stockParCouleur, lireStock, ecrireStock, stockTotal } from "./lib/stock.js";
 import { controlerAcces } from "./lib/session.js";
@@ -16,6 +17,38 @@ import {
   esc,
   prix,
 } from "./lib/email.js";
+
+// Demande a Stripe si ce paiement a bien abouti, et pour le bon montant.
+// On ne croit jamais le navigateur sur parole : sans ce controle, il
+// suffirait d'envoyer un identifiant de paiement au hasard pour obtenir une
+// commande marquee payee.
+// Renvoie null si Stripe est injoignable — dans ce cas la commande reste en
+// attente et le webhook la corrigera : on ne perd jamais une commande deja
+// payee a cause d'un incident reseau.
+async function verifierPaiement(paymentIntentId, montantAttenduEnCents) {
+  if (!paymentIntentId || !process.env.STRIPE_SECRET_KEY) return null;
+  try {
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+    if (pi.status !== "succeeded") {
+      return { paye: false, motif: pi.status };
+    }
+    // Tolerance d'un centime : les deux montants viennent du meme catalogue,
+    // un ecart plus large signale une tentative de payer moins que le panier.
+    if (Math.abs(pi.amount - montantAttenduEnCents) > 1) {
+      console.error(
+        "[paiement] montant incoherent :", pi.amount, "au lieu de",
+        montantAttenduEnCents, "pour", paymentIntentId
+      );
+      return { paye: false, motif: "montant_incoherent" };
+    }
+    const charge = pi.latest_charge;
+    return { paye: true, chargeId: (charge && (charge.id || charge)) || null };
+  } catch (err) {
+    console.error("[paiement] verification impossible :", err && err.message);
+    return null;
+  }
+}
 
 function generateOrderNumber() {
   const date = new Date();
@@ -211,7 +244,7 @@ export default async function handler(req, res) {
         message: "Trop de commandes d'affilée. Attends quelques minutes, ou écris-nous à contact@uneek.store.",
       })) return;
 
-      const { customer, items } = req.body;
+      const { customer, items, payment_intent_id } = req.body;
 
       if (!customer?.email || !customer?.name || !customer?.address) {
         return res.status(400).json({ error: "Informations client manquantes" });
@@ -300,6 +333,14 @@ export default async function handler(req, res) {
         };
       });
 
+      // Le montant vient d'etre calcule a partir des prix du catalogue, pas
+      // de ce qu'annonce le navigateur : c'est lui qui fait foi face a Stripe.
+      const paiement = await verifierPaiement(
+        payment_intent_id,
+        Math.round(totalAmount * 100)
+      );
+      const paye = !!(paiement && paiement.paye);
+
       // Créer la commande
       const { data: order, error: orderError } = await supabaseAdmin
         .from("orders")
@@ -312,7 +353,12 @@ export default async function handler(req, res) {
           shipping_address: customer.address,
           total_amount: totalAmount,
           uneek_commission: totalCommission,
-          payment_status: "pending",
+          // Toujours enregistre, meme si la verification n'a pas abouti :
+          // c'est la cle qui permet au webhook de retrouver la commande.
+          payment_id: payment_intent_id || null,
+          payment_status: paye ? "paid" : "pending",
+          stripe_charge_id: paye ? paiement.chargeId : null,
+          paid_at: paye ? new Date().toISOString() : null,
           status: "new",
         })
         .select()
