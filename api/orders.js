@@ -86,7 +86,18 @@ async function inscrireVirements(order, orderItems, chargeId) {
 
   const lignes = [];
   for (const [brandId, montant] of parMarque) {
-    const compte = (comptes || []).find((c) => c.brand_id === brandId);
+    // Une meme marque peut avoir plusieurs comptes createurs en base (un
+    // compte d'origine et celui qui tient reellement la boutique). On retient
+    // en priorite celui qui a relie son compte Stripe : sans ce tri, l'ordre
+    // renvoye par la base decide au hasard, et on sauterait un virement
+    // pourtant possible parce qu'on serait tombe sur l'autre compte.
+    const candidats = (comptes || []).filter((c) => c.brand_id === brandId);
+    const relies = candidats.filter((c) => c.stripe_account_id);
+    if (relies.length > 1) {
+      console.warn("[virements] la marque", brandId, "a", relies.length,
+        "comptes Stripe relies — la part part sur", relies[0].email);
+    }
+    const compte = relies[0] || candidats[0];
     if (!compte) {
       console.error("[virements] aucun compte createur pour la marque", brandId,
         "— part de", montant / 100, "EUR non inscrite (commande", order.order_number + ")");
