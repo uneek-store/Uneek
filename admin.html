@@ -300,7 +300,7 @@
       <div class="page-sub">Bienvenue sur le panneau admin UNEEK</div>
       <div class="stats">
         <div class="stat-card"><div class="stat-label">Commandes ce mois</div><div class="stat-value" id="stat-orders">0</div></div>
-        <div class="stat-card"><div class="stat-label">Revenus UNEEK</div><div class="stat-value" id="stat-revenue">&euro;0</div></div>
+        <div class="stat-card"><div class="stat-label">Revenus UNEEK ce mois</div><div class="stat-value" id="stat-revenue">&euro;0</div></div>
         <div class="stat-card"><div class="stat-label">En attente</div><div class="stat-value" id="stat-pending">0</div></div>
         <div class="stat-card"><div class="stat-label">Marques actives</div><div class="stat-value" id="stat-brands">0</div></div>
       </div>
@@ -1060,6 +1060,13 @@
       orders.forEach(order => {
         const items = order.items || [];
         const statusBadge = getShippingBadge(order.shipping_status);
+        // Une commande non encaissee reste visible — c'est utile de la voir —
+        // mais elle ne doit pas ressembler a une vente. Sans ce reperage, un
+        // panier abandonne au paiement s'affichait avec son montant, comme
+        // les autres.
+        const impaye = order.payment_status && order.payment_status !== 'paid'
+          ? '<div style="font-size:11px;font-weight:500;color:var(--red);margin-top:2px">non payée</div>'
+          : '';
         const faded = ['shipped', 'delivered', 'returned'].includes(order.shipping_status) ? ' class="faded"' : '';
 
         items.forEach(item => {
@@ -1080,9 +1087,9 @@
           // /api/orders, il n'etait simplement pas affiche ici.
           // esc() applique aussi au client et au produit, comme dans le tableau
           // complet juste en dessous qui le faisait deja.
-          overviewHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div></td><td class="sec">' + esc(order.customer_name) + '</td><td class="sec">' + esc(prodLabel) + '</td><td class="sec">' + esc(item.brand_name || '') + '</td><td>' + (item.quantity || 1) + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
+          overviewHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div>' + impaye + '</td><td class="sec">' + esc(order.customer_name) + '</td><td class="sec">' + esc(prodLabel) + '</td><td class="sec">' + esc(item.brand_name || '') + '</td><td>' + (item.quantity || 1) + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
 
-          ordersHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div></td><td class="sec">' + esc(order.customer_name) + '</td><td>' + surnomHtml(order) + '</td><td class="sec">' + esc(prodLabel) + '</td><td>' + (item.quantity || 1) + '</td><td class="sec">' + (item.brand_name || '') + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>€' + itemCommission.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
+          ordersHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div>' + impaye + '</td><td class="sec">' + esc(order.customer_name) + '</td><td>' + surnomHtml(order) + '</td><td class="sec">' + esc(prodLabel) + '</td><td>' + (item.quantity || 1) + '</td><td class="sec">' + (item.brand_name || '') + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>€' + itemCommission.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
 
           totalCommission += itemCommission;
         });
@@ -1092,7 +1099,10 @@
 
       document.getElementById('overview-orders').innerHTML = overviewHtml || '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
       document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
-      document.getElementById('stat-orders').textContent = orders.length;
+      // "Commandes ce mois" et "Revenus UNEEK" sont remplis par
+      // loadVersements() : ils ne comptent que les commandes encaissees
+      // du mois en cours. Ici on comptait toutes les commandes de tous
+      // les temps, paniers abandonnes au paiement compris.
       // Les chiffres d'argent (ici et dans Finances) sont remplis par
       // loadVersements(). Ils etaient calcules ici sur TOUTES les commandes,
       // payees ou non : une commande abandonnee au paiement gonflait le
@@ -1143,8 +1153,17 @@
 
       finData = d;
       finIndex = (d.mois || []).length - 1;
-      const revenus = document.getElementById('stat-revenue');
-      if (revenus) revenus.textContent = euros(d.total_commission_cents);
+      // Les deux cartes de la vue d'ensemble : le mois en cours, c'est-a-dire
+      // le dernier de la serie — jamais le mois choisi dans le graphique, qui
+      // ne doit pas changer ce qu'annonce la page d'accueil.
+      const enCours = (d.mois || [])[(d.mois || []).length - 1];
+      if (enCours) {
+        const cartes = { 'stat-orders': String(enCours.commandes), 'stat-revenue': euros(enCours.toi_cents) };
+        Object.keys(cartes).forEach(function (id) {
+          const el = document.getElementById(id);
+          if (el) el.textContent = cartes[id];
+        });
+      }
       dessinerGrapheFinances();
       afficherMois();
     } catch (err) {

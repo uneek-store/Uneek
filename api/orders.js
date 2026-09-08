@@ -303,6 +303,10 @@ export default async function handler(req, res) {
           total_amount: order.total_amount,
           uneek_commission: order.uneek_commission,
           status: order.status,
+          // Sans ce champ, l'admin ne pouvait pas distinguer une vente d'un
+          // panier abandonne au paiement : les deux s'affichaient a l'identique,
+          // avec leur montant, dans la liste des commandes.
+          payment_status: order.payment_status || "pending",
           shipping_status,
           created_at: order.created_at,
           items,
