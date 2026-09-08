@@ -185,6 +185,11 @@
 
     /* FINANCES */
     .stats-3 { grid-template-columns: repeat(3, 1fr); }
+    .stat-note { font-size: 11px; color: var(--gray-400); margin-top: 4px; }
+    /* Signale l'argent du a un createur mais suivi nulle part : sans ce
+       bandeau, la somme manquante serait simplement absente des totaux. */
+    .fin-alerte { display: none; background: var(--orange-bg); border: 1px solid var(--orange); color: var(--gray-800); border-radius: 10px; padding: 12px 16px; font-size: 13px; margin-bottom: 20px; line-height: 1.5; }
+    .fin-alerte b { color: var(--orange); }
 
     /* MOBILE RESPONSIVE */
     @media (max-width: 768px) {
@@ -322,21 +327,35 @@
     <!-- FINANCES -->
     <div id="sec-finances" class="section">
       <div class="page-title">Finances</div>
-      <div class="page-sub">Commission variable par produit</div>
+      <div class="page-sub">Uniquement les commandes r&eacute;ellement encaiss&eacute;es. Stripe affiche le total ; ici tu vois le partage.</div>
       <div class="stats stats-3">
-        <div class="stat-card"><div class="stat-label">Revenus UNEEK</div><div class="stat-value" id="fin-revenue">&euro;0</div></div>
-        <div class="stat-card"><div class="stat-label">Revers&eacute; aux cr&eacute;ateurs</div><div class="stat-value" id="fin-payout">&euro;0</div></div>
-        <div class="stat-card"><div class="stat-label">Volume total</div><div class="stat-value" id="fin-volume">&euro;0</div></div>
+        <div class="stat-card">
+          <div class="stat-label">&Agrave; verser aux cr&eacute;ateurs</div>
+          <div class="stat-value" id="fin-a-verser">&euro;0</div>
+          <div class="stat-note" id="fin-exigible">&nbsp;</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Ta commission</div>
+          <div class="stat-value" id="fin-revenue">&euro;0</div>
+          <div class="stat-note">avant les frais Stripe</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Volume encaiss&eacute;</div>
+          <div class="stat-value" id="fin-volume">&euro;0</div>
+          <div class="stat-note" id="fin-commandes">&nbsp;</div>
+        </div>
       </div>
+      <div class="fin-alerte" id="fin-alerte"></div>
       <div class="card">
         <div class="card-header">Par marque</div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Marque</th><th>Ventes</th><th>Commission</th><th>Revers&eacute;</th></tr></thead>
+            <thead><tr><th>Marque</th><th>Compte bancaire</th><th>Ventes</th><th>Ta commission</th><th>&Agrave; verser</th><th>D&eacute;j&agrave; vers&eacute;</th></tr></thead>
             <tbody id="finances-table"></tbody>
           </table>
         </div>
       </div>
+      <div class="page-sub" style="margin-top:14px">Chaque part part automatiquement 14 jours apr&egrave;s la commande, la nuit &agrave; 2 h. Le d&eacute;lai couvre les retours : une fois vers&eacute;e, une part est difficile &agrave; r&eacute;cup&eacute;rer.</div>
     </div>
 
     <!-- CANDIDATURES -->
@@ -916,7 +935,70 @@
 
   // --- LOAD DATA ---
   async function loadDashboard() {
-    await Promise.all([loadOrders(), loadProducts(), loadBrands(), loadPending(), loadApplications()]);
+    await Promise.all([loadOrders(), loadProducts(), loadBrands(), loadPending(), loadApplications(), loadVersements()]);
+  }
+
+  // --- FINANCES ---
+  // Les montants arrivent en centimes : l'API additionne des euros (les
+  // lignes de commande) et des centimes (les virements Stripe), et ramene
+  // tout a la meme unite avant de repondre. Ici on divise une seule fois.
+  function euros(cents) {
+    return '€' + ((parseInt(cents, 10) || 0) / 100).toFixed(2).replace('.', ',');
+  }
+
+  async function loadVersements() {
+    const corps = document.getElementById('finances-table');
+    if (!corps) return;
+    try {
+      const res = await fetch(API_BASE + '/admin/versements', {
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'indisponible');
+
+      const r = d.resume || {};
+      document.getElementById('stat-revenue').textContent = euros(r.commission_cents);
+      document.getElementById('fin-a-verser').textContent = euros(r.a_verser_cents);
+      document.getElementById('fin-revenue').textContent = euros(r.commission_cents);
+      document.getElementById('fin-volume').textContent = euros(r.volume_cents);
+      document.getElementById('fin-exigible').textContent = r.exigible_cents
+        ? 'dont ' + euros(r.exigible_cents) + ' exigible maintenant'
+        : 'rien n\'a encore ' + (d.delai_jours || 14) + ' jours';
+      document.getElementById('fin-commandes').textContent =
+        (r.commandes_payees || 0) + (r.commandes_payees === 1 ? ' commande payée' : ' commandes payées');
+
+      // L'ecart entre ce qui est du et ce qui est suivi. C'est la seule
+      // somme qui ne partira jamais toute seule : elle merite un bandeau,
+      // pas une ligne de tableau.
+      const alerte = document.getElementById('fin-alerte');
+      const perdu = (r.non_inscrit_cents || 0) + (r.orphelins_cents || 0);
+      if (perdu > 0) {
+        alerte.innerHTML = '<b>' + euros(perdu) + ' dus à des créateurs ne sont suivis nulle part.</b>'
+          + ' Ces parts ne partiront pas toutes seules : elles viennent de ventes conclues avant que'
+          + ' le créateur ne relie son compte bancaire. Elles sont à régler à la main.';
+        alerte.style.display = 'block';
+      } else {
+        alerte.style.display = 'none';
+      }
+
+      const marques = d.marques || [];
+      corps.innerHTML = marques.length ? marques.map(function (m) {
+        const relie = m.compte_relie
+          ? '<span class="badge badge-green">Relié</span>'
+          : '<span class="badge badge-red">Non relié</span>';
+        const aVerser = m.non_inscrit_cents > 0
+          ? euros(m.a_verser_cents) + '<div style="font-size:11px;color:var(--orange)">+ ' + euros(m.non_inscrit_cents) + ' non suivis</div>'
+          : euros(m.a_verser_cents);
+        return '<tr><td class="bold">' + esc(m.nom)
+          + (m.createur ? '<div style="font-size:11px;font-weight:400;color:var(--gray-400)">' + esc(m.createur) + '</div>' : '')
+          + '</td><td>' + relie + '</td><td class="sec">' + euros(m.ventes_cents) + '</td><td class="sec">'
+          + euros(m.commission_cents) + '</td><td>' + aVerser + '</td><td class="sec">'
+          + euros(m.deja_verse_cents) + '</td></tr>';
+      }).join('') : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune vente encaissée</td></tr>';
+    } catch (err) {
+      console.error('Error loading versements:', err);
+      corps.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Chiffres indisponibles pour le moment</td></tr>';
+    }
   }
 
   async function loadOrders() {
@@ -969,10 +1051,10 @@
       document.getElementById('overview-orders').innerHTML = overviewHtml || '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
       document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
       document.getElementById('stat-orders').textContent = orders.length;
-      document.getElementById('stat-revenue').textContent = '€' + totalCommission.toFixed(0);
-      document.getElementById('fin-revenue').textContent = '€' + totalCommission.toFixed(0);
-      document.getElementById('fin-payout').textContent = '€' + (totalRevenue - totalCommission).toFixed(0);
-      document.getElementById('fin-volume').textContent = '€' + totalRevenue.toFixed(0);
+      // Les chiffres d'argent (ici et dans Finances) sont remplis par
+      // loadVersements(). Ils etaient calcules ici sur TOUTES les commandes,
+      // payees ou non : une commande abandonnee au paiement gonflait le
+      // revenu affiche. Seul l'encaisse compte.
     } catch (err) {
       console.error('Error loading orders:', err);
     }
