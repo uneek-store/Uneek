@@ -187,45 +187,51 @@
     .stats-3 { grid-template-columns: repeat(3, 1fr); }
     .stat-note { font-size: 11px; color: var(--gray-400); margin-top: 4px; }
 
-    /* FINANCES — une seule barre a l'echelle du volume encaisse.
-       Les trois couleurs sont un jeu categoriel verifie (bandes de clarte,
-       chroma, separation daltonisme, contraste) : elles restent distinctes
-       pour un deuteranope comme a l'impression. */
-    /* .card n'a pas de marge interieure : seul .card-header en pose une.
-       Les blocs sans en-tete portent donc la leur. */
-    .fin-corps { padding: 18px; }
-    .fin-hero { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
-    .fin-hero-val { font-family: var(--font-display); font-size: 38px; font-weight: 700; letter-spacing: -1.2px; line-height: 1; }
-    .fin-hero-sub { font-size: 13px; color: var(--gray-500); }
-    /* 2px d'espace entre les segments : la coupure se lit meme quand deux
-       couleurs voisines sont proches. */
-    .fin-bar { display: flex; gap: 2px; height: 46px; margin-bottom: 16px; }
-    .fin-seg { display: flex; align-items: center; justify-content: center; min-width: 3px; color: #FFFFFF; font-family: var(--font-display); font-size: 12px; font-weight: 700; overflow: hidden; }
-    .fin-seg:first-child { border-radius: 6px 0 0 6px; }
-    .fin-seg:last-child { border-radius: 0 6px 6px 0; }
-    /* La legende est un petit tableau, pas une ligne etiree sur toute la
-       largeur : le montant doit rester colle a ce qu'il designe. */
-    .fin-legende { display: inline-grid; grid-template-columns: auto auto auto auto; gap: 9px 14px; align-items: baseline; }
-    .fin-dot { width: 10px; height: 10px; border-radius: 3px; align-self: center; }
-    .fin-cle-nom { font-size: 14px; color: var(--gray-800); }
-    .fin-cle-val { font-family: var(--font-display); font-size: 15px; font-weight: 700; text-align: right; }
-    .fin-cle-pct { font-size: 13px; color: var(--gray-400); text-align: right; }
+    /* FINANCES
+       Trois cases : ce qui rentre, ce qui part aux createurs, ce qui te
+       reste. Les deux couleurs (violet / vert) sont un jeu categoriel
+       verifie : bandes de clarte, chroma, separation sous daltonisme et
+       contraste passent tous sur fond clair. */
+    .fin-haut { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+    .fin-mois { display: flex; align-items: center; gap: 2px; background: var(--white); border: 1px solid var(--gray-200); border-radius: 10px; padding: 4px; }
+    .fin-mois button { font-family: var(--font-display); font-weight: 600; font-size: 14px; color: var(--black); background: none; border: 0; border-radius: 7px; padding: 6px 12px; cursor: pointer; }
+    .fin-mois button:hover:not(:disabled) { background: var(--gray-100); }
+    .fin-mois button:disabled { color: var(--gray-300); cursor: default; }
+    .fin-mois-nom { min-width: 150px; text-align: center; font-family: var(--font-display); font-weight: 600; font-size: 14px; }
 
-    /* Une ligne = un montant, ce qu'il est, et quand il bouge. */
-    .fin-ligne { display: grid; grid-template-columns: 130px 1fr; gap: 4px 20px; padding: 14px 18px; border-bottom: 1px solid var(--gray-200); align-items: baseline; }
-    .fin-ligne:last-child { border-bottom: none; }
-    .fin-ligne-val { font-family: var(--font-display); font-size: 22px; font-weight: 700; text-align: right; }
-    .fin-ligne-nom { font-size: 14px; font-weight: 500; }
-    .fin-ligne-quand { grid-column: 2; font-size: 12px; color: var(--gray-500); }
-    @media (max-width: 900px) {
-      .fin-ligne { grid-template-columns: 100px 1fr; }
-      .fin-ligne-val { font-size: 18px; }
+    .fin-cases { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 16px; }
+    .fin-case { background: var(--white); border: 1px solid var(--gray-200); border-radius: 12px; display: flex; flex-direction: column; }
+    .fin-case-haut { padding: 18px 20px 16px; flex: 1; display: flex; flex-direction: column; gap: 5px; }
+    .fin-case-titre { display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 500; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.6px; }
+    .fin-puce { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+    .fin-case-val { font-family: var(--font-display); font-size: 32px; font-weight: 700; letter-spacing: -1px; line-height: 1.05; }
+    .fin-case-sous { font-size: 12.5px; color: var(--gray-500); }
+    .fin-case-bas { border-top: 1px solid var(--gray-200); padding: 12px 20px 14px; display: flex; flex-direction: column; gap: 7px; }
+    .fin-duo { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+    .fin-duo-lab { font-size: 12.5px; color: var(--gray-600); }
+    .fin-duo-val { font-family: var(--font-display); font-weight: 700; font-size: 15px; white-space: nowrap; }
+    .fin-duo.total { border-top: 1px dashed var(--gray-200); padding-top: 7px; }
+
+    /* Le graphique : une colonne par mois, empilee createurs + toi.
+       2px d'ecart entre les deux parts pour que la coupure se lise. */
+    .fin-graphe { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; align-items: end; height: 200px; padding: 20px 20px 14px; }
+    .fin-col { display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; height: 100%; background: none; border: 0; padding: 0; cursor: pointer; font-family: var(--font-body); }
+    .fin-empile { display: flex; flex-direction: column-reverse; gap: 2px; justify-content: flex-end; }
+    .fin-part { border-radius: 3px; }
+    .fin-part.bout { border-radius: 5px 5px 3px 3px; }
+    .fin-vide { height: 3px; background: var(--gray-200); border-radius: 2px; }
+    .fin-col-somme { font-family: var(--font-display); font-size: 12px; font-weight: 600; text-align: center; color: var(--gray-500); height: 16px; }
+    .fin-col-etiq { font-size: 11.5px; color: var(--gray-500); text-align: center; }
+    .fin-col.actif .fin-col-somme, .fin-col.actif .fin-col-etiq { color: var(--black); font-weight: 600; }
+    .fin-col:hover .fin-empile { opacity: 0.82; }
+    .fin-legende { display: flex; gap: 16px; font-size: 12.5px; color: var(--gray-600); font-weight: 400; }
+    .fin-legende span { display: flex; align-items: center; gap: 6px; }
+    .fin-rouge { color: var(--red); font-weight: 600; }
+
+    @media (max-width: 820px) {
+      .fin-cases { grid-template-columns: 1fr; }
+      .fin-case-val { font-size: 26px; }
     }
-    /* Signale l'argent du a un createur mais suivi nulle part : sans ce
-       bandeau, la somme manquante serait simplement absente des totaux. */
-    .fin-alerte { display: none; background: var(--orange-bg); border: 1px solid var(--orange); color: var(--gray-800); border-radius: 10px; padding: 12px 16px; font-size: 13px; margin-bottom: 20px; line-height: 1.5; }
-    .fin-alerte b { color: var(--orange); }
-
     /* MOBILE RESPONSIVE */
     @media (max-width: 768px) {
       .sidebar { position: fixed; left: 0; top: 0; right: 0; bottom: auto; width: 100%; height: auto; padding: 12px 0 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 0; z-index: 10; overflow-x: auto; }
@@ -361,43 +367,62 @@
 
     <!-- FINANCES -->
     <div id="sec-finances" class="section">
-      <div class="page-title">Finances</div>
-      <div class="page-sub">Sur les commandes encaiss&eacute;es</div>
-      <div class="card">
-        <div class="card-header">O&ugrave; va l'argent des ventes</div>
-        <div class="fin-corps">
-          <div class="fin-hero">
-            <div class="fin-hero-val" id="fin-volume">&euro;0</div>
-            <div class="fin-hero-sub" id="fin-commandes">&nbsp;</div>
+      <div class="fin-haut">
+        <div>
+          <div class="page-title">Finances</div>
+          <div class="page-sub" style="margin-bottom:0">Sur les commandes encaiss&eacute;es</div>
+        </div>
+        <div class="fin-mois">
+          <button id="fin-prec" aria-label="Mois pr&eacute;c&eacute;dent">&lsaquo;</button>
+          <div class="fin-mois-nom" id="fin-mois-nom">&nbsp;</div>
+          <button id="fin-suiv" aria-label="Mois suivant">&rsaquo;</button>
+        </div>
+      </div>
+
+      <div class="fin-cases">
+        <div class="fin-case">
+          <div class="fin-case-haut">
+            <div class="fin-case-titre">Ventes</div>
+            <div class="fin-case-val" id="fin-ventes">&euro;0</div>
+            <div class="fin-case-sous" id="fin-commandes">&nbsp;</div>
           </div>
-          <div class="fin-bar" id="fin-bar"></div>
-          <div class="fin-legende" id="fin-legende"></div>
+        </div>
+        <div class="fin-case">
+          <div class="fin-case-haut">
+            <div class="fin-case-titre"><span class="fin-puce" style="background:#7C3AED"></span>Pour les cr&eacute;ateurs</div>
+            <div class="fin-case-val" id="fin-createurs">&euro;0</div>
+            <div class="fin-case-sous" id="fin-createurs-pct">&nbsp;</div>
+          </div>
+        </div>
+        <div class="fin-case">
+          <div class="fin-case-haut">
+            <div class="fin-case-titre"><span class="fin-puce" style="background:#059669"></span>Pour toi</div>
+            <div class="fin-case-val" id="fin-toi">&euro;0</div>
+            <div class="fin-case-sous" id="fin-toi-pct">&nbsp;</div>
+          </div>
+          <div class="fin-case-bas">
+            <div class="fin-duo"><span class="fin-duo-lab">Frais Stripe</span><span class="fin-duo-val" id="fin-frais">&mdash;</span></div>
+            <div class="fin-duo total"><span class="fin-duo-lab">Il te reste</span><span class="fin-duo-val" id="fin-net">&euro;0</span></div>
+          </div>
         </div>
       </div>
-      <div class="fin-alerte" id="fin-alerte"></div>
+
       <div class="card">
-        <div class="card-header">L'argent que tu dois aux cr&eacute;ateurs</div>
-        <div class="fin-ligne">
-          <div class="fin-ligne-val" id="fin-bloque">&euro;0</div>
-          <div class="fin-ligne-nom">Pas encore envoy&eacute;</div>
-          <div class="fin-ligne-quand" id="fin-bloque-quand">&nbsp;</div>
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+          Mois par mois
+          <div class="fin-legende">
+            <span><span class="fin-puce" style="background:#7C3AED"></span>Cr&eacute;ateurs</span>
+            <span><span class="fin-puce" style="background:#059669"></span>Toi</span>
+          </div>
         </div>
-        <div class="fin-ligne">
-          <div class="fin-ligne-val" id="fin-exigible">&euro;0</div>
-          <div class="fin-ligne-nom">Part la nuit prochaine</div>
-          <div class="fin-ligne-quand">Ces parts ont d&eacute;pass&eacute; les 14 jours d'attente.</div>
-        </div>
-        <div class="fin-ligne">
-          <div class="fin-ligne-val" id="fin-verse">&euro;0</div>
-          <div class="fin-ligne-nom">D&eacute;j&agrave; envoy&eacute;</div>
-          <div class="fin-ligne-quand">Arriv&eacute; sur le compte bancaire des cr&eacute;ateurs.</div>
-        </div>
+        <div class="fin-graphe" id="fin-graphe"></div>
       </div>
+
       <div class="card">
-        <div class="card-header">Par marque</div>
+        <div class="card-header" id="fin-titre-marques">Par marque</div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Marque</th><th>Compte bancaire</th><th>Ventes</th><th>Pour toi</th><th>En attente</th><th>Envoy&eacute;</th><th>&Agrave; envoyer &agrave; la main</th></tr></thead>
+            <thead><tr><th>Marque</th><th>Ventes</th><th>Taux</th><th>Cr&eacute;ateur</th><th>Toi</th><th>&Agrave; envoyer &agrave; la main</th></tr></thead>
             <tbody id="finances-table"></tbody>
           </table>
         </div>
@@ -980,17 +1005,55 @@
   }
 
   // --- LOAD DATA ---
+  // Les fleches de mois : branchees une fois, elles ne dependent pas des
+  // donnees et doivent survivre a chaque rechargement du tableau.
+  (function () {
+    const bouge = function (pas) {
+      const tout = (finData && finData.mois) || [];
+      const suivant = finIndex + pas;
+      if (suivant < 0 || suivant >= tout.length) return;
+      finIndex = suivant;
+      dessinerGrapheFinances();
+      afficherMois();
+    };
+    const p = document.getElementById('fin-prec');
+    const s = document.getElementById('fin-suiv');
+    if (p) p.addEventListener('click', function () { bouge(-1); });
+    if (s) s.addEventListener('click', function () { bouge(1); });
+  })();
+
   async function loadDashboard() {
     await Promise.all([loadOrders(), loadProducts(), loadBrands(), loadPending(), loadApplications(), loadVersements()]);
   }
 
   // --- FINANCES ---
-  // Les montants arrivent en centimes : l'API additionne des euros (les
-  // lignes de commande) et des centimes (les virements Stripe), et ramene
-  // tout a la meme unite avant de repondre. Ici on divise une seule fois.
+  // Tous les montants arrivent en centimes : cote serveur, order_items est en
+  // euros et pending_transfers en centimes, et l'API ramene tout a la meme
+  // unite. Ici on divise une seule fois, au moment d'afficher.
   function euros(cents) {
-    return '€' + ((parseInt(cents, 10) || 0) / 100).toFixed(2).replace('.', ',');
+    // Format belge : le symbole suit le nombre, virgule decimale.
+    return ((parseInt(cents, 10) || 0) / 100).toFixed(2).replace('.', ',') + ' €';
   }
+
+  // "110 €" sous une colonne du graphique : les centimes n'y apportent rien
+  // et empechent les etiquettes de tenir cote a cote.
+  function eurosCourt(cents) {
+    const c = parseInt(cents, 10) || 0;
+    return c === 0 ? '—' : Math.round(c / 100).toLocaleString('fr-BE') + ' €';
+  }
+
+  // "15 %" quand un seul taux a joue, "12 – 16 %" quand le mois en melange
+  // plusieurs. C'est ce qui rend visible que le taux vient du produit vendu,
+  // et non d'une regle appliquee au total.
+  function tauxTexte(o) {
+    if (!o || o.taux_min === null || o.taux_min === undefined) return '—';
+    const f = (n) => (Math.round(n * 10) / 10).toString().replace('.', ',');
+    return o.taux_min === o.taux_max ? f(o.taux_min) + ' %'
+      : f(o.taux_min) + ' – ' + f(o.taux_max) + ' %';
+  }
+
+  var finData = null;   // reponse de /api/admin/versements
+  var finIndex = 0;     // mois affiche
 
   async function loadVersements() {
     const corps = document.getElementById('finances-table');
@@ -1002,156 +1065,117 @@
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || 'indisponible');
 
-      const r = d.resume || {};
-      document.getElementById('stat-revenue').textContent = euros(r.commission_cents);
-      document.getElementById('fin-volume').textContent = euros(r.volume_cents);
-      document.getElementById('fin-exigible').textContent = euros(r.exigible_cents);
-      document.getElementById('fin-verse').textContent = euros(r.deja_verse_cents);
-      document.getElementById('fin-bloque').textContent =
-        euros((r.a_verser_cents || 0) - (r.exigible_cents || 0));
-      document.getElementById('fin-commandes').textContent = 'encaissés sur '
-        + (r.commandes_payees || 0) + (r.commandes_payees === 1 ? ' commande' : ' commandes');
-
-      // Une date, pas un statut : "libéré le 22 septembre" se comprend seul.
-      const quand = document.getElementById('fin-bloque-quand');
-      if (r.prochaine_liberation) {
-        const j = new Date(r.prochaine_liberation);
-        quand.textContent = 'Le premier virement partira le '
-          + j.toLocaleDateString('fr-BE', { day: 'numeric', month: 'long' })
-          + '. UNEEK garde chaque part 14 jours, le temps des retours.';
-      } else {
-        quand.textContent = 'UNEEK garde chaque part 14 jours, le temps des retours.';
-      }
-
-      // La barre : une seule echelle, celle du volume encaisse. Les frais
-      // Stripe n'apparaissent que si on les connait tous — un segment
-      // incomplet fausserait la lecture de "ce qui te reste".
-      const parts = r.frais_cents === null || r.frais_cents === undefined
-        ? [
-            { nom: 'Pour les créateurs', v: r.du_cents, c: '#7C3AED' },
-            { nom: 'Pour toi', v: r.commission_cents, c: '#059669' }
-          ]
-        : [
-            { nom: 'Pour les créateurs', v: r.du_cents, c: '#7C3AED' },
-            { nom: 'Pris par Stripe', v: r.frais_cents, c: '#B45309' },
-            { nom: 'Il te reste', v: r.net_cents, c: '#059669' }
-          ];
-      const total = parts.reduce(function (s, p) { return s + (p.v || 0); }, 0);
-      const pct = function (v) { return total ? (v / total) * 100 : 0; };
-
-      document.getElementById('fin-bar').innerHTML = total
-        ? parts.map(function (p) {
-            const part = pct(p.v);
-            // Le montant n'est ecrit dans le segment que s'il y tient ;
-            // sinon la legende juste dessous le porte.
-            return '<div class="fin-seg" style="flex:' + Math.max(p.v || 0, 0)
-              + ';background:' + p.c + '" title="' + esc(p.nom) + ' — ' + euros(p.v) + '">'
-              + (part >= 12 ? euros(p.v) : '') + '</div>';
-          }).join('')
-        : '<div class="fin-seg" style="flex:1;background:var(--gray-200)"></div>';
-
-      document.getElementById('fin-legende').innerHTML = parts.map(function (p) {
-        return '<div class="fin-cle"><span class="fin-dot" style="background:' + p.c + '"></span>'
-          + '<span class="fin-cle-nom">' + esc(p.nom) + '</span>'
-          + '<span class="fin-cle-val">' + euros(p.v) + '</span>'
-          + '<span class="fin-cle-pct">' + pct(p.v).toFixed(0) + '&nbsp;%</span></div>';
-      }).join('');
-
-      // L'ecart entre ce qui est du et ce qui est suivi. C'est la seule
-      // somme qui ne partira jamais toute seule : elle merite un bandeau,
-      // pas une ligne de tableau.
-      const alerte = document.getElementById('fin-alerte');
-      const perdu = (r.non_inscrit_cents || 0) + (r.orphelins_cents || 0);
-      if (perdu > 0) {
-        // Ce bandeau parle d'argent qui ne partira jamais tout seul : il doit
-        // dire quoi faire, pas decrire un etat interne.
-        alerte.innerHTML = '<b>' + euros(perdu) + ' à envoyer toi-même.</b>'
-          + ' Ces ventes ont été payées avant que le créateur ne relie son compte bancaire :'
-          + ' le virement automatique ne les prendra pas. Vois la colonne « à envoyer à la main » ci-dessous.';
-        alerte.style.display = 'block';
-      } else {
-        alerte.style.display = 'none';
-      }
-
-      const marques = d.marques || [];
-      corps.innerHTML = marques.length ? marques.map(function (m) {
-        const relie = m.compte_relie
-          ? '<span class="badge badge-green">Relié</span>'
-          : '<span class="badge badge-red">Non relié</span>';
-        // La colonne "a la main" est celle qui demande une action : elle est
-        // en couleur quand elle n'est pas vide, neutre quand tout va bien.
-        const main = m.non_inscrit_cents > 0
-          ? '<span style="color:var(--orange);font-weight:600">' + euros(m.non_inscrit_cents) + '</span>'
-          : '<span class="sec">—</span>';
-        return '<tr><td class="bold">' + esc(m.nom)
-          + (m.createur ? '<div style="font-size:11px;font-weight:400;color:var(--gray-400)">' + esc(m.createur) + '</div>' : '')
-          + '</td><td>' + relie + '</td><td class="sec">' + euros(m.ventes_cents) + '</td><td class="sec">'
-          + euros(m.commission_cents) + '</td><td class="sec">' + euros(m.a_verser_cents) + '</td><td class="sec">'
-          + euros(m.deja_verse_cents) + '</td><td>' + main + '</td></tr>';
-      }).join('') : '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune vente encaissée</td></tr>';
+      finData = d;
+      finIndex = (d.mois || []).length - 1;
+      const revenus = document.getElementById('stat-revenue');
+      if (revenus) revenus.textContent = euros(d.total_commission_cents);
+      dessinerGrapheFinances();
+      afficherMois();
     } catch (err) {
       console.error('Error loading versements:', err);
-      corps.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400)">Chiffres indisponibles pour le moment</td></tr>';
+      corps.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Chiffres indisponibles pour le moment</td></tr>';
     }
   }
 
-  async function loadOrders() {
-    try {
-      const res = await fetch(API_BASE + '/orders', { headers: { 'Authorization': 'Bearer ' + authToken } });
-      const data = await res.json();
-      const orders = data.orders || [];
+  // Six colonnes au plus : au-dela, les mois deviennent illisibles. La
+  // fenetre suit le mois selectionne pour qu'il soit toujours visible.
+  function fenetreFinances() {
+    const tout = (finData && finData.mois) || [];
+    const fin = Math.max(finIndex + 1, Math.min(6, tout.length));
+    return { debut: Math.max(0, fin - 6), fin: fin };
+  }
 
-      const priority = { 'pending': 0, 'processing': 0, 'shipped': 1, 'delivered': 1, 'returned': 1 };
-      orders.sort((a, b) => (priority[a.shipping_status] || 0) - (priority[b.shipping_status] || 0));
+  function dessinerGrapheFinances() {
+    const zone = document.getElementById('fin-graphe');
+    const tout = (finData && finData.mois) || [];
+    if (!zone) return;
+    const f = fenetreFinances();
+    const vus = tout.slice(f.debut, f.fin);
+    // L'echelle est celle du plus gros mois affiche : deux colonnes cote a
+    // cote se comparent alors directement.
+    const max = Math.max.apply(null, vus.map(m => m.ventes_cents).concat([1]));
+    const hauteur = 130;
 
-      let overviewHtml = '';
-      let ordersHtml = '';
-      let totalRevenue = 0;
-      let totalCommission = 0;
+    zone.innerHTML = vus.map(function (m, k) {
+      const i = f.debut + k;
+      const hc = Math.round((m.createurs_cents / max) * hauteur);
+      const ht = Math.round((m.toi_cents / max) * hauteur);
+      const barres = m.ventes_cents === 0
+        ? '<div class="fin-vide"></div>'
+        : '<div class="fin-empile">'
+            + '<div class="fin-part" style="height:' + Math.max(hc, 3) + 'px;background:#7C3AED"></div>'
+            + '<div class="fin-part bout" style="height:' + Math.max(ht, 3) + 'px;background:#059669"></div>'
+          + '</div>';
+      return '<button class="fin-col' + (i === finIndex ? ' actif' : '') + '" data-i="' + i + '"'
+        + ' title="' + esc(m.nom) + ' — ' + euros(m.ventes_cents) + '">'
+        + '<div class="fin-col-somme">' + eurosCourt(m.ventes_cents) + '</div>'
+        + barres
+        + '<div class="fin-col-etiq">' + esc(m.nom.split(' ')[0].slice(0, 4)) + '</div>'
+        + '</button>';
+    }).join('');
 
-      orders.forEach(order => {
-        const items = order.items || [];
-        const statusBadge = getShippingBadge(order.shipping_status);
-        const faded = ['shipped', 'delivered', 'returned'].includes(order.shipping_status) ? ' class="faded"' : '';
-
-        items.forEach(item => {
-          // La couleur etait enregistree mais jamais affichee : impossible de
-          // savoir quelle variante avait ete commandee.
-          const det = [];
-          if (item.size) det.push(item.size);
-          if (item.color) det.push(item.color);
-          const prodLabel = item.product_name + (det.length ? ' (' + det.join(' · ') + ')' : '');
-          // L'API renvoie le prix sous le nom "price" ; admin.html lisait
-          // "product_price", inexistant : chaque ligne affichait 0 EUR.
-          const unitPrice = parseFloat(item.price !== undefined ? item.price : item.product_price) || 0;
-          const itemTotal = unitPrice * (item.quantity || 1);
-          const itemCommission = parseFloat(item.commission_amount) || 0;
-
-          // Colonne Marque ajoutee : sur la vue d'ensemble on ne savait pas de
-          // quelle marque venait la commande. brand_name est deja renvoye par
-          // /api/orders, il n'etait simplement pas affiche ici.
-          // esc() applique aussi au client et au produit, comme dans le tableau
-          // complet juste en dessous qui le faisait deja.
-          overviewHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div></td><td class="sec">' + esc(order.customer_name) + '</td><td class="sec">' + esc(prodLabel) + '</td><td class="sec">' + esc(item.brand_name || '') + '</td><td>' + (item.quantity || 1) + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
-
-          ordersHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div></td><td class="sec">' + esc(order.customer_name) + '</td><td>' + surnomHtml(order) + '</td><td class="sec">' + esc(prodLabel) + '</td><td>' + (item.quantity || 1) + '</td><td class="sec">' + (item.brand_name || '') + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>€' + itemCommission.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
-
-          totalCommission += itemCommission;
-        });
-
-        totalRevenue += parseFloat(order.total_amount || 0);
+    [].forEach.call(zone.querySelectorAll('.fin-col'), function (b) {
+      b.addEventListener('click', function () {
+        finIndex = parseInt(b.dataset.i, 10);
+        dessinerGrapheFinances();
+        afficherMois();
       });
+    });
+  }
 
-      document.getElementById('overview-orders').innerHTML = overviewHtml || '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
-      document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
-      document.getElementById('stat-orders').textContent = orders.length;
-      // Les chiffres d'argent (ici et dans Finances) sont remplis par
-      // loadVersements(). Ils etaient calcules ici sur TOUTES les commandes,
-      // payees ou non : une commande abandonnee au paiement gonflait le
-      // revenu affiche. Seul l'encaisse compte.
-    } catch (err) {
-      console.error('Error loading orders:', err);
-    }
+  function afficherMois() {
+    const tout = (finData && finData.mois) || [];
+    const m = tout[finIndex];
+    if (!m) return;
+
+    document.getElementById('fin-mois-nom').textContent =
+      m.nom.charAt(0).toUpperCase() + m.nom.slice(1);
+    document.getElementById('fin-prec').disabled = finIndex === 0;
+    document.getElementById('fin-suiv').disabled = finIndex === tout.length - 1;
+
+    // "moyenne" et pas "des ventes" : le pourcentage est constate apres coup
+    // a partir des taux de chaque produit vendu, il ne decrit aucune regle.
+    const moyenne = function (part) {
+      return m.ventes_cents
+        ? 'moyenne ' + (Math.round(part / m.ventes_cents * 1000) / 10).toString().replace('.', ',') + ' %'
+        : '—';
+    };
+
+    document.getElementById('fin-ventes').textContent = euros(m.ventes_cents);
+    document.getElementById('fin-commandes').textContent = m.commandes === 0
+      ? 'aucune commande'
+      : m.commandes + (m.commandes === 1 ? ' commande' : ' commandes');
+    document.getElementById('fin-createurs').textContent = euros(m.createurs_cents);
+    document.getElementById('fin-createurs-pct').textContent = moyenne(m.createurs_cents);
+    document.getElementById('fin-toi').textContent = euros(m.toi_cents);
+    document.getElementById('fin-toi-pct').textContent = moyenne(m.toi_cents);
+
+    // Frais inconnus : on n'invente pas un net. Mieux vaut un tiret qu'un
+    // chiffre faux sur la seule ligne qui dit ce que tu gardes vraiment.
+    const fraisConnus = m.frais_cents !== null && m.frais_cents !== undefined;
+    document.getElementById('fin-frais').textContent = fraisConnus ? '− ' + euros(m.frais_cents) : '—';
+    document.getElementById('fin-net').textContent = fraisConnus
+      ? euros(m.toi_cents - m.frais_cents) : euros(m.toi_cents);
+
+    document.getElementById('fin-titre-marques').textContent = 'Par marque — ' + m.nom;
+
+    const lignes = m.marques || [];
+    document.getElementById('finances-table').innerHTML = lignes.length
+      ? lignes.map(function (b) {
+          // Le compte bancaire tient dans une mention a cote du nom : une
+          // colonne entiere pour un oui/non poussait les montants hors champ.
+          return '<tr><td class="bold">' + esc(b.nom)
+            + (b.compte_relie ? '' : ' <span class="fin-rouge" style="font-size:11px">compte non relié</span>')
+            + (b.createur ? '<div style="font-size:11px;font-weight:400;color:var(--gray-400)">' + esc(b.createur) + '</div>' : '')
+            + '</td><td class="sec">' + euros(b.ventes_cents) + '</td>'
+            + '<td class="sec">' + tauxTexte(b) + '</td>'
+            + '<td class="sec">' + euros(b.createurs_cents) + '</td>'
+            + '<td class="sec">' + euros(b.toi_cents) + '</td>'
+            + '<td>' + (b.a_la_main_cents > 0
+                ? '<span class="fin-rouge">' + euros(b.a_la_main_cents) + '</span>'
+                : '<span class="sec">—</span>') + '</td></tr>';
+        }).join('')
+      : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune vente ce mois-ci</td></tr>';
   }
 
   async function loadProducts() {
