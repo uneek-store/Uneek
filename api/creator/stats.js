@@ -81,19 +81,47 @@ export default async function handler(req, res) {
     }
 
     // --- 3. les lignes de commande de la marque, sur la période ---
-    const { data: lignes, error: errLignes } = await supabaseAdmin
-      .from("order_items")
-      .select("product_id, product_name, size, color, quantity, product_price, creator_payout, created_at, orders(created_at, status)")
-      .eq("brand_id", brand_id);
+    // La date d'une vente vient de la COMMANDE (orders.created_at), jamais de
+    // la ligne : order_items n'a pas de colonne created_at, et la demander
+    // faisait échouer toute la requête — donc tout l'onglet.
+    //
+    // Le repli ci-dessous existe pour la même raison : si un jour une colonne
+    // de cette liste change de nom, on retombe sur un select minimal au lieu
+    // de renvoyer une erreur. Un onglet avec moins de détail vaut mieux qu'un
+    // onglet mort.
+    const COLONNES_COMPLETES =
+      "product_id, product_name, size, color, quantity, product_price, creator_payout, orders(created_at, status)";
+    const COLONNES_MINIMALES = "product_id, quantity, orders(created_at)";
 
-    if (errLignes) {
-      console.error("[stats] lignes de commande :", errLignes.message);
-      return res.status(500).json({ error: "Erreur serveur" });
+    let lignes = [];
+    let ventesCompletes = true;
+    {
+      const r = await supabaseAdmin
+        .from("order_items")
+        .select(COLONNES_COMPLETES)
+        .eq("brand_id", brand_id);
+
+      if (r.error) {
+        console.error("[stats] lignes de commande (select complet) :", r.error.message);
+        const secours = await supabaseAdmin
+          .from("order_items")
+          .select(COLONNES_MINIMALES)
+          .eq("brand_id", brand_id);
+
+        if (secours.error) {
+          console.error("[stats] lignes de commande (select minimal) :", secours.error.message);
+          return res.status(500).json({ error: "Erreur serveur" });
+        }
+        lignes = secours.data || [];
+        ventesCompletes = false;
+      } else {
+        lignes = r.data || [];
+      }
     }
 
     const depuis = new Date(debut).getTime();
     const dansLaPeriode = (l) => {
-      const d = (l.orders && l.orders.created_at) || l.created_at;
+      const d = l.orders && l.orders.created_at;
       if (!d) return false;
       const t = new Date(d).getTime();
       return !isNaN(t) && t >= depuis;
@@ -137,10 +165,14 @@ export default async function handler(req, res) {
           ? (Number(l.product_price) || 0) * q * 0.88
           : net;
       }
-      const t = l.size || "Taille unique";
-      const co = l.color || "Sans couleur";
-      tailles[t] = (tailles[t] || 0) + q;
-      couleurs[co] = (couleurs[co] || 0) + q;
+      // En mode secours, size et color ne sont pas lus : on ne remplit rien
+      // plutôt que d'inventer des « Taille unique » qui n'existent pas.
+      if (ventesCompletes) {
+        const t = l.size || "Taille unique";
+        const co = l.color || "Sans couleur";
+        tailles[t] = (tailles[t] || 0) + q;
+        couleurs[co] = (couleurs[co] || 0) + q;
+      }
     });
 
     const pieces = Object.keys(par).map((k) => par[k]);
@@ -175,6 +207,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       jours,
       suivi_actif: suiviActif,
+      ventes_completes: ventesCompletes,
       seuil_vues: SEUIL_VUES,
       totaux: {
         vues: somme("vues"),
