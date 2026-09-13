@@ -409,6 +409,73 @@
     .zoom-zone > .chart .ax { font-size: 14px; }
     @media (max-width: 620px) { .zoom-bg { padding: 12px 12px 20px; } .zoom-sous { display: none; } }
     /* ===== fin ===== */
+    /* ===== AJOUT : onglet Mes stats ===== */
+    .st-etiq { font-size: 9.5px; letter-spacing: .6px; text-transform: uppercase; padding: 2px 7px;
+      border-radius: 5px; font-weight: 500; white-space: nowrap; }
+    .st-etiq.suivi { background: transparent; color: var(--gray-500); border: 1px dashed var(--gray-300); }
+
+    .st-tete { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+      flex-wrap: wrap; margin-bottom: 18px; }
+    .st-cartes { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 16px; }
+
+    .st-hero { font-family: var(--font-body); font-size: 40px; font-weight: 700; letter-spacing: -1.5px;
+      line-height: 1; margin-bottom: 6px; }
+    .st-hero-sous { font-size: 12.5px; color: var(--gray-500); line-height: 1.6; }
+
+    /* Entonnoir : etapes ordonnees, une seule teinte du clair au fonce.
+       La chute se lit entre deux lignes — pas de deuxieme echelle. */
+    .ent-ligne { display: grid; grid-template-columns: 92px 1fr auto; align-items: center; gap: 12px; }
+    .ent-nom { font-size: 12.5px; color: var(--gray-600); }
+    .ent-piste { height: 16px; }
+    .ent-barre { height: 16px; border-radius: 0 4px 4px 0; }
+    .ent-val { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 52px; text-align: right; }
+    .ent-chute { display: grid; grid-template-columns: 92px 1fr auto; gap: 12px; }
+    .ent-chute > :nth-child(2) { font-size: 11px; color: var(--gray-400); padding: 5px 0 5px 2px; }
+    .ent-chute b { color: var(--gray-600); font-weight: 500; }
+
+    .st-tab { width: 100%; border-collapse: collapse; }
+    .st-tab th { text-align: left; font-size: 10px; letter-spacing: .5px; text-transform: uppercase;
+      color: var(--gray-400); font-weight: 500; padding: 0 10px 9px; border-bottom: 1px solid var(--gray-100); }
+    .st-tab th.n, .st-tab td.n { text-align: right; font-variant-numeric: tabular-nums; }
+    .st-tab td { padding: 11px 10px; font-size: 13px; border-bottom: 1px solid var(--gray-50); vertical-align: middle; }
+    .st-tab tr:last-child td { border-bottom: none; }
+    .st-tab .prod { font-weight: 500; }
+    .st-tab .faible { color: var(--gray-400); }
+    .conv-cell { display: flex; align-items: center; gap: 9px; justify-content: flex-end; }
+    .conv-piste { width: 54px; height: 5px; background: var(--gray-100); border-radius: 3px; overflow: hidden; }
+    .conv-piste i { display: block; height: 5px; background: var(--black); border-radius: 3px; }
+    /* Sur telephone on resserre et on coupe les noms longs plutot que de
+       faire defiler le tableau de gauche a droite. */
+    .st-tab td.prod { overflow-wrap: break-word; }
+    @media (max-width: 620px) {
+      .st-tab th { padding: 0 5px 8px; font-size: 9px; letter-spacing: 0; }
+      .st-tab td { padding: 9px 5px; font-size: 11.5px; }
+    }
+
+    .st-lecture { display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--gray-50); }
+    .st-lecture:last-child { border-bottom: none; }
+    .st-lecture .ico { width: 22px; height: 22px; border-radius: 6px; flex: none; display: flex;
+      align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+    .st-lecture .ico.att { background: var(--orange-bg); color: var(--orange); }
+    .st-lecture .ico.bien { background: var(--green-bg); color: var(--green); }
+    .st-lecture .ico.info { background: var(--gray-100); color: var(--gray-600); }
+    .st-lecture .txt { font-size: 13px; line-height: 1.65; }
+    .st-lecture .txt b { font-weight: 600; }
+    .st-lecture .txt .quoi { display: block; color: var(--gray-500); margin-top: 2px; }
+
+    /* Les deux cartes font la meme hauteur, l'entonnoir se centre dedans. */
+    .st-2col { display: grid; grid-template-columns: 1.25fr 1fr; gap: 16px; align-items: stretch; margin-bottom: 16px; }
+    .st-2col > .card { display: flex; flex-direction: column; }
+    .st-2col > .card > .card-body { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    @media (max-width: 1000px) { .st-2col { grid-template-columns: 1fr; } }
+
+    .st-vide { font-size: 12.5px; color: var(--gray-400); padding: 22px 0; text-align: center; line-height: 1.7; }
+    .st-note { font-size: 11.5px; color: var(--gray-400); line-height: 1.6; margin-top: 12px; }
+    .st-avert { font-size: 11.5px; color: var(--gray-500); line-height: 1.7; padding: 14px 24px 20px;
+      border-top: 1px solid var(--gray-100); }
+    .st-avert b { color: var(--gray-600); font-weight: 500; }
+    /* ===== fin ===== */
+
   </style>
 </head>
 <body>
@@ -459,6 +526,7 @@
     <a class="active" onclick="showSection('overview', this)">Vue d'ensemble</a>
     <a onclick="showSection('orders', this)">Commandes <span class="badge-count" id="ordersCount" style="display:none">0</span></a>
     <a onclick="showSection('products', this)">Mes produits</a>
+    <a onclick="showSection('stats', this)">Mes stats</a>
     <a onclick="showSection('mapage', this)">Ma page</a>
     <a onclick="showSection('edits', this)">Mes demandes</a>
     <a onclick="showSection('settings', this)">Paramètres</a>
@@ -538,23 +606,6 @@
         </div>
       </div>
 
-      <!-- AJOUT : ce qui part le plus, plus bas -->
-        <div class="card">
-          <div class="card-header card-head-2">
-            <div>Ce qui part le plus
-              <div class="card-sub">pi&egrave;ces vendues sur la p&eacute;riode</div>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <div class="seg" id="ovMix">
-                <button type="button" data-m="taille" class="on">Tailles</button>
-                <button type="button" data-m="couleur">Couleurs</button>
-              </div>
-              <button type="button" class="btn-zoom" data-zoom="ovColonnes" title="Agrandir">&#9974;</button>
-            </div>
-          </div>
-          <div class="card-body"><div class="chart" id="ovColonnes"><div class="tip" id="tipColonnes"></div></div></div>
-        </div>
-
       <!-- AJOUT : stock qui s'&eacute;puise, pleine largeur -->
       <div class="card">
         <div class="card-header card-head-2">
@@ -610,6 +661,97 @@
             <tbody id="orders-table"></tbody>
           </table>
         </div>
+      </div>
+    </div>
+
+    <!-- AJOUT : MES STATS -->
+    <div id="sec-stats" class="section">
+      <div class="st-tete">
+        <div>
+          <div class="page-title">Mes stats</div>
+          <div class="page-sub">Ce que les gens font devant tes pi&egrave;ces, pas seulement ce qu'ils ach&egrave;tent</div>
+        </div>
+        <div class="seg" id="stPeriode">
+          <button type="button" data-j="7">7 jours</button>
+          <button type="button" class="on" data-j="30">30 jours</button>
+          <button type="button" data-j="90">3 mois</button>
+        </div>
+      </div>
+
+      <div class="st-cartes">
+        <div class="card"><div class="card-body" style="padding:18px 20px">
+          <div class="stat-label">Visites qui ach&egrave;tent</div>
+          <div class="st-hero" id="stTaux">&mdash;</div>
+          <div class="st-hero-sous" id="stTauxSous"></div>
+        </div></div>
+        <div class="card"><div class="card-body" style="padding:18px 20px">
+          <div class="stat-label">Pi&egrave;ces vendues</div>
+          <div class="st-hero" id="stVendues">&mdash;</div>
+          <div class="st-hero-sous" id="stVenduesSous"></div>
+        </div></div>
+        <div class="card"><div class="card-body" style="padding:18px 20px">
+          <div class="stat-label">Revenu net</div>
+          <div class="st-hero" id="stRevenu">&mdash;</div>
+          <div class="st-hero-sous" id="stRevenuSous"></div>
+        </div></div>
+        <div class="card"><div class="card-body" style="padding:18px 20px">
+          <div class="stat-label">Clients qui reviennent</div>
+          <div class="st-hero" id="stFidele">&mdash;</div>
+          <div class="st-hero-sous" id="stFideleSous"></div>
+        </div></div>
+      </div>
+
+      <div class="st-2col">
+        <div class="card">
+          <div class="card-header card-head-2">
+            <div>
+              <div>Du regard &agrave; l'achat</div>
+              <div class="card-sub" id="stEntSous"></div>
+            </div>
+          </div>
+          <div class="card-body" id="stEntonnoir"></div>
+          <div class="st-avert">
+            <b>&Agrave; lire une fois.</b> Ces chiffres sont donn&eacute;s &agrave; titre indicatif.
+            Une vue, c'est un passage sur ta fiche &mdash; &ccedil;a compte aussi les gens qui
+            reviennent plusieurs fois et ceux qui se sont tromp&eacute;s de page.
+            <b>Un taux bas ne veut pas dire que ta pi&egrave;ce est mauvaise</b> : sur une jeune
+            boutique, il faut des centaines de passages avant qu'un chiffre devienne lisible.
+            Ces mesures ne sont ni un engagement d'UNEEK sur le trafic ou les ventes,
+            ni une &eacute;valuation de ton travail. Une piste, jamais un verdict.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header card-head-2">
+            <div>
+              <div>Ce qui bloque</div>
+              <div class="card-sub">lecture automatique de tes chiffres</div>
+            </div>
+          </div>
+          <div class="card-body" id="stLectures"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header card-head-2">
+          <div>
+            <div>Pi&egrave;ce par pi&egrave;ce</div>
+            <div class="card-sub" id="stTabSous"></div>
+          </div>
+        </div>
+        <div class="card-body" style="overflow-x:auto">
+          <table class="st-tab" id="stTable"></table>
+          <div class="st-note" id="stTabNote"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header card-head-2">
+          <div>
+            <div>Ce que les gens choisissent</div>
+            <div class="card-sub">tailles et couleurs command&eacute;es sur la p&eacute;riode</div>
+          </div>
+        </div>
+        <div class="card-body" id="stChoix"></div>
       </div>
     </div>
 
@@ -2909,5 +3051,348 @@
 })();
 </script>
 
+<script>
+/* ===========================================================
+   AJOUT : onglet « Mes stats ».
+   Lit /api/creator/stats — une seule requete par periode, mise
+   en cache le temps de la visite. Rien du v1 n'est modifie.
+
+   Si la table des evenements n'existe pas encore, l'API renvoie
+   suivi_actif: false : l'onglet s'affiche quand meme, avec les
+   ventes et le revenu, et explique que les vues arrivent bientot.
+   =========================================================== */
+(function () {
+  var J = 30;
+  var MIX = 'taille';
+  var CACHE = {};            // jours -> donnees
+  var enCours = false;
+  var INK = '#0A0A0A';
+  // Rampe d'une seule teinte, du clair au fonce, verifiee : monotone,
+  // ecarts suffisants, extremite claire lisible sur fond blanc.
+  var RAMPE = ['#A3A3A3', '#737373', '#404040', '#0A0A0A'];
+
+  function esc(v) {
+    return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function euro(v) { return '€' + Math.round(v || 0).toLocaleString('fr-BE'); }
+  function pct(a, b) { return b > 0 ? (a / b * 100) : 0; }
+  function fpct(v, dec) { return v.toFixed(dec === undefined ? 1 : dec).replace('.', ',') + ' %'; }
+  function nb(v) { return (v || 0).toLocaleString('fr-BE'); }
+  function libelle() { return J === 7 ? '7 derniers jours' : (J === 30 ? '30 derniers jours' : '3 derniers mois'); }
+  function poser(id, v) { var e = document.getElementById(id); if (e) e.textContent = v; }
+  function poserH(id, v) { var e = document.getElementById(id); if (e) e.innerHTML = v; }
+
+  // ---------- lecture ----------
+  async function charger() {
+    if (typeof currentBrand === 'undefined' || !currentBrand) return null;
+    if (CACHE[J]) return CACHE[J];
+    var res = await fetch(API_BASE + '/creator/stats?brand_id=' + encodeURIComponent(currentBrand.id)
+      + '&jours=' + J, { headers: { 'Authorization': 'Bearer ' + authToken } });
+    var d = await res.json();
+    if (!res.ok || !d || !Array.isArray(d.pieces)) throw new Error((d && d.error) || 'lecture impossible');
+    CACHE[J] = d;
+    return d;
+  }
+
+  function attendre() {
+    poser('stTaux', '…'); poser('stVendues', '…');
+    poser('stRevenu', '…'); poser('stFidele', '…');
+    poserH('stEntonnoir', '<div class="st-vide">Lecture de tes chiffres…</div>');
+    poserH('stLectures', '<div class="st-vide">…</div>');
+  }
+
+  function panne(msg) {
+    poser('stTaux', '—'); poser('stVendues', '—');
+    poser('stRevenu', '—'); poser('stFidele', '—');
+    var m = '<div class="st-vide">' + esc(msg) + '<br>Réessaie dans un instant.</div>';
+    poserH('stEntonnoir', m);
+    poserH('stLectures', '');
+    poserH('stTable', '');
+    poserH('stChoix', '');
+  }
+
+  // ---------- les quatre chiffres ----------
+  function rendreCartes(d) {
+    var t = d.totaux;
+    if (d.suivi_actif && t.vues >= d.seuil_vues) {
+      poser('stTaux', fpct(pct(t.ventes, t.vues)));
+      poserH('stTauxSous', nb(t.ventes) + ' achats pour ' + nb(t.vues) + ' vues');
+    } else if (d.suivi_actif) {
+      poser('stTaux', '—');
+      poserH('stTauxSous', nb(t.vues) + ' vues sur la période &mdash; il en faut au moins '
+        + d.seuil_vues + ' pour qu\'un pourcentage veuille dire quelque chose.');
+    } else {
+      poser('stTaux', '—');
+      poserH('stTauxSous', 'La mesure des vues vient d\'être installée. Les premiers chiffres arrivent dans quelques jours.');
+    }
+
+    poser('stVendues', nb(t.ventes));
+    poser('stVenduesSous', libelle());
+    poser('stRevenu', euro(t.revenu));
+    poser('stRevenuSous', 'ce qui te revient, commission déduite');
+
+    if (d.fideles === null || d.fideles === undefined) {
+      poser('stFidele', '—');
+      poser('stFideleSous', 'pas encore assez de commandes pour le calculer');
+    } else {
+      poser('stFidele', fpct(d.fideles, 0));
+      poser('stFideleSous', 'ont déjà commandé chez toi avant');
+    }
+  }
+
+  // ---------- l'entonnoir ----------
+  function rendreEntonnoir(d) {
+    poser('stEntSous', libelle());
+    var t = d.totaux;
+    if (!d.suivi_actif) {
+      poserH('stEntonnoir', '<div class="st-vide">'
+        + 'Les vues, les favoris et les mises au panier viennent d\'être branchés.<br>'
+        + 'Reviens dans quelques jours : il faut du passage avant que ces chiffres disent quelque chose.'
+        + '</div>');
+      return;
+    }
+    if (!t.vues && !t.favoris && !t.paniers && !t.ventes) {
+      poserH('stEntonnoir', '<div class="st-vide">Aucun passage enregistré sur cette période.</div>');
+      return;
+    }
+    var etapes = [
+      { nom: 'Vues', v: t.vues }, { nom: 'Favoris', v: t.favoris },
+      { nom: 'Paniers', v: t.paniers }, { nom: 'Achats', v: t.ventes }
+    ];
+    var max = Math.max(1, etapes[0].v), html = '';
+    etapes.forEach(function (e, i) {
+      var l = Math.max(2.2, e.v / max * 100);
+      html += '<div class="ent-ligne">'
+        + '<div class="ent-nom">' + e.nom + '</div>'
+        + '<div class="ent-piste"><div class="ent-barre" style="width:' + l.toFixed(1) + '%;background:' + RAMPE[i] + '"></div></div>'
+        + '<div class="ent-val">' + nb(e.v) + '</div></div>';
+      if (i < etapes.length - 1) {
+        var suiv = etapes[i + 1].v;
+        html += '<div class="ent-chute"><div></div><div><b>' + fpct(pct(suiv, e.v), 0)
+          + '</b> continuent &mdash; ' + nb(e.v - suiv) + ' s\'arrêtent ici</div><div></div></div>';
+      }
+    });
+    poserH('stEntonnoir', html);
+  }
+
+  // ---------- le tableau ----------
+  function rendreTable(d) {
+    poser('stTabSous', libelle() + ' · du plus rentable au moins rentable');
+    // Sept colonnes ne tiennent pas sur un telephone. Plutot que d'imposer un
+    // defilement lateral, on garde les quatre qui comptent ; le detail complet
+    // reste disponible sur un ecran large.
+    var t0 = document.getElementById('stTable');
+    var etroit = !!t0 && t0.parentElement && t0.parentElement.clientWidth > 0
+                 && t0.parentElement.clientWidth < 620;
+    if (!d.pieces.length) {
+      poserH('stTable', '');
+      poserH('stTabNote', 'Tu n\'as pas encore de pièce en ligne.');
+      return;
+    }
+    var suivi = d.suivi_actif;
+    var detail = suivi && !etroit;      // favoris, paniers et conversion
+    var avecConv = d.pieces.map(function (p) {
+      return { p: p, conv: (suivi && p.vues >= d.seuil_vues) ? pct(p.ventes, p.vues) : null };
+    });
+    var maxConv = Math.max.apply(null, avecConv.map(function (x) { return x.conv || 0; })) || 1;
+
+    var html = '<thead><tr><th>Pièce</th>';
+    if (suivi) html += '<th class="n">Vues</th>';
+    if (detail) html += '<th class="n">Favoris</th><th class="n">Paniers</th>';
+    html += '<th class="n">Ventes</th>';
+    if (detail) html += '<th class="n">Conversion</th>';
+    html += '<th class="n">Revenu net</th></tr></thead><tbody>';
+
+    avecConv.forEach(function (x) {
+      var p = x.p;
+      html += '<tr><td class="prod">' + esc(p.nom) + '</td>';
+      if (suivi) html += '<td class="n' + (p.vues ? '' : ' faible') + '">' + nb(p.vues) + '</td>';
+      if (detail) {
+        html += '<td class="n' + (p.favoris ? '' : ' faible') + '">' + nb(p.favoris) + '</td>'
+              + '<td class="n' + (p.paniers ? '' : ' faible') + '">' + nb(p.paniers) + '</td>';
+      }
+      html += '<td class="n' + (p.ventes ? '' : ' faible') + '">' + nb(p.ventes) + '</td>';
+      if (detail) {
+        html += '<td class="n">' + (x.conv === null
+          ? '<span class="faible" title="moins de ' + d.seuil_vues + ' vues sur la période">—</span>'
+          : '<span class="conv-cell"><span class="conv-piste"><i style="width:'
+            + Math.max(4, x.conv / maxConv * 100).toFixed(0) + '%"></i></span>' + fpct(x.conv) + '</span>')
+          + '</td>';
+      }
+      html += '<td class="n">' + (p.revenu ? euro(p.revenu) : '<span class="faible">—</span>') + '</td></tr>';
+    });
+    poserH('stTable', html + '</tbody>');
+    poser('stTabNote', !suivi
+      ? 'Les colonnes vues, favoris et paniers apparaîtront quand la mesure aura commencé à remonter des chiffres.'
+      : (detail
+        ? 'Le taux de conversion, c\'est le nombre d\'achats divisé par le nombre de vues. '
+          + 'En dessous de ' + d.seuil_vues + ' vues sur la période, il n\'est pas affiché : '
+          + 'sur de petits nombres il ne veut rien dire.'
+        : 'Favoris, paniers et taux de conversion s\'affichent sur un écran plus large.'));
+  }
+
+  // ---------- les lectures ----------
+  function rendreLectures(d) {
+    var l = [], suivi = d.suivi_actif, S = d.seuil_vues;
+    d.pieces.forEach(function (p) {
+      if (suivi && p.vues >= S && p.ventes <= 1 && p.vues >= 100) {
+        l.push({ t: 'att', quoi: p.nom,
+          txt: nb(p.vues) + ' vues, ' + (p.ventes ? 'une seule vente' : 'aucune vente') + '.',
+          faire: 'Les gens regardent mais n\'achètent pas' + (p.prix ? ' : le prix (' + euro(p.prix) + ') ou les photos bloquent.' : '.') });
+      }
+      if (suivi && p.paniers >= 5 && p.ventes / Math.max(1, p.paniers) < 0.5) {
+        l.push({ t: 'att', quoi: p.nom,
+          txt: nb(p.paniers) + ' mises au panier pour ' + nb(p.ventes) + ' achats.',
+          faire: nb(p.paniers - p.ventes) + ' personnes sont parties au moment de payer. Regarde les frais de port.' });
+      }
+      if (suivi && p.vues >= S && p.ventes >= 3 && pct(p.ventes, p.vues) > 5) {
+        l.push({ t: 'bien', quoi: p.nom,
+          txt: fpct(pct(p.ventes, p.vues)) + ' des vues finissent par un achat.',
+          faire: 'C\'est ta pièce la plus efficace. Mets-la en avant.' });
+      }
+      if (suivi && p.favoris >= 15 && p.ventes <= 2) {
+        l.push({ t: 'info', quoi: p.nom,
+          txt: nb(p.favoris) + ' personnes l\'ont mise en favori, ' + nb(p.ventes) + ' l\'ont achetée.',
+          faire: 'Elle plaît mais quelque chose retient.' });
+      }
+    });
+    // tailles : disponible meme sans le suivi
+    var t = (d.tailles || []).slice().sort(function (a, b) { return b[1] - a[1]; });
+    if (t.length > 1 && t[0][1] >= 4 && t[0][1] >= t[t.length - 1][1] * 2.5) {
+      l.push({ t: 'info', quoi: 'Tailles',
+        txt: 'La ' + t[0][0] + ' part ' + (t[0][1] / t[t.length - 1][1]).toFixed(1).replace('.', ',')
+          + '× plus que la ' + t[t.length - 1][0] + '.',
+        faire: 'Pour ta prochaine production, tu sais quoi couper.' });
+    }
+    // une seule lecture par piece, la plus severe d'abord
+    var rang = { att: 0, info: 1, bien: 2 }, vus = {}, garde = [];
+    l.sort(function (a, b) { return rang[a.t] - rang[b.t]; }).forEach(function (x) {
+      if (vus[x.quoi]) return;
+      vus[x.quoi] = true; garde.push(x);
+    });
+    garde = garde.slice(0, 4);
+
+    poserH('stLectures', garde.length
+      ? garde.map(function (x) {
+          return '<div class="st-lecture"><div class="ico ' + x.t + '">'
+            + (x.t === 'att' ? '!' : (x.t === 'bien' ? '✓' : 'i')) + '</div>'
+            + '<div class="txt"><b>' + esc(x.quoi) + '</b> &mdash; ' + esc(x.txt)
+            + '<span class="quoi">' + esc(x.faire) + '</span></div></div>';
+        }).join('')
+      : '<div class="st-vide">' + (suivi
+          ? 'Rien à signaler sur cette période. C\'est plutôt bon signe.'
+          : 'Les observations arriveront avec les premières vues mesurées.') + '</div>');
+  }
+
+  // ---------- tailles et couleurs ----------
+  function rendreChoix(d) {
+    var hote = document.getElementById('stChoix');
+    if (!hote) return;
+    var brut = (MIX === 'taille' ? d.tailles : d.couleurs) || [];
+    var liste = brut.slice().sort(function (a, b) { return b[1] - a[1]; }).slice(0, 12);
+    if (MIX === 'taille' && typeof comparerTailles === 'function') {
+      liste.sort(function (a, b) { return comparerTailles(a[0], b[0]); });
+    }
+    var boutons = '<div class="seg" id="stMix" style="margin-bottom:14px">'
+      + '<button type="button" class="' + (MIX === 'taille' ? 'on' : '') + '" data-m="taille">Tailles</button>'
+      + '<button type="button" class="' + (MIX === 'couleur' ? 'on' : '') + '" data-m="couleur">Couleurs</button></div>';
+    if (!liste.length) {
+      hote.innerHTML = boutons + '<div class="st-vide">Aucune vente sur la période.</div>';
+      return;
+    }
+    var etroit = hote.clientWidth > 0 && hote.clientWidth < 560;
+    var W = etroit ? 340 : 1200, H = etroit ? 200 : 210;
+    var PB = 32, PT = 26, n = liste.length;
+    var bande = W / n, bw = Math.min(etroit ? 26 : 34, bande - 16);
+    var max = Math.max.apply(null, liste.map(function (x) { return x[1]; })) || 1;
+    var g = '';
+    liste.forEach(function (p, i) {
+      var h = Math.max(3, p[1] / max * (H - PT - PB));
+      var xx = i * bande + (bande - bw) / 2, yy = H - PB - h;
+      g += '<rect x="' + xx + '" y="' + yy + '" width="' + bw + '" height="' + h + '" rx="4" fill="' + INK + '"/>'
+        + '<rect x="' + xx + '" y="' + (H - PB - Math.min(h, 4)) + '" width="' + bw + '" height="' + Math.min(h, 4) + '" fill="' + INK + '"/>'
+        + '<text class="ax" x="' + (xx + bw / 2) + '" y="' + (yy - 8) + '" text-anchor="middle" style="fill:var(--black);font-size:12px;font-weight:500">' + p[1] + '</text>'
+        + '<text class="ax" x="' + (xx + bw / 2) + '" y="' + (H - 12) + '" text-anchor="middle">' + esc(p[0]) + '</text>';
+    });
+    var tot = liste.reduce(function (a, x) { return a + x[1]; }, 0);
+    hote.innerHTML = boutons
+      + '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto">' + g + '</svg>'
+      + '<div class="st-note">' + nb(tot) + ' pièce' + (tot > 1 ? 's' : '')
+      + ' commandée' + (tot > 1 ? 's' : '') + ' sur la période.</div>';
+  }
+
+  function sansCasser(nom, fn, d) {
+    try { fn(d); } catch (e) { if (window.console) console.warn('[mes stats] ' + nom, e); }
+  }
+
+  async function tout() {
+    if (enCours) return;
+    enCours = true;
+    if (!CACHE[J]) attendre();
+    try {
+      var d = await charger();
+      if (!d) { enCours = false; return; }
+      sansCasser('cartes', rendreCartes, d);
+      sansCasser('entonnoir', rendreEntonnoir, d);
+      sansCasser('lectures', rendreLectures, d);
+      sansCasser('tableau', rendreTable, d);
+      sansCasser('choix', rendreChoix, d);
+    } catch (err) {
+      panne('Tes chiffres n\'ont pas pu être lus.');
+      if (window.console) console.warn('[mes stats]', err);
+    }
+    enCours = false;
+  }
+
+  document.addEventListener('click', function (ev) {
+    if (!ev.target || !ev.target.closest) return;
+    var b = ev.target.closest('#stPeriode button');
+    if (b) {
+      document.querySelectorAll('#stPeriode button').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      J = parseInt(b.getAttribute('data-j'), 10) || 30;
+      tout();
+      return;
+    }
+    var m = ev.target.closest('#stMix button');
+    if (m) {
+      MIX = m.getAttribute('data-m');
+      if (CACHE[J]) sansCasser('choix', rendreChoix, CACHE[J]);
+      return;
+    }
+  });
+
+  // On dessine en arrivant sur l'onglet, pas avant : inutile d'appeler
+  // l'API pour un onglet que le createur n'ouvrira peut-etre jamais.
+  if (typeof showSection === 'function') {
+    var _show = showSection;
+    showSection = function (id, el) {
+      var r = _show.apply(this, arguments);
+      if (id === 'stats') tout();
+      return r;
+    };
+  }
+
+  // Une nouvelle commande ou une expedition change les chiffres : on vide
+  // le cache pour que le prochain passage sur l'onglet relise.
+  if (typeof loadOrders === 'function') {
+    var _loadOrders = loadOrders;
+    loadOrders = async function () {
+      var r = await _loadOrders.apply(this, arguments);
+      CACHE = {};
+      return r;
+    };
+  }
+
+  window.addEventListener('resize', function () {
+    var sec = document.getElementById('sec-stats');
+    if (sec && sec.classList.contains('active') && CACHE[J]) {
+      sansCasser('choix', rendreChoix, CACHE[J]);
+      sansCasser('tableau', rendreTable, CACHE[J]);
+    }
+  });
+})();
+</script>
 </body>
 </html>

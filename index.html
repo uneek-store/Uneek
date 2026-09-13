@@ -2040,7 +2040,7 @@ function doLogout() {
 function legalPage(type) {
   const pages = {
     cgv: { title: "Conditions Générales de Vente", items: [["Article 1 — Préambule", "UNEEK est une marketplace de mode indépendante mettant en relation créateurs et acheteurs. UNEEK agit en qualité d'intermédiaire. Les produits sont vendus directement par les créateurs."], ["Article 2 — Produits et prix", "Les produits sont des vêtements et accessoires de marques indépendantes sélectionnées. Les prix sont en euros TTC, fixés librement par chaque créateur."], ["Article 3 — Commande et paiement", "La validation du paiement constitue l'acceptation de la commande. Le paiement est sécurisé. UNEEK ne stocke aucune donnée bancaire."], ["Article 4 — Livraison", "Expédition par le créateur sous 3 jours ouvrés. Délais : 3–7 jours BE/FR, 5–10 jours reste de l'Europe."], ["Article 5 — Droit de rétractation", "14 jours à compter de la réception. Produit non porté, étiquettes intactes. Frais de retour à charge du client sauf produit défectueux."], ["Article 6 — Garantie légale", "Garantie légale de conformité de 2 ans conformément au Code civil belge."], ["Article 7 — Droit applicable", "Droit belge applicable. Règlement en ligne : ec.europa.eu/consumers/odr"]] },
-    privacy: { title: "Politique de confidentialité", items: [["Données collectées", "Nom, prénom, email, adresse de livraison et historique de commandes."], ["Utilisation", "Traitement des commandes, service client, amélioration de la plateforme."], ["Partage", "Données de livraison transmises au créateur uniquement. UNEEK ne vend aucune donnée."], ["Vos droits (RGPD)", "Droit d'accès, rectification, suppression et portabilité. Contact : support@uneek.store"], ["Sécurité", "Paiements sécurisés. UNEEK ne stocke aucune donnée bancaire."]] },
+    privacy: { title: "Politique de confidentialité", items: [["Données collectées", "Nom, prénom, email, adresse de livraison et historique de commandes."], ["Utilisation", "Traitement des commandes, service client, amélioration de la plateforme."], ["Partage", "Données de livraison transmises au créateur uniquement. UNEEK ne vend aucune donnée."], ["Vos droits (RGPD)", "Droit d'accès, rectification, suppression et portabilité. Contact : support@uneek.store"], ["Sécurité", "Paiements sécurisés. UNEEK ne stocke aucune donnée bancaire."], ["Mesure d'audience", "Nous comptons les passages sur les fiches produits, les mises en favori et les mises au panier, pour renseigner les créateurs sur leurs pièces. Ces compteurs sont anonymes et agrégés : aucune adresse IP, aucun identifiant de visiteur et aucun compte client n'y est associé. Il est donc impossible de relier ces chiffres à une personne, et rien n'est partagé avec un service tiers."]] },
     legal: { title: "Mentions légales", items: [["Éditeur", "UNEEK — Marketplace de mode indépendante\nBCE : [à compléter] — TVA : BE [à compléter]\nEmail : contact@uneek.store"], ["Hébergement", "Vercel Inc., 340 S Lemon Ave #4133, Walnut CA 91789, USA"], ["Propriété intellectuelle", "Tout le contenu du site est protégé. Reproduction interdite sans autorisation."]] }
   };
   const pg = pages[type];
@@ -2105,6 +2105,110 @@ async function init() {
 
 init();
 
+/* ==========================================================
+   SUIVI DES FICHES PRODUITS — pour l'onglet « Mes stats »
+   du panneau createur.
+
+   On compte trois choses : une fiche regardee, une piece mise
+   en favori, une piece mise au panier. Rien d'autre.
+
+   AUCUNE DONNEE PERSONNELLE NE PART. Pas d'identifiant de
+   visiteur, pas de compte, pas d'adresse. Le serveur ne garde
+   ni IP ni agent utilisateur (voir api/events.js).
+
+   Le marqueur anti-doublon vit dans sessionStorage : il meurt
+   a la fermeture de l'onglet, donc il ne suit personne entre
+   deux visites.
+
+   REGLE : ce bloc ne doit jamais gener la boutique. Tout est
+   dans des try/catch, l'appel part sans qu'on attende la
+   reponse, et un echec reseau est ignore en silence.
+   ========================================================== */
+(function () {
+  var DEJA = {};   // repli memoire si sessionStorage est refuse
+
+  function dejaVu(cle) {
+    try {
+      if (sessionStorage.getItem(cle)) return true;
+      sessionStorage.setItem(cle, '1');
+      return false;
+    } catch (err) {
+      if (DEJA[cle]) return true;
+      DEJA[cle] = true;
+      return false;
+    }
+  }
+
+  function envoyer(corps) {
+    var texte = JSON.stringify(corps);
+    try {
+      // keepalive : l'appel survit si la personne change de page tout de suite.
+      fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: texte,
+        keepalive: true
+      }).catch(function () { /* le suivi n'est pas critique */ });
+    } catch (err) { /* rien : la boutique passe avant */ }
+  }
+
+  function noter(type, productId, size, color) {
+    try {
+      if (!productId) return;
+      var id = String(productId);
+      // Une vue par piece et par onglet. Les favoris et les paniers sont des
+      // gestes volontaires : on les compte une fois aussi, sinon un clic
+      // repete gonflerait le chiffre.
+      if (dejaVu('uneek_ev_' + type + '_' + id)) return;
+      envoyer({ type: type, product_id: id, size: size || null, color: color || null });
+    } catch (err) { /* rien */ }
+  }
+
+  // --- la fiche produit est affichee ---
+  if (typeof renderPage === 'function') {
+    var _renderPage = renderPage;
+    renderPage = function () {
+      var r = _renderPage.apply(this, arguments);
+      try {
+        if (currentPage === 'product' && pageData && dataLoaded) {
+          var prod = trouverProduit(pageData);
+          if (prod) noter('vue', prod.id);
+        }
+      } catch (err) { /* rien */ }
+      return r;
+    };
+  }
+
+  // --- ajout aux favoris (le retrait ne compte pas) ---
+  if (typeof toggleFav === 'function') {
+    var _toggleFav = toggleFav;
+    toggleFav = function (id) {
+      var etaitDeja = false;
+      try { etaitDeja = Array.isArray(favorites) && favorites.indexOf(id) !== -1; } catch (err) {}
+      var r = _toggleFav.apply(this, arguments);
+      if (!etaitDeja) noter('favori', id);
+      return r;
+    };
+  }
+
+  // --- mise au panier ---
+  if (typeof addToCart === 'function') {
+    var _addToCart = addToCart;
+    addToCart = function (product, size, couleur) {
+      var avant = 0;
+      try { avant = Array.isArray(cart) ? cart.length : 0; } catch (err) {}
+      var r = _addToCart.apply(this, arguments);
+      try {
+        // Seulement si la piece est vraiment entree dans le panier : le v1
+        // refuse l'ajout quand la taille est epuisee.
+        if (Array.isArray(cart) && cart.length > avant && product && product.id) {
+          noter('panier', product.id, size, couleur);
+        }
+      } catch (err) { /* rien */ }
+      return r;
+    };
+  }
+})();
 </script>
 <script src="/cookie-banner.js"></script>
 </body>
