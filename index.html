@@ -657,7 +657,7 @@ function productCardHTML(p) {
   const b = getBrand(p);
   const isFav = favorites.includes(p.id);
   return `<div class="product-card" onclick="navigate('product','${p.id}')">
-    <div class="product-card-image" onmousemove="tilt(event,this)" onmouseleave="tiltReset(this)">
+    <div class="product-card-image">
       <img src="${p.image_url || PLACEHOLDER_IMG}" alt="${p.name}" loading="lazy">
       <button class="product-card-fav ${isFav ? 'is-fav' : ''}" data-fav="${p.id}" onclick="event.stopPropagation();toggleFav('${p.id}')" aria-label="Favori">
         ${isFav ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="url(#heartGrad)" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'}
@@ -669,14 +669,12 @@ function productCardHTML(p) {
   </div>`;
 }
 
-// TILT
-function tilt(e, el) {
-  const img = el.querySelector('img');
-  const r = el.getBoundingClientRect();
-  const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
-  img.style.transform = `perspective(800px) rotateX(${(0.5 - y) * 20}deg) rotateY(${(x - 0.5) * 20}deg) scale(1.04)`;
-}
-function tiltReset(el) { el.querySelector('img').style.transform = ''; }
+// L'effet 3D au survol des photos produit (fonctions tilt / tiltReset) a ete
+// retire le 14 septembre 2026, a la demande d'Axel. Il inclinait l'image
+// jusqu'a 20 degres sur chaque axe en suivant la souris, ce qui deformait la
+// coupe du vetement — precisement ce que le client regarde avant d'acheter —
+// et ne fonctionnait de toute facon pas au doigt sur telephone.
+// Le leger zoom au survol des cartes, lui, est du CSS et n'a pas bouge.
 
 // ---------------------------------------------------------------------
 // STOCK : deux formes possibles dans la meme colonne sizes_stock
@@ -1205,7 +1203,6 @@ function productPage() {
       <div class="pd-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start">
         <div class="pd-sticky" style="position:sticky;top:96px">
           <div class="pd-imgwrap" style="position:relative;aspect-ratio:3/4;overflow:hidden;background:var(--gray-100);border-radius:var(--radius-lg)"
-               onmousemove="tilt(event,this)" onmouseleave="tiltReset(this)"
                ontouchstart="pdTouchStart(event)" ontouchend="pdTouchEnd(event)">
             <img id="pd-main-img" data-i="0" src="${(p.image_urls && p.image_urls[0]) || p.image_url || PLACEHOLDER_IMG}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease-out">
             ${(p.image_urls && p.image_urls.length > 1) ? `

@@ -591,6 +591,22 @@
             <div class="card-body"><div class="chart" id="ovBarres"><div class="tip" id="tipBarres"></div></div></div>
           </div>
 
+          <div class="card">
+            <div class="card-header card-head-2">
+              <div>Ce qui part le plus
+                <div class="card-sub">pi&egrave;ces vendues sur la p&eacute;riode</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="seg" id="ovMix">
+                  <button type="button" data-m="taille" class="on">Tailles</button>
+                  <button type="button" data-m="couleur">Couleurs</button>
+                </div>
+                <button type="button" class="btn-zoom" data-zoom="ovColonnes" title="Agrandir">&#9974;</button>
+              </div>
+            </div>
+            <div class="card-body"><div class="chart" id="ovColonnes"><div class="tip" id="tipColonnes"></div></div></div>
+          </div>
+
           <div class="card" style="margin-bottom:0">
             <div class="card-header card-head-2">
               <div>Ton revenu net, jour par jour
@@ -1005,7 +1021,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-09-07-lot3-nettoyage-21';
+  const APP_VERSION = '2026-09-14-carte-retablie-22';
 
   async function checkAppVersion() {
     try {

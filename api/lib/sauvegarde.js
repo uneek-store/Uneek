@@ -29,6 +29,11 @@ export const TABLES = [
   // aurait retrouve les commandes et l'argent encaisse, mais plus aucune
   // trace de ce qui restait a reverser. Trouve par le garde-fou.
   "pending_transfers",
+  // Ajoutee le 14 septembre, meme raison que ci-dessus : product_events
+  // enregistre les vues, favoris et mises au panier de chaque produit. C'est
+  // ce qui alimente l'onglet Statistiques du panneau createur. Sans elle dans
+  // cette liste, l'historique d'audience serait perdu en cas de restauration.
+  "product_events",
 ];
 
 // Volontairement absente de la liste : "admin_notifications". La sauvegarde du
