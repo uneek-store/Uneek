@@ -79,6 +79,12 @@
       parcourir(document.body);
     }
     majSelecteur();
+
+    /* Le panneau createur enregistre la langue sur le compte, pour que les
+       e-mails suivent. La boutique ne definit pas ce crochet : elle l'ignore. */
+    try {
+      if (typeof window.UNEEK_SIGNALER_LANGUE === 'function') window.UNEEK_SIGNALER_LANGUE(l);
+    } catch (e) { /* signaler la langue ne doit jamais casser la bascule */ }
   }
 
   function changerLangue(l) {

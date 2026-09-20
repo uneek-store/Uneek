@@ -545,7 +545,7 @@ export default async function handler(req, res) {
 
         const { data: comptes } = await supabaseAdmin
           .from("creator_accounts")
-          .select("email, full_name, brand_id")
+          .select("email, full_name, brand_id, lang")
           .in("brand_id", brandIds);
         const { data: marques } = await supabaseAdmin
           .from("brands")
@@ -574,7 +574,9 @@ export default async function handler(req, res) {
             destinataire,
             (compte && compte.full_name) || (marque && marque.name) || "",
             pourEmail,
-            orderItems.filter((i) => i.brand_id === bid)
+            orderItems.filter((i) => i.brand_id === bid),
+            // Le createur lit dans SA langue, pas dans celle du client.
+            (compte && compte.lang) || null
           ));
         }
 

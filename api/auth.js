@@ -2,9 +2,10 @@
 // POST → connexion créateur ou admin, changement email/mot de passe
 
 import { supabaseAdmin } from "./lib/supabase.js";
-import { creerJeton, lireJeton, jetonDeLaRequete,
+import { creerJeton, lireJeton, jetonDeLaRequete, controlerAcces,
   creerJetonClient, lireJetonClient } from "./lib/session.js";
 import { limiter } from "./lib/limite.js";
+import { normaliser } from "./lib/email-langues.js";
 import crypto from "crypto";
 
 // Hash simple du mot de passe (en production, utiliser bcrypt)
@@ -74,7 +75,7 @@ export default async function handler(req, res) {
 
       const { data: account, error } = await supabaseAdmin
         .from("creator_accounts")
-        .select("id, email, full_name, is_admin, brand_id")
+        .select("id, email, full_name, is_admin, brand_id, lang")
         .eq("email", email.toLowerCase())
         .eq("password_hash", hashPassword(password))
         .single();
@@ -98,6 +99,21 @@ export default async function handler(req, res) {
           : data;
       }
 
+      // La langue du panneau suit le createur : c'est elle qui decidera de
+      // la langue de ses e-mails. Ecriture au mieux — elle ne doit jamais
+      // empecher une connexion.
+      const langueConnexion = normaliser(req.body && req.body.lang);
+      if (langueConnexion && langueConnexion !== account.lang) {
+        try {
+          await supabaseAdmin
+            .from("creator_accounts")
+            .update({ lang: langueConnexion })
+            .eq("id", account.id);
+        } catch (e) {
+          console.warn("[langue] non enregistree a la connexion :", e && e.message);
+        }
+      }
+
       // Jeton signe : le serveur pourra verifier qu'il vient bien de lui.
       // Si AUTH_SECRET manque, on retombe sur l'ancien jeton aleatoire
       // pour ne pas empecher la connexion.
@@ -114,6 +130,34 @@ export default async function handler(req, res) {
           brand,
         },
       });
+    }
+
+    // --- LANGUE (le createur a change la langue de son panneau) ---
+    //
+    // Sans ceci, changer de langue ne se verrait qu'a la prochaine connexion.
+    // La marque et le compte viennent du jeton signe, jamais de la requete.
+    if (action === "langue") {
+      const acces = controlerAcces(req, { nom: "/api/auth?action=langue" });
+      if (!acces.ok) return res.status(401).json({ error: "Non autorisé" });
+
+      const voulue = normaliser(req.body && req.body.lang);
+      if (!voulue) return res.status(400).json({ error: "Langue inconnue" });
+
+      const idCompte = (acces.session && acces.session.id) || null;
+      if (!idCompte) return res.status(401).json({ error: "Non autorisé" });
+
+      const { error: erreurLangue } = await supabaseAdmin
+        .from("creator_accounts")
+        .update({ lang: voulue })
+        .eq("id", idCompte);
+
+      // Un echec ici ne doit rien casser : le createur garde son panneau
+      // dans la langue choisie, seuls ses e-mails resteront dans l'ancienne.
+      if (erreurLangue) {
+        console.warn("[langue] non enregistree :", erreurLangue.message);
+        return res.status(200).json({ success: false });
+      }
+      return res.status(200).json({ success: true, lang: voulue });
     }
 
     // --- REGISTER (création de compte créateur par l'admin) ---

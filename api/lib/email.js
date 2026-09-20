@@ -20,7 +20,7 @@ const SITE = process.env.SITE_URL || "https://uneek.store";
 
 // Toute donnee venant d'un client ou d'un createur passe par la.
 // Un nom contenant < ou & casserait le HTML de l'e-mail sans ca.
-import { choisirLangue, locale, t } from "./email-langues.js";
+import { choisirLangue, locale, normaliser, t } from "./email-langues.js";
 
 export function esc(v) {
   return String(v == null ? "" : v)
@@ -291,30 +291,33 @@ export async function confirmationCommande(order, items) {
 }
 
 // 2. Le createur a une commande a preparer.
-export async function nouvelleCommandeCreateur(destinataire, nomCreateur, order, items) {
+export async function nouvelleCommandeCreateur(destinataire, nomCreateur, order, items, langue) {
+  // La langue du createur, retenue sur son compte. Rien a voir avec celle
+  // du client : le meme achat produit deux e-mails dans deux langues.
+  const lg = normaliser(langue) || "fr";
   const corps =
-    '<p style="margin:0 0 14px">Bonjour ' + esc((nomCreateur || "").split(" ")[0]) + ',</p>'
-    + '<p style="margin:0 0 18px">Tu as une nouvelle commande à préparer.</p>'
-    + bloqueInfo("Commande", [
+    '<p style="margin:0 0 14px">' + t("c_bonjour", lg, { prenom: esc((nomCreateur || "").split(" ")[0]) }) + '</p>'
+    + '<p style="margin:0 0 18px">' + t("n_intro", lg) + '</p>'
+    + bloqueInfo(t("bloc_commande", lg), [
         '<strong>' + esc(order.order_number) + '</strong>',
-        'Passée le ' + dateFr(order.created_at),
+        t("c_passee_le", lg, { date: dateFr(order.created_at, lg) }),
       ])
     + '<div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;'
-    + 'color:#888;margin:20px 0 4px">À préparer</div>'
-    + tableauArticles(items, false)
-    + bloqueInfo("Adresse de livraison", [
+    + 'color:#888;margin:20px 0 4px">' + t("n_a_preparer", lg) + '</div>'
+    + tableauArticles(items, false, lg)
+    + bloqueInfo(t("n_adresse", lg), [
         esc(order.customer_name),
         esc(order.shipping_address),
         order.customer_phone ? esc(order.customer_phone) : null,
       ])
     + '<p style="margin:20px 0 0"><a href="' + SITE + '/creator" '
     + 'style="display:inline-block;background:#000;color:#fff;text-decoration:none;'
-    + 'padding:12px 22px;border-radius:6px;font-size:14px">Ouvrir mon panneau</a></p>';
+    + 'padding:12px 22px;border-radius:6px;font-size:14px">' + t("n_panneau", lg) + '</a></p>';
 
   return envoyer({
     to: destinataire,
-    subject: "Nouvelle commande à préparer — " + (order.order_number || ""),
-    html: gabarit("Nouvelle commande", corps),
+    subject: t("n_sujet", lg, { numero: order.order_number || "" }),
+    html: gabarit(t("n_titre", lg), corps, null, lg),
   });
 }
 
@@ -392,43 +395,38 @@ export async function commandeExpediee(order, articles, nomMarque) {
 }
 
 // 6. L'admin a valide ou refuse : on previent le createur.
-export async function reponseValidation(destinataire, nomCreateur, info) {
+export async function reponseValidation(destinataire, nomCreateur, info, langue) {
+  const lg = normaliser(langue) || "fr";
   const approuve = !!(info && info.approuve);
-  const nomProduit = (info && info.nomProduit) || "ton produit";
+  const nomProduit = (info && info.nomProduit) || t("v_produit_defaut", lg);
   const estNouveau = !!(info && info.estNouveau);
   const note = (info && info.note) || "";
 
-  const quoi = estNouveau ? "produit" : "modification";
-
-  let corps = '<p style="margin:0 0 14px">Bonjour '
-    + esc((nomCreateur || "").split(" ")[0]) + ',</p>';
+  let corps = '<p style="margin:0 0 14px">'
+    + t("c_bonjour", lg, { prenom: esc((nomCreateur || "").split(" ")[0]) }) + '</p>';
 
   if (approuve) {
-    corps += estNouveau
-      ? '<p style="margin:0 0 18px"><strong>' + esc(nomProduit) + '</strong> est validé '
-        + 'et publié sur la boutique. Il est visible par tout le monde dès maintenant.</p>'
-      : '<p style="margin:0 0 18px">Ta modification sur <strong>' + esc(nomProduit)
-        + '</strong> est validée et appliquée sur la boutique.</p>';
+    corps += '<p style="margin:0 0 18px">'
+      + t(estNouveau ? "v_ok_nouveau" : "v_ok_modif", lg, { nom: esc(nomProduit) }) + '</p>';
   } else {
-    corps += '<p style="margin:0 0 18px">Ta demande concernant <strong>'
-      + esc(nomProduit) + '</strong> n\'a pas été retenue pour le moment. '
-      + 'Tu peux la corriger et la soumettre à nouveau depuis ton panneau.</p>';
+    corps += '<p style="margin:0 0 18px">'
+      + t("v_refus", lg, { nom: esc(nomProduit) }) + '</p>';
   }
 
   if (note) {
-    corps += bloqueInfo("Message de l\'équipe UNEEK", [esc(note)]);
+    corps += bloqueInfo(t("v_message", lg), [esc(note)]);
   }
 
   corps += '<p style="margin:20px 0 0"><a href="' + SITE + '/creator" '
     + 'style="display:inline-block;background:#000;color:#fff;text-decoration:none;'
-    + 'padding:12px 22px;border-radius:6px;font-size:14px">Ouvrir mon panneau</a></p>';
+    + 'padding:12px 22px;border-radius:6px;font-size:14px">' + t("n_panneau", lg) + '</a></p>';
 
   return envoyer({
     to: destinataire,
     subject: approuve
-      ? "Ton " + quoi + " est validé — " + nomProduit
-      : "Ta demande sur " + nomProduit + " n\'a pas été retenue",
-    html: gabarit(approuve ? "Validé par UNEEK" : "Demande non retenue", corps),
+      ? t(estNouveau ? "v_sujet_produit" : "v_sujet_modif", lg, { nom: nomProduit })
+      : t("v_sujet_refus", lg, { nom: nomProduit }),
+    html: gabarit(approuve ? t("v_titre_ok", lg) : t("v_titre_non", lg), corps, null, lg),
   });
 }
 

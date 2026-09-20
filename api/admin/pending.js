@@ -265,7 +265,7 @@ export default async function handler(req, res) {
       try {
         const { data: compte } = await supabaseAdmin
           .from("creator_accounts")
-          .select("email, full_name")
+          .select("email, full_name, lang")
           .eq("brand_id", edit.brand_id)
           .maybeSingle();
         const { data: marque } = await supabaseAdmin
@@ -284,7 +284,8 @@ export default async function handler(req, res) {
               nomProduit: (edit.changes && edit.changes.name) || "ton produit",
               estNouveau: !!edit.is_new_product,
               note: admin_note || "",
-            }
+            },
+            (compte && compte.lang) || null
           );
         } else {
           console.warn("[email] aucune adresse pour la marque", edit.brand_id);

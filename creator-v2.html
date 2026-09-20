@@ -1022,7 +1022,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-09-20-cinq-langues-1';
+  const APP_VERSION = '2026-09-20-langue-createur-2';
 
   async function checkAppVersion() {
     try {
@@ -1148,6 +1148,18 @@
   }
 
   // --- LOGIN ---
+  // Le createur a change la langue de son panneau : ses e-mails doivent
+  // suivre. Appele par i18n.js apres chaque bascule. Un echec est sans
+  // consequence visible — le panneau reste dans la langue choisie.
+  window.UNEEK_SIGNALER_LANGUE = function (langue) {
+    if (!authToken) return;
+    fetch(API_BASE + '/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ action: 'langue', lang: langue })
+    }).catch(function () { /* sans consequence */ });
+  };
+
   async function doLogin() {
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
@@ -1158,7 +1170,7 @@
       const res = await fetch(API_BASE + '/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'login', email, password })
+        body: JSON.stringify({ action: 'login', email, password, lang: window.UNEEK_LANG || 'fr' })
       });
       const data = await res.json();
       if (!res.ok || !data.user) {
