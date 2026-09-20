@@ -30,7 +30,7 @@ export default async function handler(req, res) {
       // Récupérer les order_items de cette marque avec les infos de commande
       const { data, error } = await supabaseAdmin
         .from("order_items")
-        .select("*, orders(order_number, customer_name, customer_nickname, customer_email, shipping_address, status, created_at), products(name)")
+        .select("*, orders(order_number, customer_name, customer_nickname, customer_email, shipping_address, status, lang, created_at), products(name)")
         .eq("brand_id", brand_id)
         ;
 
@@ -143,7 +143,7 @@ export default async function handler(req, res) {
         if (ligne && ligne.order_id) {
           const { data: commande } = await supabaseAdmin
             .from("orders")
-            .select("order_number, customer_name, customer_nickname, customer_email, shipping_address")
+            .select("order_number, customer_name, customer_nickname, customer_email, shipping_address, lang")
             .eq("id", ligne.order_id)
             .maybeSingle();
 

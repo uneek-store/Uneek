@@ -436,6 +436,10 @@ export default async function handler(req, res) {
           customer_nickname: customer.nickname || null,
           customer_id: customerId,
           shipping_address: customer.address,
+          // La langue lue par le client au moment de la commande. Elle sert a
+          // ecrire la confirmation, ET l'e-mail « ton colis est parti » envoye
+          // des jours plus tard, quand plus rien d'autre ne la connait.
+          lang: customer.lang || null,
           total_amount: totalAmount,
           uneek_commission: totalCommission,
           // Toujours enregistre, meme si la verification n'a pas abouti :

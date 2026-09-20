@@ -359,36 +359,35 @@ export async function candidatureAcceptee(destinataire, contactName, brandName, 
 
 // 5. La marque a expedie : on previent le client.
 export async function commandeExpediee(order, articles, nomMarque) {
+  // Meme langue que la confirmation : elle a ete enregistree sur la commande
+  // au moment de l'achat, precisement pour ce message-ci.
+  const lg = choisirLangue(order);
   const prenom = esc((order.customer_name || "").split(" ")[0]);
   const surnom = order.customer_nickname ? esc(order.customer_nickname) : "";
-  const qui = nomMarque ? esc(nomMarque) : "La marque";
+  const qui = nomMarque ? esc(nomMarque) : t("e_marque_defaut", lg);
 
   const corps =
-    '<p style="margin:0 0 14px;font-size:16px">Bonjour ' + prenom + ',</p>'
-    + '<p style="margin:0 0 18px">Ça y est : <strong>' + qui + '</strong> vient de poster '
-    + 'ton colis. Il est en route vers toi.</p>'
-    + bloqueInfo("Commande", [
+    '<p style="margin:0 0 14px;font-size:16px">' + t("c_bonjour", lg, { prenom: prenom }) + '</p>'
+    + '<p style="margin:0 0 18px">' + t("e_poste", lg, { marque: qui }) + '</p>'
+    + bloqueInfo(t("bloc_commande", lg), [
         '<strong>' + esc(order.order_number) + '</strong>',
-        'Expédiée le ' + dateFr(new Date()),
+        t("e_expediee_le", lg, { date: dateFr(new Date(), lg) }),
       ])
     + '<div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;'
-    + 'color:#888;margin:20px 0 4px">Ce qui arrive</div>'
-    + tableauArticles(articles, false)
-    + bloqueInfo("Livraison", [
+    + 'color:#888;margin:20px 0 4px">' + t("e_ce_qui_arrive", lg) + '</div>'
+    + tableauArticles(articles, false, lg)
+    + bloqueInfo(t("bloc_livraison", lg), [
         esc(order.customer_name),
         esc(order.shipping_address),
-        surnom ? 'Cherche <strong>' + surnom + '</strong> écrit à la main sur le colis' : null,
+        surnom ? t("e_cherche", lg, { surnom: surnom }) : null,
       ])
-    + '<p style="margin:20px 0 18px;font-size:14px">Merci de faire vivre les marques '
-    + 'indépendantes. Si ce que tu reçois te plaît, parles-en autour de toi — '
-    + 'pour une petite marque, ça change tout.</p>'
-    + '<p style="margin:0;font-size:13px;color:#666">Un souci à la réception ? '
-    + 'Réponds à cet e-mail, on s\'en occupe.</p>';
+    + '<p style="margin:20px 0 18px;font-size:14px">' + t("e_merci", lg) + '</p>'
+    + '<p style="margin:0;font-size:13px;color:#666">' + t("e_souci", lg) + '</p>';
 
   return envoyer({
     to: order.customer_email,
-    subject: "C\'est parti ! Ta commande " + (order.order_number || "") + " est en route",
-    html: gabarit("Ton colis est parti", corps),
+    subject: t("e_sujet", lg, { numero: order.order_number || "" }),
+    html: gabarit(t("e_titre", lg), corps, null, lg),
   });
 }
 
