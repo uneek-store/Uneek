@@ -514,14 +514,24 @@
   /* ---------- le selecteur de langue ---------- */
   function selecteur(styleTexte) {
     var boite = document.createElement('div');
-    boite.className = 'uneek-lang';
+    boite.className = 'uneek-lang notranslate';
     boite.setAttribute('data-sans-traduction', '');
-    boite.style.cssText = styleTexte;
+    /* FR, EN, NL, DE, ES sont aussi des mots francais : sans ceci, la
+       traduction automatique du navigateur transforme EN en "AND" et
+       DE en "THE". */
+    boite.setAttribute('translate', 'no');
+    boite.style.cssText = 'display:flex;align-items:center;' + styleTexte;
+
+    /* le menu impose display:flex et width:100% a tous ses liens :
+       il faut le defaire ici, sinon les cinq langues s'empilent. */
+    var COMMUN = 'display:inline-block;width:auto;flex:0 0 auto;padding:0;margin:0;'
+      + 'background:none;border:none;font:inherit;line-height:1;';
+
     LANGUES.forEach(function (l, i) {
       if (i) {
         var sep = document.createElement('span');
         sep.textContent = '\u00b7';
-        sep.style.cssText = 'opacity:.45;margin:0 5px';
+        sep.style.cssText = COMMUN + 'opacity:.45;margin:0 5px';
         boite.appendChild(sep);
       }
       var a = document.createElement('a');
@@ -529,9 +539,10 @@
       a.textContent = l.toUpperCase();
       a.title = NOMS[l];
       a.setAttribute('lang', l);
-      a.style.cssText = (l === LANG)
+      a.setAttribute('translate', 'no');
+      a.style.cssText = COMMUN + ((l === LANG)
         ? 'color:inherit;opacity:1;font-weight:600;text-decoration:none;cursor:default'
-        : 'color:inherit;opacity:.55;text-decoration:underline;cursor:pointer';
+        : 'color:inherit;opacity:.55;text-decoration:underline;cursor:pointer');
       if (l !== LANG) {
         a.onclick = function (e) { e.preventDefault(); changerLangue(l); return false; };
       } else {
@@ -551,7 +562,7 @@
     try {
       var css = document.createElement('style');
       css.textContent =
-        '.sidebar .uneek-lang{position:absolute;left:0;bottom:16px}'
+        '.sidebar .uneek-lang{position:absolute;left:0;right:0;bottom:18px}'
         + '@media(max-width:768px){.sidebar .uneek-lang{position:static;bottom:auto}}';
       var ou = document.head || document.documentElement;
       if (ou && ou.appendChild) ou.appendChild(css);
@@ -560,8 +571,8 @@
     var menu = document.querySelector('.sidebar');
     if (menu) {
       menu.appendChild(selecteur(
-        'padding:10px 20px;font-size:11px;letter-spacing:.5px;color:#A3A3A3;'
-        + 'font-family:inherit;white-space:nowrap'));
+        'justify-content:flex-start;padding:10px 20px 0;font-size:11px;'
+        + 'letter-spacing:.5px;color:#A3A3A3;font-family:inherit;white-space:nowrap'));
     }
 
     var connexion = document.getElementById('loginScreen');
@@ -569,7 +580,8 @@
       var pied = document.createElement('div');
       pied.setAttribute('data-sans-traduction', '');
       pied.style.cssText = 'position:fixed;bottom:18px;left:0;right:0;text-align:center;z-index:5';
-      pied.appendChild(selecteur('font-size:11px;letter-spacing:.5px;color:#A3A3A3;font-family:inherit'));
+      pied.appendChild(selecteur('justify-content:center;font-size:11px;letter-spacing:.5px;'
+        + 'color:#A3A3A3;font-family:inherit'));
       connexion.appendChild(pied);
     }
   }
