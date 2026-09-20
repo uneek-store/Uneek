@@ -564,7 +564,11 @@
     "Le module de paiement n'a pas pu se charger. V\u00e9rifie ta connexion et recharge la page.": { en: "The payment module couldn't load. Check your connection and reload the page.", nl: "De betaalmodule kon niet laden. Controleer je verbinding en herlaad de pagina.", de: "Das Zahlungsmodul konnte nicht geladen werden. Pr\u00fcfe deine Verbindung und lade die Seite neu.", es: "No se ha podido cargar el m\u00f3dulo de pago. Comprueba tu conexi\u00f3n y recarga la p\u00e1gina." },
     "Le formulaire de paiement n'est pas pr\u00eat. Recharge la page et r\u00e9essaie.": { en: "The payment form isn't ready. Reload the page and try again.", nl: "Het betaalformulier is niet klaar. Herlaad de pagina en probeer opnieuw.", de: "Das Zahlungsformular ist nicht bereit. Lade die Seite neu und versuch es nochmal.", es: "El formulario de pago no est\u00e1 listo. Recarga la p\u00e1gina e int\u00e9ntalo de nuevo." },
     "Le paiement n'a pas abouti.": { en: "The payment didn't go through.", nl: "De betaling is niet gelukt.", de: "Die Zahlung ist nicht durchgegangen.", es: "El pago no se ha completado." },
-    "Le paiement n'a pas abouti. Tu peux r\u00e9essayer.": { en: "The payment didn't go through. You can try again.", nl: "De betaling is niet gelukt. Je kunt het opnieuw proberen.", de: "Die Zahlung ist nicht durchgegangen. Du kannst es erneut versuchen.", es: "El pago no se ha completado. Puedes volver a intentarlo." }
+    "Le paiement n'a pas abouti. Tu peux r\u00e9essayer.": { en: "The payment didn't go through. You can try again.", nl: "De betaling is niet gelukt. Je kunt het opnieuw proberen.", de: "Die Zahlung ist nicht durchgegangen. Du kannst es erneut versuchen.", es: "El pago no se ha completado. Puedes volver a intentarlo." },
+    "Ce site utilise des cookies pour am\u00e9liorer ton exp\u00e9rience.": { en: "This site uses cookies to improve your experience.", nl: "Deze site gebruikt cookies om je ervaring te verbeteren.", de: "Diese Seite verwendet Cookies, um dein Erlebnis zu verbessern.", es: "Este sitio usa cookies para mejorar tu experiencia." },
+    "En savoir plus": { en: "Learn more", nl: "Meer weten", de: "Mehr erfahren", es: "Saber m\u00e1s" },
+    "Refuser": { en: "Decline", nl: "Weigeren", de: "Ablehnen", es: "Rechazar" },
+    "Accepter": { en: "Accept", nl: "Accepteren", de: "Akzeptieren", es: "Aceptar" }
   };
 
   /* ---------- 2. phrases avec un chiffre ou un nom au milieu ---------- */
