@@ -406,7 +406,10 @@
     [/^([\d\s.,]+) personnes l'ont mise en favori, ([\d\s.,]+) l'ont achet\u00e9e\.$/, "$1 people favorited it, $2 bought it."],
     [/^La (.+) part (.+)\u00d7 plus que la (.+)\.$/, "$1 sells $2\u00d7 more than $3."],
     [/^([\d\s.,]+) pi\u00e8ces? command\u00e9es? sur la p\u00e9riode\.$/, "$1 items ordered over the period."],
-    [/^Maximum (\d+) photos \u2014 (\d+) ignor\u00e9e$/, "Maximum $1 photos \u2014 $2 ignored"]
+    [/^Maximum (\d+) photos \u2014 (\d+) ignor\u00e9e$/, "Maximum $1 photos \u2014 $2 ignored"],
+    [/^Bonjour, (.+)$/, "Hello, $1"],
+    [/^Tableau de bord (.+)$/, "$1 dashboard"],
+    [/^(\d{2}\/\d{2}) \u00e0 (\d{2})h(\d{2})$/, "$1 at $2:$3"]
   ];
 
   /* ---------- 3. blocs ou l'ordre des mots traverse des balises ---------- */
@@ -468,7 +471,10 @@
     if (n.nodeType !== 1) return;
 
     var tag = n.nodeName;
-    if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA') return;
+    if (tag === 'SCRIPT' || tag === 'STYLE') return;
+    /* un <textarea> contient le texte ecrit par le createur : on n'y touche
+       pas, mais son placeholder, lui, est bien a nous. */
+    var seulementAttributs = (tag === 'TEXTAREA');
     if (n.getAttribute && n.getAttribute('data-sans-traduction') !== null) return;
 
     /* bloc entier (ordre des mots different en anglais) */
@@ -486,6 +492,8 @@
         }
       }
     }
+
+    if (seulementAttributs) return;
 
     var enfant = n.firstChild;
     while (enfant) { var suivant = enfant.nextSibling; parcourir(enfant); enfant = suivant; }
@@ -510,6 +518,18 @@
 
   function poserBoutons() {
     if (document.querySelector('.uneek-lang')) return;
+
+    /* le lien se pose au bas du menu, pas a la suite des onglets.
+       Sur telephone le menu devient une barre horizontale : il reprend
+       alors sa place dans le flux. */
+    try {
+      var css = document.createElement('style');
+      css.textContent =
+        '.sidebar .uneek-lang{position:absolute;left:0;bottom:18px}'
+        + '@media(max-width:768px){.sidebar .uneek-lang{position:static;bottom:auto}}';
+      var ou = document.head || document.documentElement;
+      if (ou && ou.appendChild) ou.appendChild(css);
+    } catch (e) { /* le lien restera simplement a la suite des onglets */ }
 
     var menu = document.querySelector('.sidebar');
     if (menu) {
