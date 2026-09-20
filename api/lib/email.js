@@ -20,6 +20,8 @@ const SITE = process.env.SITE_URL || "https://uneek.store";
 
 // Toute donnee venant d'un client ou d'un createur passe par la.
 // Un nom contenant < ou & casserait le HTML de l'e-mail sans ca.
+import { choisirLangue, locale, t } from "./email-langues.js";
+
 export function esc(v) {
   return String(v == null ? "" : v)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -35,18 +37,19 @@ export function prix(n) {
 // ATTENTION : les serveurs Vercel tournent en UTC. Sans forcer le fuseau,
 // une commande passee a 20h42 a Bruxelles s'afficherait "18h42" dans l'e-mail.
 // On formate donc explicitement en heure belge (gere aussi l'heure d'ete).
-export function dateFr(d) {
+export function dateFr(d, lang) {
   try {
     const dt = d ? new Date(d) : new Date();
     if (isNaN(dt.getTime())) return "";
-    const parts = new Intl.DateTimeFormat("fr-BE", {
+    const lg = lang || "fr";
+    const parts = new Intl.DateTimeFormat(locale(lg), {
       timeZone: "Europe/Brussels",
       day: "2-digit", month: "2-digit", year: "numeric",
       hour: "2-digit", minute: "2-digit", hour12: false,
     }).formatToParts(dt).reduce((o, p) => (o[p.type] = p.value, o), {});
     if (!parts.day) return "";
     return parts.day + "/" + parts.month + "/" + parts.year
-      + " à " + parts.hour + "h" + parts.minute;
+      + t("date_a", lg) + parts.hour + t("date_h", lg) + parts.minute;
   } catch {
     // Si Intl ou le fuseau manquent, on ne bloque pas l'e-mail pour autant.
     return "";
@@ -54,20 +57,21 @@ export function dateFr(d) {
 }
 
 // Decrit une ligne de commande : "T-shirt — Rose, M × 2"
-export function ligneArticle(item) {
+export function ligneArticle(item, lang) {
   const bouts = [];
   if (item.color) bouts.push(esc(item.color));
   if (item.size) bouts.push(esc(item.size));
   const detail = bouts.length ? " — " + bouts.join(", ") : "";
   const qte = parseInt(item.quantity) || 1;
-  return esc(item.product_name || item.name || "Article") + detail
+  return esc(item.product_name || item.name || t("article", lang || "fr")) + detail
     + (qte > 1 ? " × " + qte : "");
 }
 
 // --- gabarit commun -------------------------------------------------------
 
-export function gabarit(titre, corpsHtml, piedHtml) {
-  return '<!doctype html><html lang="fr"><body style="margin:0;padding:0;background:#f4f4f4">'
+export function gabarit(titre, corpsHtml, piedHtml, lang) {
+  const lg = lang || "fr";
+  return '<!doctype html><html lang="' + lg + '"><body style="margin:0;padding:0;background:#f4f4f4">'
     + '<div style="max-width:560px;margin:0 auto;padding:32px 20px;'
     + 'font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;'
     + 'color:#111;line-height:1.55">'
@@ -80,20 +84,20 @@ export function gabarit(titre, corpsHtml, piedHtml) {
     + '</div>'
     + '<div style="text-align:center;color:#999;font-size:12px;padding:20px 8px 0">'
     + (piedHtml || '')
-    + '<p style="margin:10px 0 0">UNEEK — la mode indépendante, en Belgique<br>'
+    + '<p style="margin:10px 0 0">' + t("pied", lg) + '<br>'
     + '<a href="' + SITE + '" style="color:#999">uneek.store</a></p>'
     + '</div></div></body></html>';
 }
 
 // Un tableau d'articles reutilise par l'e-mail client et l'e-mail createur.
-export function tableauArticles(items, avecPrix) {
+export function tableauArticles(items, avecPrix, lang) {
   let html = '<table style="width:100%;border-collapse:collapse;margin:8px 0 16px">';
   for (const item of items || []) {
     const qte = parseInt(item.quantity) || 1;
     const total = (parseFloat(item.product_price) || 0) * qte;
     html += '<tr>'
       + '<td style="padding:10px 0;border-bottom:1px solid #eee;font-size:14px">'
-      + ligneArticle(item)
+      + ligneArticle(item, lang)
       + (item.brand_name
           ? '<div style="font-size:11px;color:#999;margin-top:4px;'
             + 'text-transform:uppercase;letter-spacing:1.5px">'
@@ -238,55 +242,51 @@ export async function envoyerTous(taches) {
 
 // 1. Le client vient de commander.
 export async function confirmationCommande(order, items) {
+  const lg = choisirLangue(order);
   const marques = [...new Set((items || []).map((i) => i.brand_name).filter(Boolean))];
   const plusieurs = marques.length > 1;
   const prenom = esc((order.customer_name || "").split(" ")[0]);
   const surnom = order.customer_nickname ? esc(order.customer_nickname) : "";
 
   const corps =
-    '<p style="margin:0 0 14px;font-size:16px">Bonjour ' + prenom + ',</p>'
-    + '<p style="margin:0 0 10px">Merci, et bienvenue chez UNEEK.</p>'
+    '<p style="margin:0 0 14px;font-size:16px">' + t("c_bonjour", lg, { prenom: prenom }) + '</p>'
+    + '<p style="margin:0 0 10px">' + t("c_merci", lg) + '</p>'
     + '<p style="margin:0 0 16px;font-size:17px;font-weight:600">'
-    + 'Ta commande est bien confirmée.</p>'
-    + '<p style="margin:0 0 18px">En commandant ici, tu fais vivre '
-    + (plusieurs ? 'des marques indépendantes' : 'une marque indépendante')
-    + '. Ça compte plus que tu ne crois.</p>'
-    + bloqueInfo("Commande", [
+    + t("c_confirmee", lg) + '</p>'
+    + '<p style="margin:0 0 18px">'
+    + t(plusieurs ? "c_soutien_plusieurs" : "c_soutien_une", lg) + '</p>'
+    + bloqueInfo(t("bloc_commande", lg), [
         '<strong>' + esc(order.order_number) + '</strong>',
-        'Passée le ' + dateFr(order.created_at),
+        t("c_passee_le", lg, { date: dateFr(order.created_at, lg) }),
       ])
     + '<div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;'
-    + 'color:#888;margin:20px 0 4px">Ce que tu as choisi</div>'
-    + tableauArticles(items, true)
+    + 'color:#888;margin:20px 0 4px">' + t("c_choisi", lg) + '</div>'
+    + tableauArticles(items, true, lg)
     + '<table style="width:100%;border-collapse:collapse">'
-    + '<tr><td style="font-size:15px;font-weight:600;padding-top:4px">Total</td>'
+    + '<tr><td style="font-size:15px;font-weight:600;padding-top:4px">' + t("total", lg) + '</td>'
     + '<td style="font-size:15px;font-weight:600;padding-top:4px;text-align:right">'
     + prix(order.total_amount) + '</td></tr></table>'
-    + bloqueInfo("Livraison", [
+    + bloqueInfo(t("bloc_livraison", lg), [
         esc(order.customer_name),
         esc(order.shipping_address),
-        surnom ? 'Ton colis sera marqué <strong>' + surnom + '</strong>, écrit à la main' : null,
+        surnom ? t("c_colis_marque", lg, { surnom: surnom }) : null,
       ])
     + '<div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;'
-    + 'color:#888;margin:22px 0 6px">La suite</div>'
+    + 'color:#888;margin:22px 0 6px">' + t("c_la_suite", lg) + '</div>'
     + '<ul style="margin:0 0 20px;padding-left:18px;font-size:14px;color:#333;line-height:1.7">'
-    + '<li>' + (plusieurs ? 'Les marques préparent' : 'La marque prépare')
-    + ' ta commande dans les prochains jours</li>'
-    + '<li>Tu reçois un e-mail au moment exact où ' + (plusieurs ? 'chaque colis part' : 'le colis part') + '</li>'
-    + (plusieurs
-        ? '<li>Chaque créateur expédie lui-même : tu recevras donc plusieurs colis, pas forcément le même jour</li>'
-        : '')
+    + '<li>' + t(plusieurs ? "c_prepare_plusieurs" : "c_prepare_une", lg) + '</li>'
+    + '<li>' + t(plusieurs ? "c_depart_plusieurs" : "c_depart_une", lg) + '</li>'
+    + (plusieurs ? '<li>' + t("c_plusieurs_colis", lg) + '</li>' : '')
     + '</ul>'
-    + '<p style="margin:0 0 18px;font-size:14px">Une question, un doute, une envie ? '
-    + 'Réponds simplement à cet e-mail.</p>'
+    + '<p style="margin:0 0 18px;font-size:14px">' + t("c_question", lg) + '</p>'
     + '<p style="margin:0"><a href="' + SITE + '/shop" '
     + 'style="display:inline-block;background:#000;color:#fff;text-decoration:none;'
-    + 'padding:12px 22px;border-radius:6px;font-size:14px">Découvrir les autres marques</a></p>';
+    + 'padding:12px 22px;border-radius:6px;font-size:14px">' + t("c_bouton", lg) + '</a></p>';
 
   return envoyer({
     to: order.customer_email,
-    subject: "Merci pour ta commande — " + (order.order_number || ""),
-    html: gabarit("Confirmation de commande", corps),
+    subject: t("c_sujet", lg, { numero: order.order_number || "" }),
+    html: gabarit(t("c_titre", lg), corps, null, lg),
   });
 }
 

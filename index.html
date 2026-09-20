@@ -1557,7 +1557,8 @@ function validerCommande() {
         email: e,
         name: `${p} ${n}`,
         nickname: nickname.trim(),
-        address: `${a}, ${c} ${v}, ${pays}`
+        address: `${a}, ${c} ${v}, ${pays}`,
+        lang: window.UNEEK_LANG || 'fr'
       },
       items: cart.map(item => ({
         product_id: item.id,

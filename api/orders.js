@@ -530,7 +530,13 @@ export default async function handler(req, res) {
       // Placees APRES la commande et le decrement de stock, et enfermees dans
       // un try : si Resend est indisponible, la commande reste valide.
       try {
-        const pourEmail = { ...order, customer_phone: customer.phone || null };
+        // La langue lue par le client au moment de la commande, envoyee par
+        // le site. Elle sert a ecrire l'e-mail, elle n'est pas enregistree.
+        const pourEmail = {
+          ...order,
+          customer_phone: customer.phone || null,
+          lang: customer.lang || null,
+        };
         const brandIds = [...new Set(orderItems.map((i) => i.brand_id).filter(Boolean))];
 
         const { data: comptes } = await supabaseAdmin
