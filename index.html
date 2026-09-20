@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>UNEEK — Marques de mode indépendantes belges</title>
+<script src="/i18n.js" defer></script>
 <!-- Ces valeurs sont celles que voient les robots qui n'executent pas de
      JavaScript : ceux de ChatGPT et de Perplexity, et les apercus de partage
      de Facebook, WhatsApp ou iMessage. Le JavaScript les remplace ensuite par
@@ -149,6 +150,7 @@ a{text-decoration:none;}
 .footer-col-title{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px;color:rgba(255,255,255,0.5);}
 .footer-link{display:block;font-size:14px;color:rgba(255,255,255,0.35);margin-bottom:10px;cursor:pointer;transition:color 0.2s;font-weight:300;}
 .footer-link:hover{color:var(--white);}
+.uneek-legal-avis{display:none;font-size:13px;line-height:1.7;color:var(--gray-500);font-weight:300;border-left:2px solid var(--gray-200);padding-left:14px;margin-bottom:8px;}
 .footer-bottom{display:flex;justify-content:space-between;padding-top:24px;border-top:1px solid rgba(255,255,255,0.06);font-size:12px;color:rgba(255,255,255,0.25);font-weight:300;}
 /* SHOP FILTERS */
 .filter-chip{padding:8px 20px;font-size:12px;font-weight:500;letter-spacing:0.5px;text-transform:uppercase;border:1px solid var(--gray-200);background:transparent;cursor:pointer;transition:all 0.3s;font-family:var(--font-body);color:var(--gray-500);border-radius:50px;}
@@ -2044,6 +2046,7 @@ function legalPage(type) {
   return `<div>
     <section class="section" style="padding-top:112px;max-width:720px;margin:0 auto">
       <h1 style="font-family:var(--font-display);font-size:clamp(28px,4vw,40px);font-weight:700;letter-spacing:-1px;margin-bottom:32px">${pg.title}</h1>
+      <p class="uneek-legal-avis">Les pages légales de UNEEK sont disponibles en français uniquement.</p>
       ${pg.items.map(([h, p]) => `<div><h2 style="font-family:var(--font-display);font-size:18px;font-weight:700;margin-top:36px;margin-bottom:12px">${h}</h2><p style="font-size:14px;line-height:1.8;color:var(--gray-600);font-weight:300;white-space:pre-line">${p}</p></div>`).join('')}
     </section>
     ${footerHTML()}

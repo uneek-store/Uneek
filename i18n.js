@@ -77,7 +77,6 @@
       var t = trad(document.title);
       if (t !== null) document.title = t;
       parcourir(document.body);
-      installerObservateur();
     }
     majSelecteur();
   }
@@ -381,7 +380,191 @@
     "\u203a Aucune photo": { en: "\u203a No photo", nl: "\u203a Geen foto", de: "\u203a Kein Foto", es: "\u203a Sin foto" },
     "ce produit": { en: "this product", nl: "dit product", de: "dieses Produkt", es: "este producto" },
     "Cette image n'a pas pu \u00eatre lue. Essaie un JPEG ou un PNG.": { en: "This image couldn't be read. Try a JPEG or a PNG.", nl: "Deze afbeelding kon niet gelezen worden. Probeer een JPEG of een PNG.", de: "Dieses Bild konnte nicht gelesen werden. Versuch ein JPEG oder ein PNG.", es: "No se pudo leer esta imagen. Prueba con un JPEG o un PNG." },
-    "Photos trop lourdes": { en: "Photos too heavy", nl: "Foto's te zwaar", de: "Fotos zu gro\u00df", es: "Fotos demasiado pesadas" }
+    "Photos trop lourdes": { en: "Photos too heavy", nl: "Foto's te zwaar", de: "Fotos zu gro\u00df", es: "Fotos demasiado pesadas" },
+    "Home": { en: "Home", nl: "Home", de: "Start", es: "Inicio" },
+    "Shop": { en: "Shop", nl: "Shop", de: "Shop", es: "Tienda" },
+    "Marques": { en: "Brands", nl: "Merken", de: "Marken", es: "Marcas" },
+    "Les Marques": { en: "Brands", nl: "De merken", de: "Die Marken", es: "Las marcas" },
+    "Les marques": { en: "Brands", nl: "De merken", de: "Die Marken", es: "Las marcas" },
+    "Toutes les marques": { en: "All brands", nl: "Alle merken", de: "Alle Marken", es: "Todas las marcas" },
+    "Manifesto": { en: "Manifesto", nl: "Manifesto", de: "Manifest", es: "Manifiesto" },
+    "Panier": { en: "Cart", nl: "Winkelmandje", de: "Warenkorb", es: "Carrito" },
+    "Mon Profil": { en: "My profile", nl: "Mijn profiel", de: "Mein Profil", es: "Mi perfil" },
+    "Mon profil": { en: "My profile", nl: "Mijn profiel", de: "Mein Profil", es: "Mi perfil" },
+    "Devenir Partenaire": { en: "Become a partner", nl: "Partner worden", de: "Partner werden", es: "Hazte socio" },
+    "Menu": { en: "Menu", nl: "Menu", de: "Men\u00fc", es: "Men\u00fa" },
+    "Total": { en: "Total", nl: "Totaal", de: "Gesamt", es: "Total" },
+    "Sous-total": { en: "Subtotal", nl: "Subtotaal", de: "Zwischensumme", es: "Subtotal" },
+    "Livraison": { en: "Shipping", nl: "Verzending", de: "Versand", es: "Env\u00edo" },
+    "Gratuite": { en: "Free", nl: "Gratis", de: "Kostenlos", es: "Gratis" },
+    "Ton panier est vide.": { en: "Your cart is empty.", nl: "Je winkelmandje is leeg.", de: "Dein Warenkorb ist leer.", es: "Tu carrito est\u00e1 vac\u00edo." },
+    "Explore le shop pour trouver ta pi\u00e8ce.": { en: "Explore the shop to find your piece.", nl: "Ontdek de shop en vind jouw stuk.", de: "St\u00f6bere im Shop und finde dein St\u00fcck.", es: "Explora la tienda y encuentra tu pieza." },
+    "Explore le shop.": { en: "Explore the shop.", nl: "Ontdek de shop.", de: "St\u00f6bere im Shop.", es: "Explora la tienda." },
+    "Aucun favori pour l'instant.": { en: "No favorites yet.", nl: "Nog geen favorieten.", de: "Noch keine Favoriten.", es: "A\u00fan no tienes favoritos." },
+    "Like les pi\u00e8ces qui te parlent.": { en: "Like the pieces that speak to you.", nl: "Like de stukken die je aanspreken.", de: "Like die St\u00fccke, die dich ansprechen.", es: "Dale me gusta a las piezas que te hablan." },
+    "Panier vide": { en: "Cart empty", nl: "Winkelmandje leeg", de: "Warenkorb leer", es: "Carrito vac\u00edo" },
+    "Voir tout": { en: "See all", nl: "Alles bekijken", de: "Alle ansehen", es: "Ver todo" },
+    "Tout voir": { en: "See all", nl: "Alles bekijken", de: "Alle ansehen", es: "Ver todo" },
+    "UNEEK \u2014 Marques de mode ind\u00e9pendantes belges": { en: "UNEEK \u2014 Belgian independent fashion brands", nl: "UNEEK \u2014 Belgische onafhankelijke modemerken", de: "UNEEK \u2014 Belgische unabh\u00e4ngige Modemarken", es: "UNEEK \u2014 Marcas de moda independientes belgas" },
+    "UNEEK regroupe les marques ind\u00e9pendantes les plus cr\u00e9atives. Des pi\u00e8ces uniques, s\u00e9lectionn\u00e9es pour ceux qui refusent l'ordinaire.": { en: "UNEEK brings together the most creative independent brands. Unique pieces, picked for those who refuse the ordinary.", nl: "UNEEK brengt de meest creatieve onafhankelijke merken samen. Unieke stukken, gekozen voor wie het gewone weigert.", de: "UNEEK versammelt die kreativsten unabh\u00e4ngigen Marken. Einzigartige St\u00fccke, f\u00fcr alle, die das Gew\u00f6hnliche ablehnen.", es: "UNEEK re\u00fane las marcas independientes m\u00e1s creativas. Piezas \u00fanicas, elegidas para quienes rechazan lo ordinario." },
+    "Explorer le Shop": { en: "Explore the shop", nl: "Ontdek de shop", de: "Shop entdecken", es: "Explorar la tienda" },
+    "Explorer le Shop \u2192": { en: "Explore the shop \u2192", nl: "Ontdek de shop \u2192", de: "Shop entdecken \u2192", es: "Explorar la tienda \u2192" },
+    "S\u00e9lection du moment": { en: "Picked right now", nl: "Selectie van het moment", de: "Aktuelle Auswahl", es: "Selecci\u00f3n del momento" },
+    "Les pi\u00e8ces qui font parler": { en: "The pieces people talk about", nl: "De stukken waar iedereen over praat", de: "Die St\u00fccke, \u00fcber die gesprochen wird", es: "Las piezas de las que se habla" },
+    "Cr\u00e9ateurs ind\u00e9pendants, s\u00e9lectionn\u00e9s avec soin": { en: "Independent designers, carefully selected", nl: "Onafhankelijke ontwerpers, zorgvuldig gekozen", de: "Unabh\u00e4ngige Designer, sorgf\u00e4ltig ausgew\u00e4hlt", es: "Creadores independientes, seleccionados con cuidado" },
+    "On ne vend pas des v\u00eatements. On donne une voix aux cr\u00e9ateurs qui osent, et un style \u00e0 ceux qui refusent de se fondre dans la masse.": { en: "We don't sell clothes. We give a voice to designers who dare, and a style to those who refuse to blend in.", nl: "We verkopen geen kleren. We geven een stem aan ontwerpers die durven, en een stijl aan wie niet wil opgaan in de massa.", de: "Wir verkaufen keine Kleidung. Wir geben Designern eine Stimme, die etwas wagen, und einen Stil allen, die nicht in der Masse verschwinden wollen.", es: "No vendemos ropa. Damos voz a los creadores que se atreven, y estilo a quienes se niegan a pasar desapercibidos." },
+    "Lire le Manifesto": { en: "Read the manifesto", nl: "Lees het manifesto", de: "Manifest lesen", es: "Leer el manifiesto" },
+    "Nouveaut\u00e9s": { en: "New in", nl: "Nieuw", de: "Neu", es: "Novedades" },
+    "Les derni\u00e8res pi\u00e8ces ajout\u00e9es": { en: "The latest pieces added", nl: "De laatst toegevoegde stukken", de: "Die zuletzt hinzugef\u00fcgten St\u00fccke", es: "Las \u00faltimas piezas a\u00f1adidas" },
+    "Chaque marque est s\u00e9lectionn\u00e9e \u00e0 la main. Pas de mass market, pas de compromis.": { en: "Every brand is picked by hand. No mass market, no compromise.", nl: "Elk merk wordt met de hand gekozen. Geen massaproductie, geen compromissen.", de: "Jede Marke wird von Hand ausgew\u00e4hlt. Kein Massenmarkt, keine Kompromisse.", es: "Cada marca se elige a mano. Nada de mass market, sin concesiones." },
+    "Les pi\u00e8ces": { en: "The pieces", nl: "De stukken", de: "Die St\u00fccke", es: "Las piezas" },
+    "Aucun produit pour le moment.": { en: "No products yet.", nl: "Nog geen producten.", de: "Noch keine Produkte.", es: "A\u00fan no hay productos." },
+    "Pr\u00eat \u00e0 d\u00e9couvrir ?": { en: "Ready to explore?", nl: "Klaar om te ontdekken?", de: "Bereit zu entdecken?", es: "\u00bfListo para descubrir?" },
+    "Voir les Marques": { en: "See the brands", nl: "Bekijk de merken", de: "Marken ansehen", es: "Ver las marcas" },
+    "Voir les Marques \u2192": { en: "See the brands \u2192", nl: "Bekijk de merken \u2192", de: "Marken ansehen \u2192", es: "Ver las marcas \u2192" },
+    "Tous": { en: "All", nl: "Alle", de: "Alle", es: "Todos" },
+    "Rechercher...": { en: "Search...", nl: "Zoeken...", de: "Suchen...", es: "Buscar..." },
+    "S\u00e9lectionne une taille": { en: "Select a size", nl: "Kies een maat", de: "W\u00e4hle eine Gr\u00f6\u00dfe", es: "Elige una talla" },
+    "Ajouter au panier": { en: "Add to cart", nl: "Aan winkelmandje toevoegen", de: "In den Warenkorb", es: "A\u00f1adir al carrito" },
+    "Ajout\u00e9 au panier": { en: "Added to cart", nl: "Toegevoegd aan winkelmandje", de: "In den Warenkorb gelegt", es: "A\u00f1adido al carrito" },
+    "Retir\u00e9 du panier": { en: "Removed from cart", nl: "Uit winkelmandje gehaald", de: "Aus dem Warenkorb entfernt", es: "Quitado del carrito" },
+    "Ajout\u00e9 aux favoris": { en: "Added to favorites", nl: "Toegevoegd aan favorieten", de: "Zu Favoriten hinzugef\u00fcgt", es: "A\u00f1adido a favoritos" },
+    "Retir\u00e9 des favoris": { en: "Removed from favorites", nl: "Uit favorieten gehaald", de: "Aus Favoriten entfernt", es: "Quitado de favoritos" },
+    "Cette taille est \u00e9puis\u00e9e": { en: "That size is sold out", nl: "Die maat is uitverkocht", de: "Diese Gr\u00f6\u00dfe ist ausverkauft", es: "Esa talla est\u00e1 agotada" },
+    "Aucune taille disponible dans cette couleur": { en: "No size available in this color", nl: "Geen maat beschikbaar in deze kleur", de: "Keine Gr\u00f6\u00dfe in dieser Farbe verf\u00fcgbar", es: "Ninguna talla disponible en este color" },
+    "D\u00e9tails": { en: "Details", nl: "Details", de: "Details", es: "Detalles" },
+    "Composition": { en: "Composition", nl: "Samenstelling", de: "Zusammensetzung", es: "Composici\u00f3n" },
+    "Coupe": { en: "Fit", nl: "Pasvorm", de: "Schnitt", es: "Corte" },
+    "Entretien": { en: "Care", nl: "Onderhoud", de: "Pflege", es: "Cuidado" },
+    "Photo pr\u00e9c\u00e9dente": { en: "Previous photo", nl: "Vorige foto", de: "Vorheriges Foto", es: "Foto anterior" },
+    "Photo suivante": { en: "Next photo", nl: "Volgende foto", de: "N\u00e4chstes Foto", es: "Foto siguiente" },
+    "Favori": { en: "Favorite", nl: "Favoriet", de: "Favorit", es: "Favorito" },
+    "UNEEK r\u00e9unit des marques de mode ind\u00e9pendantes belges.": { en: "UNEEK brings together Belgian independent fashion brands.", nl: "UNEEK brengt Belgische onafhankelijke modemerken samen.", de: "UNEEK versammelt belgische unabh\u00e4ngige Modemarken.", es: "UNEEK re\u00fane marcas de moda independientes belgas." },
+    "Des pi\u00e8ces en petite s\u00e9rie, chaque commande soutient directement un cr\u00e9ateur.": { en: "Small-batch pieces \u2014 every order directly supports a designer.", nl: "Stukken in kleine oplage, elke bestelling steunt rechtstreeks een ontwerper.", de: "St\u00fccke in Kleinserie \u2014 jede Bestellung unterst\u00fctzt direkt einen Designer.", es: "Piezas en serie corta: cada pedido apoya directamente a un creador." },
+    "Pi\u00e8ce en petite s\u00e9rie disponible sur UNEEK.": { en: "Small-batch piece available on UNEEK.", nl: "Stuk in kleine oplage, beschikbaar op UNEEK.", de: "Kleinserien-St\u00fcck, erh\u00e4ltlich auf UNEEK.", es: "Pieza en serie corta disponible en UNEEK." },
+    "Toutes les pi\u00e8ces des marques ind\u00e9pendantes belges r\u00e9unies sur UNEEK.": { en: "Every piece from Belgian independent brands, gathered on UNEEK.", nl: "Alle stukken van Belgische onafhankelijke merken, samen op UNEEK.", de: "Alle St\u00fccke belgischer unabh\u00e4ngiger Marken, versammelt auf UNEEK.", es: "Todas las piezas de las marcas independientes belgas, reunidas en UNEEK." },
+    "Les marques ind\u00e9pendantes belges pr\u00e9sentes sur UNEEK : leur histoire, leurs pi\u00e8ces.": { en: "The Belgian independent brands on UNEEK: their story, their pieces.", nl: "De Belgische onafhankelijke merken op UNEEK: hun verhaal, hun stukken.", de: "Die belgischen unabh\u00e4ngigen Marken auf UNEEK: ihre Geschichte, ihre St\u00fccke.", es: "Las marcas independientes belgas en UNEEK: su historia, sus piezas." },
+    "Pourquoi UNEEK existe : soutenir les cr\u00e9ateurs ind\u00e9pendants, pi\u00e8ce par pi\u00e8ce.": { en: "Why UNEEK exists: supporting independent designers, piece by piece.", nl: "Waarom UNEEK bestaat: onafhankelijke ontwerpers steunen, stuk voor stuk.", de: "Warum es UNEEK gibt: unabh\u00e4ngige Designer unterst\u00fctzen, St\u00fcck f\u00fcr St\u00fcck.", es: "Por qu\u00e9 existe UNEEK: apoyar a los creadores independientes, pieza a pieza." },
+    "Tu cr\u00e9es une marque ind\u00e9pendante ? Rejoins UNEEK et vends tes pi\u00e8ces.": { en: "Running an independent brand? Join UNEEK and sell your pieces.", nl: "Heb je een onafhankelijk merk? Sluit je aan bij UNEEK en verkoop je stukken.", de: "Du hast eine unabh\u00e4ngige Marke? Komm zu UNEEK und verkauf deine St\u00fccke.", es: "\u00bfTienes una marca independiente? \u00danete a UNEEK y vende tus piezas." },
+    "\u2014 marque ind\u00e9pendante": { en: "\u2014 independent brand", nl: "\u2014 onafhankelijk merk", de: "\u2014 unabh\u00e4ngige Marke", es: "\u2014 marca independiente" },
+    "Checkout": { en: "Checkout", nl: "Afrekenen", de: "Kasse", es: "Pago" },
+    "Checkout \u2192": { en: "Checkout \u2192", nl: "Afrekenen \u2192", de: "Zur Kasse \u2192", es: "Pagar \u2192" },
+    "Ajoute des pi\u00e8ces avant de passer commande.": { en: "Add some pieces before placing an order.", nl: "Voeg eerst stukken toe voor je bestelt.", de: "Leg erst ein paar St\u00fccke hinein, bevor du bestellst.", es: "A\u00f1ade piezas antes de hacer el pedido." },
+    "Informations de livraison": { en: "Shipping details", nl: "Verzendgegevens", de: "Lieferdaten", es: "Datos de env\u00edo" },
+    "Pr\u00e9nom": { en: "First name", nl: "Voornaam", de: "Vorname", es: "Nombre" },
+    "Nom": { en: "Last name", nl: "Achternaam", de: "Nachname", es: "Apellidos" },
+    "Ville": { en: "City", nl: "Stad", de: "Stadt", es: "Ciudad" },
+    "Code postal": { en: "Postcode", nl: "Postcode", de: "Postleitzahl", es: "C\u00f3digo postal" },
+    "Pays": { en: "Country", nl: "Land", de: "Land", es: "Pa\u00eds" },
+    "Belgique": { en: "Belgium", nl: "Belgi\u00eb", de: "Belgien", es: "B\u00e9lgica" },
+    "France": { en: "France", nl: "Frankrijk", de: "Frankreich", es: "Francia" },
+    "Pays-Bas": { en: "Netherlands", nl: "Nederland", de: "Niederlande", es: "Pa\u00edses Bajos" },
+    "Luxembourg": { en: "Luxembourg", nl: "Luxemburg", de: "Luxemburg", es: "Luxemburgo" },
+    "Rue de la Mode 42": { en: "42 Fashion Street", nl: "Modestraat 42", de: "Modestra\u00dfe 42", es: "Calle de la Moda 42" },
+    "Bruxelles": { en: "Brussels", nl: "Brussel", de: "Br\u00fcssel", es: "Bruselas" },
+    "Surnom \u2014 \u00e9crit \u00e0 la main sur ton colis *": { en: "Nickname \u2014 handwritten on your parcel *", nl: "Bijnaam \u2014 met de hand op je pakje geschreven *", de: "Spitzname \u2014 handschriftlich auf deinem Paket *", es: "Apodo \u2014 escrito a mano en tu paquete *" },
+    "Ton petit nom": { en: "Your nickname", nl: "Je bijnaam", de: "Dein Spitzname", es: "Tu apodo" },
+    "Ton petit nom (optionnel)": { en: "Your nickname (optional)", nl: "Je bijnaam (optioneel)", de: "Dein Spitzname (optional)", es: "Tu apodo (opcional)" },
+    "Ajoute un surnom \u2014 il sera \u00e9crit sur ton colis": { en: "Add a nickname \u2014 it goes on your parcel", nl: "Voeg een bijnaam toe \u2014 die komt op je pakje", de: "Gib einen Spitznamen an \u2014 er kommt auf dein Paket", es: "A\u00f1ade un apodo: ir\u00e1 escrito en tu paquete" },
+    "Surnom (pour l'emballage)": { en: "Nickname (for the parcel)", nl: "Bijnaam (voor het pakje)", de: "Spitzname (f\u00fcr das Paket)", es: "Apodo (para el paquete)" },
+    "Surnom (affich\u00e9 sur l'emballage)": { en: "Nickname (shown on the parcel)", nl: "Bijnaam (op het pakje)", de: "Spitzname (auf dem Paket)", es: "Apodo (visible en el paquete)" },
+    "Paiement": { en: "Payment", nl: "Betaling", de: "Zahlung", es: "Pago" },
+    "ou payer autrement": { en: "or pay another way", nl: "of betaal op een andere manier", de: "oder anders bezahlen", es: "o paga de otra forma" },
+    "R\u00e9capitulatif": { en: "Summary", nl: "Overzicht", de: "\u00dcbersicht", es: "Resumen" },
+    "Confirmer la commande \u2192": { en: "Confirm order \u2192", nl: "Bestelling bevestigen \u2192", de: "Bestellung best\u00e4tigen \u2192", es: "Confirmar pedido \u2192" },
+    "Paiement en cours\u2026": { en: "Payment in progress\u2026", nl: "Betaling bezig\u2026", de: "Zahlung l\u00e4uft\u2026", es: "Pago en curso\u2026" },
+    "Enregistrement de la commande...": { en: "Saving your order...", nl: "Bestelling opslaan...", de: "Bestellung wird gespeichert...", es: "Guardando el pedido..." },
+    "Commande confirm\u00e9e !": { en: "Order confirmed!", nl: "Bestelling bevestigd!", de: "Bestellung best\u00e4tigt!", es: "\u00a1Pedido confirmado!" },
+    "est en cours de pr\u00e9paration.": { en: "is being prepared.", nl: "wordt klaargemaakt.", de: "wird vorbereitet.", es: "se est\u00e1 preparando." },
+    "Continuer le shopping \u2192": { en: "Keep shopping \u2192", nl: "Verder winkelen \u2192", de: "Weiter einkaufen \u2192", es: "Seguir comprando \u2192" },
+    "Retour au shop \u2192": { en: "Back to the shop \u2192", nl: "Terug naar de shop \u2192", de: "Zur\u00fcck zum Shop \u2192", es: "Volver a la tienda \u2192" },
+    "Ton paiement est pass\u00e9, mais la commande n'a pas pu \u00eatre enregistr\u00e9e": { en: "Your payment went through, but the order could not be saved", nl: "Je betaling is gelukt, maar de bestelling kon niet worden opgeslagen", de: "Deine Zahlung ist durch, aber die Bestellung konnte nicht gespeichert werden", es: "Tu pago se ha realizado, pero el pedido no se ha podido guardar" },
+    "Ne repaie pas.": { en: "Do not pay again.", nl: "Betaal niet opnieuw.", de: "Zahle nicht noch einmal.", es: "No vuelvas a pagar." },
+    "\u00c9cris-nous \u00e0": { en: "Write to us at", nl: "Mail ons op", de: "Schreib uns an", es: "Escr\u00edbenos a" },
+    "avec cette r\u00e9f\u00e9rence, on r\u00e8gle \u00e7a tout de suite :": { en: "with this reference and we'll sort it out right away:", nl: "met deze referentie, we lossen het meteen op:", de: "mit dieser Referenz, wir kl\u00e4ren das sofort:", es: "con esta referencia y lo resolvemos enseguida:" },
+    "V\u00e9rifie les informations de paiement.": { en: "Check your payment details.", nl: "Controleer je betaalgegevens.", de: "Pr\u00fcfe deine Zahlungsdaten.", es: "Revisa los datos de pago." },
+    "Le paiement a \u00e9t\u00e9 refus\u00e9.": { en: "The payment was declined.", nl: "De betaling is geweigerd.", de: "Die Zahlung wurde abgelehnt.", es: "El pago ha sido rechazado." },
+    "Impossible de pr\u00e9parer le paiement. R\u00e9essaie dans un instant.": { en: "Couldn't set up the payment. Try again in a moment.", nl: "Kon de betaling niet voorbereiden. Probeer het zo meteen opnieuw.", de: "Die Zahlung konnte nicht vorbereitet werden. Versuch es gleich nochmal.", es: "No se ha podido preparar el pago. Int\u00e9ntalo de nuevo en un momento." },
+    "Paiement impossible.": { en: "Payment failed.", nl: "Betalen lukt niet.", de: "Zahlung nicht m\u00f6glich.", es: "No se ha podido pagar." },
+    "Erreur r\u00e9seau": { en: "Network error", nl: "Netwerkfout", de: "Netzwerkfehler", es: "Error de red" },
+    "Erreur serveur": { en: "Server error", nl: "Serverfout", de: "Serverfehler", es: "Error del servidor" },
+    "Erreur": { en: "Error", nl: "Fout", de: "Fehler", es: "Error" },
+    "Connexion": { en: "Log in", nl: "Inloggen", de: "Anmelden", es: "Iniciar sesi\u00f3n" },
+    "Se connecter \u2192": { en: "Log in \u2192", nl: "Inloggen \u2192", de: "Anmelden \u2192", es: "Iniciar sesi\u00f3n \u2192" },
+    "Connexion...": { en: "Logging in...", nl: "Inloggen...", de: "Anmelden...", es: "Iniciando sesi\u00f3n..." },
+    "Connect\u00e9 !": { en: "Logged in!", nl: "Ingelogd!", de: "Angemeldet!", es: "\u00a1Sesi\u00f3n iniciada!" },
+    "Inscription": { en: "Sign up", nl: "Registreren", de: "Registrieren", es: "Registro" },
+    "Cr\u00e9er un compte": { en: "Create an account", nl: "Account aanmaken", de: "Konto erstellen", es: "Crear una cuenta" },
+    "Cr\u00e9er mon compte \u2192": { en: "Create my account \u2192", nl: "Mijn account aanmaken \u2192", de: "Mein Konto erstellen \u2192", es: "Crear mi cuenta \u2192" },
+    "Cr\u00e9ation...": { en: "Creating...", nl: "Aanmaken...", de: "Wird erstellt...", es: "Creando..." },
+    "Compte cr\u00e9\u00e9 !": { en: "Account created!", nl: "Account aangemaakt!", de: "Konto erstellt!", es: "\u00a1Cuenta creada!" },
+    "D\u00e9j\u00e0 inscrit ?": { en: "Already registered?", nl: "Al geregistreerd?", de: "Schon registriert?", es: "\u00bfYa tienes cuenta?" },
+    "Inscris-toi": { en: "Sign up", nl: "Registreer je", de: "Registrier dich", es: "Reg\u00edstrate" },
+    "Connecte-toi": { en: "Log in", nl: "Log in", de: "Melde dich an", es: "Inicia sesi\u00f3n" },
+    "Mot de passe (min. 6 caract\u00e8res)": { en: "Password (min. 6 characters)", nl: "Wachtwoord (min. 6 tekens)", de: "Passwort (mind. 6 Zeichen)", es: "Contrase\u00f1a (m\u00edn. 6 caracteres)" },
+    "Mot de passe trop court (min. 6)": { en: "Password too short (min. 6)", nl: "Wachtwoord te kort (min. 6)", de: "Passwort zu kurz (mind. 6)", es: "Contrase\u00f1a demasiado corta (m\u00edn. 6)" },
+    "Remplis tous les champs obligatoires": { en: "Fill in every required field", nl: "Vul alle verplichte velden in", de: "F\u00fclle alle Pflichtfelder aus", es: "Rellena todos los campos obligatorios" },
+    "Adresse email invalide": { en: "Invalid email address", nl: "Ongeldig e-mailadres", de: "Ung\u00fcltige E-Mail-Adresse", es: "Direcci\u00f3n de correo no v\u00e1lida" },
+    "Ta session a expir\u00e9, reconnecte-toi": { en: "Your session has expired, log in again", nl: "Je sessie is verlopen, log opnieuw in", de: "Deine Sitzung ist abgelaufen, melde dich erneut an", es: "Tu sesi\u00f3n ha caducado, vuelve a iniciar sesi\u00f3n" },
+    "Profil sauvegard\u00e9": { en: "Profile saved", nl: "Profiel opgeslagen", de: "Profil gespeichert", es: "Perfil guardado" },
+    "D\u00e9connect\u00e9": { en: "Logged out", nl: "Uitgelogd", de: "Abgemeldet", es: "Sesi\u00f3n cerrada" },
+    "Informations personnelles": { en: "Personal details", nl: "Persoonlijke gegevens", de: "Pers\u00f6nliche Daten", es: "Datos personales" },
+    "Mes commandes": { en: "My orders", nl: "Mijn bestellingen", de: "Meine Bestellungen", es: "Mis pedidos" },
+    "Sauvegarder": { en: "Save", nl: "Opslaan", de: "Speichern", es: "Guardar" },
+    "Sauvegarde...": { en: "Saving...", nl: "Opslaan...", de: "Wird gespeichert...", es: "Guardando..." },
+    "Connecte-toi pour acc\u00e9der \u00e0 ton profil et suivre tes commandes.": { en: "Log in to reach your profile and follow your orders.", nl: "Log in om je profiel te zien en je bestellingen te volgen.", de: "Melde dich an, um dein Profil zu sehen und deine Bestellungen zu verfolgen.", es: "Inicia sesi\u00f3n para acceder a tu perfil y seguir tus pedidos." },
+    "Le Manifesto UNEEK": { en: "The UNEEK manifesto", nl: "Het UNEEK-manifesto", de: "Das UNEEK-Manifest", es: "El manifiesto UNEEK" },
+    "La mode ne devrait pas \u00eatre un uniforme. Pas un algorithme qui te dit quoi porter. Pas une tendance TikTok qui s'oublie en deux semaines.": { en: "Fashion shouldn't be a uniform. Not an algorithm telling you what to wear. Not a TikTok trend forgotten in two weeks.", nl: "Mode zou geen uniform mogen zijn. Geen algoritme dat je vertelt wat je moet dragen. Geen TikTok-trend die na twee weken vergeten is.", de: "Mode sollte keine Uniform sein. Kein Algorithmus, der dir sagt, was du tragen sollst. Kein TikTok-Trend, der nach zwei Wochen vergessen ist.", es: "La moda no deber\u00eda ser un uniforme. Ni un algoritmo que te dice qu\u00e9 ponerte. Ni una tendencia de TikTok que se olvida en dos semanas." },
+    "La mode, c'est une expression. Un choix. Un acte cr\u00e9atif. Et les vrais cr\u00e9ateurs \u2014 ceux qui dessinent dans leur chambre, qui cousent dans leur garage \u2014 m\u00e9ritent d'\u00eatre vus.": { en: "Fashion is expression. A choice. A creative act. And the real designers \u2014 the ones sketching in their bedroom, sewing in their garage \u2014 deserve to be seen.", nl: "Mode is expressie. Een keuze. Een creatieve daad. En de echte ontwerpers \u2014 die tekenen op hun kamer, naaien in hun garage \u2014 verdienen het om gezien te worden.", de: "Mode ist Ausdruck. Eine Entscheidung. Ein kreativer Akt. Und die echten Designer \u2014 die, die im Schlafzimmer entwerfen und in der Garage n\u00e4hen \u2014 verdienen es, gesehen zu werden.", es: "La moda es expresi\u00f3n. Una elecci\u00f3n. Un acto creativo. Y los verdaderos creadores \u2014 los que dibujan en su cuarto, los que cosen en su garaje \u2014 merecen que se los vea." },
+    "UNEEK existe pour \u00e7a. Pour donner une vitrine aux marques ind\u00e9pendantes. Pour offrir \u00e0 chacun la possibilit\u00e9 de porter quelque chose qui a une histoire, un nom, une \u00e2me.": { en: "That's why UNEEK exists. To give independent brands a window. To let anyone wear something with a story, a name, a soul.", nl: "Daarvoor bestaat UNEEK. Om onafhankelijke merken een etalage te geven. Om iedereen iets te laten dragen met een verhaal, een naam, een ziel.", de: "Daf\u00fcr gibt es UNEEK. Um unabh\u00e4ngigen Marken ein Schaufenster zu geben. Damit jeder etwas tragen kann, das eine Geschichte hat, einen Namen, eine Seele.", es: "Para eso existe UNEEK. Para dar escaparate a las marcas independientes. Para que cualquiera pueda llevar algo con una historia, un nombre, un alma." },
+    "Parce que s'habiller, c'est se raconter. Et ton histoire m\u00e9rite mieux qu'un copier-coller.": { en: "Because getting dressed is telling your story. And yours deserves better than a copy-paste.", nl: "Want je kleden is jezelf vertellen. En jouw verhaal verdient beter dan een kopie.", de: "Denn sich anzuziehen hei\u00dft, sich zu erz\u00e4hlen. Und deine Geschichte verdient mehr als ein Copy-paste.", es: "Porque vestirse es contarse. Y tu historia merece algo mejor que un copia y pega." },
+    "Questions fr\u00e9quentes": { en: "Frequently asked questions", nl: "Veelgestelde vragen", de: "H\u00e4ufige Fragen", es: "Preguntas frecuentes" },
+    "C'est quoi UNEEK exactement ?": { en: "What exactly is UNEEK?", nl: "Wat is UNEEK precies?", de: "Was genau ist UNEEK?", es: "\u00bfQu\u00e9 es UNEEK exactamente?" },
+    "UNEEK est une marketplace qui regroupe des marques de mode ind\u00e9pendantes soigneusement s\u00e9lectionn\u00e9es. On donne une vitrine aux cr\u00e9ateurs qui m\u00e9ritent d'\u00eatre vus.": { en: "UNEEK is a marketplace bringing together carefully selected independent fashion brands. We give a window to designers who deserve to be seen.", nl: "UNEEK is een marktplaats met zorgvuldig gekozen onafhankelijke modemerken. We geven een etalage aan ontwerpers die het verdienen gezien te worden.", de: "UNEEK ist ein Marktplatz mit sorgf\u00e4ltig ausgew\u00e4hlten unabh\u00e4ngigen Modemarken. Wir geben Designern ein Schaufenster, die es verdienen, gesehen zu werden.", es: "UNEEK es un marketplace que re\u00fane marcas de moda independientes cuidadosamente seleccionadas. Damos escaparate a los creadores que merecen que se los vea." },
+    "Comment sont s\u00e9lectionn\u00e9es les marques ?": { en: "How are brands selected?", nl: "Hoe worden merken geselecteerd?", de: "Wie werden die Marken ausgew\u00e4hlt?", es: "\u00bfC\u00f3mo se seleccionan las marcas?" },
+    "Chaque marque est \u00e9valu\u00e9e sur la qualit\u00e9 de ses cr\u00e9ations, son originalit\u00e9 et son histoire. On refuse volontairement le mass market.": { en: "Every brand is judged on the quality of its work, its originality and its story. We deliberately turn down mass market.", nl: "Elk merk wordt beoordeeld op de kwaliteit van zijn creaties, zijn originaliteit en zijn verhaal. Massaproductie weigeren we bewust.", de: "Jede Marke wird nach der Qualit\u00e4t ihrer Entw\u00fcrfe, ihrer Originalit\u00e4t und ihrer Geschichte beurteilt. Massenware lehnen wir bewusst ab.", es: "Cada marca se eval\u00faa por la calidad de sus creaciones, su originalidad y su historia. Rechazamos el mass market a prop\u00f3sito." },
+    "Quels sont les d\u00e9lais de livraison ?": { en: "How long does delivery take?", nl: "Wat zijn de levertijden?", de: "Wie lange dauert die Lieferung?", es: "\u00bfCu\u00e1les son los plazos de entrega?" },
+    "Entre 3 et 7 jours ouvr\u00e9s en Belgique et en France. Chaque commande est pr\u00e9par\u00e9e directement par la marque.": { en: "Between 3 and 7 working days in Belgium and France. Every order is prepared by the brand itself.", nl: "Tussen 3 en 7 werkdagen in Belgi\u00eb en Frankrijk. Elke bestelling wordt door het merk zelf klaargemaakt.", de: "Zwischen 3 und 7 Werktagen in Belgien und Frankreich. Jede Bestellung wird direkt von der Marke vorbereitet.", es: "Entre 3 y 7 d\u00edas laborables en B\u00e9lgica y Francia. Cada pedido lo prepara directamente la marca." },
+    "Comment devenir partenaire UNEEK ?": { en: "How do I become an UNEEK partner?", nl: "Hoe word ik UNEEK-partner?", de: "Wie werde ich UNEEK-Partner?", es: "\u00bfC\u00f3mo ser socio de UNEEK?" },
+    "Si tu es un cr\u00e9ateur ind\u00e9pendant, tu peux postuler via notre formulaire 'Devenir Partenaire' accessible depuis le menu.": { en: "If you're an independent designer, you can apply through the 'Become a partner' form in the menu.", nl: "Ben je een onafhankelijke ontwerper? Dan kun je je aanmelden via het formulier 'Partner worden' in het menu.", de: "Wenn du unabh\u00e4ngiger Designer bist, kannst du dich \u00fcber das Formular \u201ePartner werden\" im Men\u00fc bewerben.", es: "Si eres creador independiente, puedes presentarte con el formulario \u00abHazte socio\u00bb del men\u00fa." },
+    "Pour les cr\u00e9ateurs": { en: "For designers", nl: "Voor ontwerpers", de: "F\u00fcr Designer", es: "Para creadores" },
+    "Tu cr\u00e9es des pi\u00e8ces uniques ? Tu m\u00e9rites une vitrine \u00e0 la hauteur. Rejoins la communaut\u00e9 UNEEK.": { en: "Making unique pieces? You deserve a window that matches. Join the UNEEK community.", nl: "Maak je unieke stukken? Dan verdien je een etalage die daarbij past. Sluit je aan bij de UNEEK-community.", de: "Du machst einzigartige St\u00fccke? Dann verdienst du ein passendes Schaufenster. Komm in die UNEEK-Community.", es: "\u00bfCreas piezas \u00fanicas? Mereces un escaparate a la altura. \u00danete a la comunidad UNEEK." },
+    "Nom de ta marque": { en: "Your brand name", nl: "Naam van je merk", de: "Name deiner Marke", es: "Nombre de tu marca" },
+    "Ex: Brouillon": { en: "e.g. Brouillon", nl: "bv. Brouillon", de: "z. B. Brouillon", es: "ej.: Brouillon" },
+    "Ton nom": { en: "Your name", nl: "Je naam", de: "Dein Name", es: "Tu nombre" },
+    "Pr\u00e9nom Nom": { en: "First name Last name", nl: "Voornaam Achternaam", de: "Vorname Nachname", es: "Nombre y apellidos" },
+    "Email": { en: "Email", nl: "E-mail", de: "E-Mail", es: "Correo" },
+    "Instagram": { en: "Instagram", nl: "Instagram", de: "Instagram", es: "Instagram" },
+    "Parle-nous de ta marque": { en: "Tell us about your brand", nl: "Vertel ons over je merk", de: "Erz\u00e4hl uns von deiner Marke", es: "H\u00e1blanos de tu marca" },
+    "Ton histoire, ton style, ce qui te rend unique...": { en: "Your story, your style, what makes you different...", nl: "Je verhaal, je stijl, wat jou uniek maakt...", de: "Deine Geschichte, dein Stil, was dich einzigartig macht...", es: "Tu historia, tu estilo, lo que te hace \u00fanico..." },
+    "Envoyer ma candidature \u2192": { en: "Send my application \u2192", nl: "Mijn aanvraag versturen \u2192", de: "Bewerbung senden \u2192", es: "Enviar mi candidatura \u2192" },
+    "Candidature envoy\u00e9e !": { en: "Application sent!", nl: "Aanvraag verstuurd!", de: "Bewerbung gesendet!", es: "\u00a1Candidatura enviada!" },
+    "Merci": { en: "Thanks", nl: "Bedankt", de: "Danke", es: "Gracias" },
+    "! Notre \u00e9quipe \u00e9tudie ta candidature pour": { en: "! Our team is reviewing your application for", nl: "! Ons team bekijkt je aanvraag voor", de: "! Unser Team pr\u00fcft deine Bewerbung f\u00fcr", es: "! Nuestro equipo est\u00e1 revisando tu candidatura para" },
+    "et te recontacte sous 48h.": { en: "and will get back to you within 48 hours.", nl: "en neemt binnen 48 uur contact met je op.", de: "und meldet sich innerhalb von 48 Stunden.", es: "y te responder\u00e1 en 48 h." },
+    "Remplis au moins le nom, l'email et la marque": { en: "Fill in at least the name, the email and the brand", nl: "Vul minstens de naam, het e-mailadres en het merk in", de: "F\u00fclle mindestens Name, E-Mail und Marke aus", es: "Rellena al menos el nombre, el correo y la marca" },
+    "Navigation": { en: "Navigation", nl: "Navigatie", de: "Navigation", es: "Navegaci\u00f3n" },
+    "Support": { en: "Support", nl: "Support", de: "Support", es: "Ayuda" },
+    "FAQ": { en: "FAQ", nl: "FAQ", de: "FAQ", es: "FAQ" },
+    "Livraison & Retours": { en: "Shipping & returns", nl: "Verzending & retour", de: "Versand & R\u00fcckgabe", es: "Env\u00edos y devoluciones" },
+    "Contact": { en: "Contact", nl: "Contact", de: "Kontakt", es: "Contacto" },
+    "L\u00e9gal": { en: "Legal", nl: "Juridisch", de: "Rechtliches", es: "Legal" },
+    "CGV": { en: "Terms of sale", nl: "Verkoopvoorwaarden", de: "AGB", es: "Condiciones de venta" },
+    "Politique de confidentialit\u00e9": { en: "Privacy policy", nl: "Privacybeleid", de: "Datenschutzerkl\u00e4rung", es: "Pol\u00edtica de privacidad" },
+    "Confidentialit\u00e9": { en: "Privacy", nl: "Privacy", de: "Datenschutz", es: "Privacidad" },
+    "Mentions l\u00e9gales": { en: "Legal notice", nl: "Juridische vermeldingen", de: "Impressum", es: "Aviso legal" },
+    "Conditions G\u00e9n\u00e9rales de Vente": { en: "Terms and conditions of sale", nl: "Algemene verkoopvoorwaarden", de: "Allgemeine Gesch\u00e4ftsbedingungen", es: "Condiciones generales de venta" },
+    "La mode ind\u00e9pendante, cr\u00e9\u00e9e pour ceux qui refusent de ressembler \u00e0 tout le monde. Dress different. Feel different.": { en: "Independent fashion, made for those who refuse to look like everyone else. Dress different. Feel different.", nl: "Onafhankelijke mode, gemaakt voor wie niet op iedereen wil lijken. Dress different. Feel different.", de: "Unabh\u00e4ngige Mode f\u00fcr alle, die nicht aussehen wollen wie jeder andere. Dress different. Feel different.", es: "Moda independiente, creada para quienes se niegan a parecerse a todo el mundo. Dress different. Feel different." },
+    "Made with \u2605 in Belgium": { en: "Made with \u2605 in Belgium", nl: "Gemaakt met \u2605 in Belgi\u00eb", de: "Mit \u2605 in Belgien gemacht", es: "Hecho con \u2605 en B\u00e9lgica" },
+    "TAILLE UNIQUE": { en: "ONE SIZE", nl: "\u00c9\u00c9N MAAT", de: "EINHEITSGR\u00d6SSE", es: "TALLA \u00daNICA" },
+    "Les pages l\u00e9gales de UNEEK sont disponibles en fran\u00e7ais uniquement.": { en: "UNEEK's legal pages are available in French only.", nl: "De juridische pagina's van UNEEK zijn alleen in het Frans beschikbaar.", de: "Die rechtlichen Seiten von UNEEK sind nur auf Franz\u00f6sisch verf\u00fcgbar.", es: "Las p\u00e1ginas legales de UNEEK solo est\u00e1n disponibles en franc\u00e9s." },
+    "Du m\u00eame cr\u00e9ateur": { en: "From the same designer", nl: "Van dezelfde ontwerper", de: "Vom selben Designer", es: "Del mismo creador" },
+    "Paiement s\u00e9curis\u00e9 par Stripe": { en: "Secure payment by Stripe", nl: "Veilig betalen via Stripe", de: "Sichere Zahlung \u00fcber Stripe", es: "Pago seguro con Stripe" },
+    "\u2014 mode test, aucun argent r\u00e9el n'est d\u00e9bit\u00e9": { en: "\u2014 test mode, no real money is charged", nl: "\u2014 testmodus, er wordt geen echt geld afgeschreven", de: "\u2014 Testmodus, es wird kein echtes Geld abgebucht", es: "\u2014 modo de prueba, no se cobra dinero real" },
+    "Le module de paiement n'a pas pu se charger. V\u00e9rifie ta connexion et recharge la page.": { en: "The payment module couldn't load. Check your connection and reload the page.", nl: "De betaalmodule kon niet laden. Controleer je verbinding en herlaad de pagina.", de: "Das Zahlungsmodul konnte nicht geladen werden. Pr\u00fcfe deine Verbindung und lade die Seite neu.", es: "No se ha podido cargar el m\u00f3dulo de pago. Comprueba tu conexi\u00f3n y recarga la p\u00e1gina." },
+    "Le formulaire de paiement n'est pas pr\u00eat. Recharge la page et r\u00e9essaie.": { en: "The payment form isn't ready. Reload the page and try again.", nl: "Het betaalformulier is niet klaar. Herlaad de pagina en probeer opnieuw.", de: "Das Zahlungsformular ist nicht bereit. Lade die Seite neu und versuch es nochmal.", es: "El formulario de pago no est\u00e1 listo. Recarga la p\u00e1gina e int\u00e9ntalo de nuevo." },
+    "Le paiement n'a pas abouti.": { en: "The payment didn't go through.", nl: "De betaling is niet gelukt.", de: "Die Zahlung ist nicht durchgegangen.", es: "El pago no se ha completado." },
+    "Le paiement n'a pas abouti. Tu peux r\u00e9essayer.": { en: "The payment didn't go through. You can try again.", nl: "De betaling is niet gelukt. Je kunt het opnieuw proberen.", de: "Die Zahlung ist nicht durchgegangen. Du kannst es erneut versuchen.", es: "El pago no se ha completado. Puedes volver a intentarlo." }
   };
 
   /* ---------- 2. phrases avec un chiffre ou un nom au milieu ---------- */
@@ -444,7 +627,14 @@
     [/^Maximum (\d+) photos \u2014 (\d+) ignor\u00e9e$/, { en: "Maximum $1 photos \u2014 $2 ignored", nl: "Maximaal $1 foto's \u2014 $2 genegeerd", de: "Maximal $1 Fotos \u2014 $2 ignoriert", es: "M\u00e1ximo $1 fotos \u2014 $2 ignoradas" }],
     [/^Bonjour, (.+)$/, { en: "Hello, $1", nl: "Hallo, $1", de: "Hallo, $1", es: "Hola, $1" }],
     [/^Tableau de bord (.+)$/, { en: "$1 dashboard", nl: "Dashboard $1", de: "Dashboard $1", es: "Panel de $1" }],
-    [/^(\d{2}\/\d{2}) \u00e0 (\d{2})h(\d{2})$/, { en: "$1 at $2:$3", nl: "$1 om $2:$3", de: "$1 um $2:$3", es: "$1 a las $2:$3" }]
+    [/^(\d{2}\/\d{2}) \u00e0 (\d{2})h(\d{2})$/, { en: "$1 at $2:$3", nl: "$1 om $2:$3", de: "$1 um $2:$3", es: "$1 a las $2:$3" }],
+    [/^Panier \((\d+)\)$/, { en: "Cart ($1)", nl: "Winkelmandje ($1)", de: "Warenkorb ($1)", es: "Carrito ($1)" }],
+    [/^Favoris \((\d+)\)$/, { en: "Favorites ($1)", nl: "Favorieten ($1)", de: "Favoriten ($1)", es: "Favoritos ($1)" }],
+    [/^Tu as d\u00e9j\u00e0 les (\d+) exemplaires? disponibles dans ton panier$/, { en: "You already have all $1 available in your cart", nl: "Je hebt de $1 beschikbare stuks al in je winkelmandje", de: "Du hast bereits alle $1 verf\u00fcgbaren St\u00fcck im Warenkorb", es: "Ya tienes las $1 unidades disponibles en tu carrito" }],
+    [/^Merci (.+) ! Ta commande$/, { en: "Thanks $1! Your order", nl: "Bedankt $1! Je bestelling", de: "Danke $1! Deine Bestellung", es: "\u00a1Gracias $1! Tu pedido" }],
+    [/^Merci ! Ta commande$/, { en: "Thanks! Your order", nl: "Bedankt! Je bestelling", de: "Danke! Deine Bestellung", es: "\u00a1Gracias! Tu pedido" }],
+    [/^Commande UNEEK \u2014 (.+)$/, { en: "UNEEK order \u2014 $1", nl: "UNEEK-bestelling \u2014 $1", de: "UNEEK-Bestellung \u2014 $1", es: "Pedido UNEEK \u2014 $1" }],
+    [/^Le paiement n'a pas abouti \((.+)\)\.$/, { en: "The payment didn't go through ($1).", nl: "De betaling is niet gelukt ($1).", de: "Die Zahlung ist nicht durchgegangen ($1).", es: "El pago no se ha completado ($1)." }]
   ];
 
   /* ---------- 3. blocs ou l'ordre des mots traverse des balises ---------- */
@@ -604,36 +794,43 @@
     for (var i = 0; i < vieux.length; i++) {
       if (vieux[i].parentNode) vieux[i].parentNode.removeChild(vieux[i]);
     }
-    poserBoutons();
+    placerSelecteurs();
   }
 
   var styleFait = false;
-  function poserBoutons() {
-    if (document.querySelector('.uneek-lang')) return;
-
-    /* le selecteur se pose au bas du menu, pas a la suite des onglets.
-       Sur telephone le menu devient une barre horizontale : il reprend
-       alors sa place dans le flux. */
+  function poserStyle() {
+    if (styleFait) return;
+    styleFait = true;
     try {
-      if (styleFait) throw 0;
-      styleFait = true;
       var css = document.createElement('style');
       css.textContent =
+        /* panneau createur : au bas de la colonne de gauche */
         '.sidebar .uneek-lang{position:absolute;left:0;right:0;bottom:18px}'
-        + '@media(max-width:768px){.sidebar .uneek-lang{position:static;bottom:auto}}';
+        + '@media(max-width:768px){.sidebar .uneek-lang{position:static;bottom:auto}}'
+        /* boutique : dans la derniere ligne du pied de page */
+        + '.footer-bottom{flex-wrap:wrap;gap:8px 16px}'
+        /* l'avertissement des pages legales ne s'affiche que hors francais */
+        + 'html:not([lang="fr"]) .uneek-legal-avis{display:block}';
       var ou = document.head || document.documentElement;
       if (ou && ou.appendChild) ou.appendChild(css);
-    } catch (e) { /* le selecteur restera simplement a la suite des onglets */ }
+    } catch (e) { /* le selecteur restera simplement dans le flux */ }
+  }
+
+  /* Appele au demarrage ET a chaque changement de la page : la boutique
+     reconstruit son pied de page a chaque navigation, le selecteur doit
+     donc pouvoir s'y reposer. Trois emplacements, chacun teste avant. */
+  function placerSelecteurs() {
+    poserStyle();
 
     var menu = document.querySelector('.sidebar');
-    if (menu) {
+    if (menu && !menu.querySelector('.uneek-lang')) {
       menu.appendChild(selecteur(
         'justify-content:flex-start;padding:10px 20px 0;font-size:11px;'
         + 'letter-spacing:.5px;color:#A3A3A3;font-family:inherit;white-space:nowrap'));
     }
 
     var connexion = document.getElementById('loginScreen');
-    if (connexion) {
+    if (connexion && !connexion.querySelector('.uneek-lang')) {
       var pied = document.createElement('div');
       pied.className = 'uneek-lang-pied';
       pied.setAttribute('data-sans-traduction', '');
@@ -642,20 +839,29 @@
         + 'color:#A3A3A3;font-family:inherit'));
       connexion.appendChild(pied);
     }
+
+    var bas = document.querySelector('.footer-bottom');
+    if (bas && !bas.querySelector('.uneek-lang')) {
+      bas.appendChild(selecteur('justify-content:flex-end;font-size:12px;'
+        + 'letter-spacing:.5px;color:inherit;font-family:inherit;white-space:nowrap'));
+    }
   }
 
   /* ---------- demarrage ---------- */
   function demarrer() {
     TITRE_FR = document.title;
-    poserBoutons();
-    if (LANG === 'fr') return;          /* francais : on ne touche a rien */
+    placerSelecteurs();
+    /* L'observateur est pose meme en francais, mais il ne fait alors
+       qu'une chose : reposer le selecteur quand la page se reconstruit.
+       Aucun texte n'est lu ni modifie tant que la langue est le francais. */
+    installerObservateur();
+    if (LANG === 'fr') return;
 
     try { document.documentElement.setAttribute('lang', LANG); } catch (e) {}
     var t = trad(document.title);
     if (t !== null) document.title = t;
 
     parcourir(document.body);
-    installerObservateur();
   }
 
   /* pose une seule fois, et seulement quand on quitte le francais :
@@ -666,6 +872,8 @@
     observateurPose = true;
 
     function traiter(lots) {
+        placerSelecteurs();
+        if (LANG === 'fr') return;
         for (var i = 0; i < lots.length; i++) {
           var l = lots[i];
           if (l.type === 'characterData') { traduireTexte(l.target); continue; }
