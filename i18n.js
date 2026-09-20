@@ -48,9 +48,52 @@
   var LANG = langueChoisie();
   window.UNEEK_LANG = LANG;
 
+  /* Changer de langue ne recharge PAS la page : un rechargement
+     deconnecte du panneau createur, dont le jeton de session ne vit
+     qu'en memoire. On defait donc les traductions posees, puis on
+     repose celles de la nouvelle langue. */
+  var TITRE_FR = null;
+  var MEMOIRE = [];   /* tout ce qui a ete modifie a l'ecran */
+
+  function restaurer() {
+    for (var i = MEMOIRE.length - 1; i >= 0; i--) {
+      var m = MEMOIRE[i];
+      try {
+        if (m.t) m.t.nodeValue = m.v;
+        else if (m.h !== undefined) m.e.innerHTML = m.h;
+        else m.e.setAttribute(m.a, m.v);
+      } catch (e) { /* le morceau de page a disparu entre-temps */ }
+    }
+    MEMOIRE = [];
+  }
+
+  function basculer(l) {
+    restaurer();                       /* on revient au francais d'origine */
+    LANG = l;
+    window.UNEEK_LANG = l;
+    try { document.documentElement.setAttribute('lang', l); } catch (e) {}
+    if (TITRE_FR !== null) document.title = TITRE_FR;
+    if (l !== 'fr') {
+      var t = trad(document.title);
+      if (t !== null) document.title = t;
+      parcourir(document.body);
+      installerObservateur();
+    }
+    majSelecteur();
+  }
+
   function changerLangue(l) {
+    if (LANGUES.indexOf(l) === -1 || l === LANG) return;
     try { localStorage.setItem(CLE, l); } catch (e) {}
-    location.reload();
+    try {
+      basculer(l);
+    } catch (e) {
+      /* en dernier recours seulement : la page sera rechargee et il
+         faudra se reconnecter, mais l'ecran ne restera pas a moitie
+         traduit. */
+      if (window.console) console.warn('i18n:', e);
+      location.reload();
+    }
   }
   window.uneekChangerLangue = changerLangue;
 
@@ -471,7 +514,7 @@
     var avant = v.match(/^\s*/)[0];
     var apres = v.match(/\s*$/)[0];
     var neuf = avant + t + apres;
-    if (neuf !== v) n.nodeValue = neuf;
+    if (neuf !== v) { MEMOIRE.push({ t: n, v: v }); n.nodeValue = neuf; }
   }
 
   function parcourir(n) {
@@ -491,7 +534,7 @@
       var brut = normal(n.innerHTML);
       if (Object.prototype.hasOwnProperty.call(H, brut)) {
         var bloc = choisir(H[brut], LANG);
-        if (bloc !== null) { n.innerHTML = bloc; return; }
+        if (bloc !== null) { MEMOIRE.push({ e: n, h: n.innerHTML }); n.innerHTML = bloc; return; }
       }
     }
 
@@ -500,7 +543,10 @@
         var val = n.getAttribute(ATTRS[a]);
         if (val) {
           var t = trad(val);
-          if (t !== null && t !== val) n.setAttribute(ATTRS[a], t);
+          if (t !== null && t !== val) {
+            MEMOIRE.push({ e: n, a: ATTRS[a], v: val });
+            n.setAttribute(ATTRS[a], t);
+          }
         }
       }
     }
@@ -553,6 +599,15 @@
     return boite;
   }
 
+  function majSelecteur() {
+    var vieux = document.querySelectorAll('.uneek-lang, .uneek-lang-pied');
+    for (var i = 0; i < vieux.length; i++) {
+      if (vieux[i].parentNode) vieux[i].parentNode.removeChild(vieux[i]);
+    }
+    poserBoutons();
+  }
+
+  var styleFait = false;
   function poserBoutons() {
     if (document.querySelector('.uneek-lang')) return;
 
@@ -560,6 +615,8 @@
        Sur telephone le menu devient une barre horizontale : il reprend
        alors sa place dans le flux. */
     try {
+      if (styleFait) throw 0;
+      styleFait = true;
       var css = document.createElement('style');
       css.textContent =
         '.sidebar .uneek-lang{position:absolute;left:0;right:0;bottom:18px}'
@@ -578,6 +635,7 @@
     var connexion = document.getElementById('loginScreen');
     if (connexion) {
       var pied = document.createElement('div');
+      pied.className = 'uneek-lang-pied';
       pied.setAttribute('data-sans-traduction', '');
       pied.style.cssText = 'position:fixed;bottom:18px;left:0;right:0;text-align:center;z-index:5';
       pied.appendChild(selecteur('justify-content:center;font-size:11px;letter-spacing:.5px;'
@@ -588,6 +646,7 @@
 
   /* ---------- demarrage ---------- */
   function demarrer() {
+    TITRE_FR = document.title;
     poserBoutons();
     if (LANG === 'fr') return;          /* francais : on ne touche a rien */
 
@@ -596,12 +655,17 @@
     if (t !== null) document.title = t;
 
     parcourir(document.body);
+    installerObservateur();
+  }
 
-    if (typeof MutationObserver === 'function') {
-      var obs = new MutationObserver(function (lots) {
-        try { traiter(lots); } catch (e) { if (window.console) console.warn('i18n:', e); }
-      });
-      function traiter(lots) {
+  /* pose une seule fois, et seulement quand on quitte le francais :
+     tant qu'on est en francais, ce fichier ne surveille rien. */
+  var observateurPose = false;
+  function installerObservateur() {
+    if (observateurPose || typeof MutationObserver !== 'function') return;
+    observateurPose = true;
+
+    function traiter(lots) {
         for (var i = 0; i < lots.length; i++) {
           var l = lots[i];
           if (l.type === 'characterData') { traduireTexte(l.target); continue; }
@@ -611,12 +675,15 @@
             if (v) { var x = trad(v); if (x !== null && x !== v) l.target.setAttribute(l.attributeName, x); }
           }
         }
-      }
-      obs.observe(document.documentElement, {
-        childList: true, subtree: true, characterData: true,
-        attributes: true, attributeFilter: ATTRS
-      });
     }
+
+    var obs = new MutationObserver(function (lots) {
+      try { traiter(lots); } catch (e) { if (window.console) console.warn('i18n:', e); }
+    });
+    obs.observe(document.documentElement, {
+      childList: true, subtree: true, characterData: true,
+      attributes: true, attributeFilter: ATTRS
+    });
   }
 
   /* une erreur de traduction ne doit jamais casser la page */
