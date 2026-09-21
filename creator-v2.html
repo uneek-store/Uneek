@@ -1022,7 +1022,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-09-20-langue-createur-2';
+  const APP_VERSION = '2026-09-21-photos-stockage-1';
 
   async function checkAppVersion() {
     try {
@@ -1930,6 +1930,29 @@
     return selectedImages.some((src, i) => src !== av[i]);
   }
 
+  // Les photos partent d'abord dans le stockage, et ce sont leurs adresses
+  // qui sont enregistrees avec le produit — plus les images entieres. Le
+  // catalogue public passe ainsi de 1,2 Mo a quelques kilo-octets.
+  //
+  // Si un envoi echoue, la photo reste telle quelle et repart comme avant,
+  // en base64 : le produit est soumis dans tous les cas. Rien ne bloque.
+  async function televerserPhotos() {
+    for (let i = 0; i < selectedImages.length; i++) {
+      const img = selectedImages[i];
+      if (typeof img !== 'string' || img.indexOf('data:') !== 0) continue;
+      try {
+        const res = await fetch(API_BASE + '/creator/photo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+          body: JSON.stringify({ data: img })
+        });
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (data && data.url) selectedImages[i] = data.url;
+      } catch (e) { /* on garde la photo telle quelle */ }
+    }
+  }
+
   function attachImages(body, enModification) {
     if (enModification) {
       // Les photos n'etaient renvoyees qu'en cas de changement reel : sinon
@@ -1978,6 +2001,12 @@
     const variants = variantsRaw ? variantsRaw.split(',').map(v => v.trim()).filter(v => v) : [];
 
     if (!name || !price) { showToast('Nom et prix requis'); return; }
+
+    // En modification, on ne televerse que si les photos ont reellement
+    // change. Sinon on remplacerait des photos intactes par de nouvelles
+    // adresses, et imagesOntChange() croirait a un changement : une simple
+    // correction de stock creerait une demande « Photos remplacees ».
+    if (!isEditMode || imagesOntChange()) await televerserPhotos();
 
     const details = lireDetails();
     const manqueDetails = detailsIncomplets(details);
