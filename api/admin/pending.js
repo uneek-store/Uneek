@@ -263,11 +263,21 @@ export default async function handler(req, res) {
       // Prevenir le createur de la decision. Enferme dans un try : un echec
       // d'envoi ne doit pas annuler une validation deja enregistree.
       try {
-        const { data: compte } = await supabaseAdmin
+        // maybeSingle() renvoyait une ERREUR des qu'une marque avait deux
+        // comptes createurs : le createur ne recevait alors jamais la
+        // reponse, elle partait a l'adresse de la marque. On prend la liste
+        // et on choisit, comme pour les virements et la notification de
+        // commande : celui qui a relie Stripe, sinon celui qui n'est pas
+        // administrateur.
+        const { data: comptesMarque } = await supabaseAdmin
           .from("creator_accounts")
-          .select("email, full_name, lang")
-          .eq("brand_id", edit.brand_id)
-          .maybeSingle();
+          .select("email, full_name, lang, is_admin, stripe_account_id")
+          .eq("brand_id", edit.brand_id);
+        const candidats = comptesMarque || [];
+        const compte = candidats.find((x) => x.stripe_account_id)
+          || candidats.find((x) => !x.is_admin)
+          || candidats[0]
+          || null;
         const { data: marque } = await supabaseAdmin
           .from("brands")
           .select("name, email")

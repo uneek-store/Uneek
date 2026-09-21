@@ -545,7 +545,7 @@ export default async function handler(req, res) {
 
         const { data: comptes } = await supabaseAdmin
           .from("creator_accounts")
-          .select("email, full_name, brand_id, lang")
+          .select("email, full_name, brand_id, lang, is_admin, stripe_account_id")
           .in("brand_id", brandIds);
         const { data: marques } = await supabaseAdmin
           .from("brands")
@@ -563,7 +563,20 @@ export default async function handler(req, res) {
 
         // Un e-mail par marque concernee, ne contenant que ses propres articles.
         for (const bid of brandIds) {
-          const compte = (comptes || []).find((c) => c.brand_id === bid);
+          // Meme piege que pour les virements, quelques lignes plus haut :
+          // une marque peut avoir plusieurs comptes createurs en base. Le
+          // premier renvoye par la base n'est pas forcement celui qui tient
+          // la boutique — ici c'etait un compte administrateur rattache a la
+          // marque, et la notification partait chez lui, dans sa langue.
+          const candidats = (comptes || []).filter((c) => c.brand_id === bid);
+          const compte = candidats.find((c) => c.stripe_account_id)
+            || candidats.find((c) => !c.is_admin)
+            || candidats[0];
+          if (candidats.length > 1) {
+            console.warn("[email] la marque", bid, "a", candidats.length,
+              "comptes createurs — la notification part chez",
+              compte && compte.email);
+          }
           const marque = (marques || []).find((m) => m.id === bid);
           const destinataire = (compte && compte.email) || (marque && marque.email);
           if (!destinataire) {
