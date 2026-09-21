@@ -44,6 +44,14 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  // Le catalogue public est le meme pour tout le monde : il n'y a aucune
+  // raison de le recalculer et de le renvoyer en entier a chaque visiteur.
+  // Vercel le garde 60 s a la peripherie, et continue a servir l'ancienne
+  // reponse pendant 5 min le temps d'en chercher une fraiche. Un produit
+  // publie apparait donc au plus tard une minute apres. Rien n'est stocke
+  // chez le visiteur : "private" reste faux, mais max-age=0 force le
+  // navigateur a redemander, c'est le CDN qui repond.
+  res.setHeader("Cache-Control", "public, max-age=0, s-maxage=60, stale-while-revalidate=300");
 
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
