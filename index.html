@@ -1189,6 +1189,30 @@ function pdTouchEnd(e) {
   if (Math.abs(d) > 40) stepProductImage(d < 0 ? 1 : -1);
 }
 
+// La liste ne ramene qu'une photo par produit (voir api/products.js). Quand
+// on ouvre une fiche, on demande les autres et on redessine la galerie. La
+// page reste utilisable entre-temps : elle a deja sa photo principale.
+async function chargerPhotosProduit() {
+  try {
+    const p = trouverProduit(pageData);
+    if (!p || !p.image_count || p.image_count < 2) return;
+    if (Array.isArray(p.image_urls) && p.image_urls.length >= p.image_count) return;
+
+    const r = await fetch(API_BASE + '/products?id=' + encodeURIComponent(p.id));
+    if (!r.ok) return;
+    const complet = await r.json();
+    if (!complet || !Array.isArray(complet.image_urls) || complet.image_urls.length < 2) return;
+
+    p.image_urls = complet.image_urls;   // garde en memoire : une seule fois par produit
+    // On ne redessine que si le visiteur n'a encore rien choisi, pour ne pas
+    // effacer une taille ou une couleur deja selectionnee.
+    if (currentPage === 'product' && !selectedSize && trouverProduit(pageData) === p) {
+      const app = document.getElementById('app');
+      if (app) app.innerHTML = productPage();
+    }
+  } catch (e) { /* la fiche garde sa photo principale, rien n'est casse */ }
+}
+
 function productPage() {
   const p = trouverProduit(pageData);
   if (!p) return '<div style="padding:120px 24px;text-align:center"><h2>Produit introuvable</h2></div>';
@@ -2069,7 +2093,7 @@ function renderPage() {
   switch (currentPage) {
     case 'home': app.innerHTML = homePage(); break;
     case 'shop': app.innerHTML = shopPage(); break;
-    case 'product': app.innerHTML = productPage(); break;
+    case 'product': app.innerHTML = productPage(); chargerPhotosProduit(); break;
     case 'brands': app.innerHTML = brandsPage(); break;
     case 'brand': app.innerHTML = brandPage(); break;
     case 'manifesto': app.innerHTML = manifestoPage(); break;

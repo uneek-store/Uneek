@@ -92,11 +92,21 @@ export default async function handler(req, res) {
       (p) => !(p.brands && p.brands.is_active === false)
     );
 
-    // Map image_urls array to image_url for frontend
-    const products = visibles.map(p => ({
-      ...sansChampsPrives(p),
-      image_url: (p.image_urls && p.image_urls.length > 0) ? p.image_urls[0] : ''
-    }));
+    // Les photos sont stockees en base64 DANS la base : une liste de 13
+    // produits a 5 photos pesait 1,2 Mo et mettait 2,5 s a arriver. La liste
+    // ne transporte donc plus que la premiere photo, la seule que la grille
+    // affiche. Les autres restent disponibles produit par produit, via
+    // /api/products?id=..., que la fiche produit demande quand on l'ouvre.
+    // image_count dit a la fiche combien de photos existent reellement.
+    const products = visibles.map(p => {
+      const photos = Array.isArray(p.image_urls) ? p.image_urls : [];
+      return {
+        ...sansChampsPrives(p),
+        image_urls: photos.length ? [photos[0]] : [],
+        image_count: photos.length,
+        image_url: photos.length ? photos[0] : ''
+      };
+    });
     return res.status(200).json(products);
   } catch (err) {
     console.error("Products API error:", err);
