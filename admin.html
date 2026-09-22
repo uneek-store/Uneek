@@ -576,6 +576,7 @@
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('app').style.display = 'block';
       loadDashboard();
+      demarrerRafraichissement();
       checkAppVersion();
     } catch (err) {
       errorEl.textContent = 'Erreur de connexion au serveur';
@@ -586,7 +587,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-09-07-lot1-securite-20';
+  const APP_VERSION = '2026-09-22-rafraichissement-1';
 
   async function checkAppVersion() {
     try {
@@ -903,12 +904,62 @@
     if (el) el.classList.add('active');
     // Idem cote admin : les listes ne se rafraichissaient qu'a la connexion.
     if (!authToken) return;
+    SECTION_OUVERTE = id;
     if (id === 'pending') loadPending();
     else if (id === 'products') loadProducts();
     else if (id === 'orders') loadOrders();
     else if (id === 'brands') loadBrands();
     else if (id === 'applications') loadApplications();
+    else if (id === 'finances') loadVersements();
   }
+
+  var SECTION_OUVERTE = 'overview';
+
+  // Le tableau de bord affiche les compteurs des six listes : sur cette
+  // section-la, et seulement celle-la, on recharge tout.
+  function RECHARGER_SECTION() {
+    if (SECTION_OUVERTE === 'pending') loadPending();
+    else if (SECTION_OUVERTE === 'products') loadProducts();
+    else if (SECTION_OUVERTE === 'orders') loadOrders();
+    else if (SECTION_OUVERTE === 'brands') loadBrands();
+    else if (SECTION_OUVERTE === 'applications') loadApplications();
+    else if (SECTION_OUVERTE === 'finances') loadVersements();
+    else if (SECTION_OUVERTE === 'overview') loadDashboard();
+  }
+
+  // --- RAFRAICHISSEMENT AUTOMATIQUE ---------------------------------
+  // Axel : « j'en ai marre de devoir rafraichir ma page pour voir si
+  // nouvelle demande ou commande ».
+  //
+  // Trois regles, pour que ce soit utile sans etre couteux :
+  //   1. on ne recharge QUE la section ouverte - pas tout le panneau ;
+  //   2. on s'arrete quand l'onglet est en arriere-plan (document.hidden) :
+  //      inutile d'appeler le serveur pour une page que personne ne regarde,
+  //      et ca evite de faire grimper la facture Vercel ;
+  //   3. on recharge tout de suite quand l'onglet redevient visible - c'est
+  //      le moment ou l'on veut voir ce qui est arrive pendant l'absence.
+  //
+  // Une erreur reseau ne casse rien : la fonction rechargee a deja son
+  // propre try/catch, et le minuteur continue.
+  var MINUTEUR_AUTO = null;
+  var DELAI_AUTO = 45000;
+
+  function rafraichirSectionCourante() {
+    if (document.hidden) return;
+    // Jamais pendant une saisie : recharger sous les doigts d'un createur
+    // en train de remplir un formulaire lui ferait perdre son travail.
+    if (document.querySelector('.modal-bg.show, .confirm-bg.show, .confirm-overlay.show')) return;
+    try { RECHARGER_SECTION(); } catch (e) { /* on retentera dans 45 s */ }
+  }
+
+  function demarrerRafraichissement() {
+    if (MINUTEUR_AUTO) return;
+    MINUTEUR_AUTO = setInterval(rafraichirSectionCourante, DELAI_AUTO);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) rafraichirSectionCourante();
+    });
+  }
+
 
   // Surnom a inscrire sur l'emballage, tel que le client l'a demande.
   function surnomHtml(order) {

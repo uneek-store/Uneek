@@ -119,6 +119,9 @@
     .modal-btns { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
     .modal-btns button { padding: 9px 20px; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: var(--font-body); border: none; }
     .btn-cancel { background: var(--gray-100); color: var(--gray-600); }
+    .btn-retirer { background: none; border: 1px solid var(--gray-200); color: var(--gray-600);
+      font-size: 12px; padding: 5px 10px; border-radius: 7px; cursor: pointer; white-space: nowrap; }
+    .btn-retirer:hover { border-color: var(--red); color: var(--red); }
     .btn-cancel:hover { background: var(--gray-200); }
     .btn-submit { background: var(--black); color: var(--white); font-weight: 500; }
     .btn-submit:hover { background: var(--gray-800); }
@@ -170,8 +173,10 @@
     .img-section.show { display: block; }
 
     /* TOAST */
+    .champ-manquant { border-color: var(--red) !important; box-shadow: 0 0 0 3px rgba(220,38,38,0.12); }
     .toast { display: none; position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 10px; font-size: 13px; z-index: 300; background: var(--green); color: var(--white); box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
     .toast.show { display: block; animation: slideUp 0.3s ease; }
+    .toast.toast-erreur { background: var(--red); }
     @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
     .faded { opacity: 0.5; }
@@ -660,7 +665,7 @@
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Produit</th><th style="min-width:280px">Détail de la demande</th><th>Date</th><th>Statut</th><th>Note UNEEK</th></tr></thead>
+            <thead><tr><th>Produit</th><th style="min-width:280px">Détail de la demande</th><th>Date</th><th>Statut</th><th>Note UNEEK</th><th></th></tr></thead>
             <tbody id="edits-table"></tbody>
           </table>
         </div>
@@ -879,7 +884,7 @@
 <!-- CONFIRM DELETE DIALOG -->
 <div class="confirm-bg" id="confirmDeleteBg">
   <div class="confirm-box">
-    <h3>Supprimer ce produit ?</h3>
+    <h3 id="confirmDeleteTitre">Supprimer ce produit ?</h3>
     <p id="confirmDeleteMsg">Cette action est irréversible. Le produit sera définitivement supprimé.</p>
     <div class="confirm-btns">
       <button class="btn-cancel" onclick="closeConfirmDelete()">Annuler</button>
@@ -983,7 +988,11 @@
 
     <!-- STOCK: only for new products -->
     <div id="stockSection">
-      <label>Tailles disponibles</label>
+      <label class="size-cb" id="ligneTailleUnique" style="display:inline-flex;margin-bottom:10px">
+        <input type="checkbox" id="tailleUnique" onchange="basculerTailleUnique()">
+        &nbsp;Taille unique &mdash; bonnet, chaussettes, accessoire&hellip;
+      </label>
+      <label id="labelTailles">Tailles disponibles</label>
       <div class="size-checks" id="sizeChecks">
         <label class="size-cb"><input type="checkbox" value="XS" onchange="updateSizeGrid()"> XS</label>
         <label class="size-cb"><input type="checkbox" value="S" checked onchange="updateSizeGrid()"> S</label>
@@ -994,13 +1003,13 @@
       </div>
       <label id="stockLabel">Stock initial par taille</label>
       <div class="size-grid" id="sizeGrid"></div>
-      <p class="modal-note" style="margin-top:6px">Minimum 3 pièces par taille proposée — c'est dans les règles UNEEK. Laisse 0 pour une taille que tu ne proposes pas.</p>
+      <p class="modal-note" id="noteStock" style="margin-top:6px">Minimum 3 pièces par taille proposée — c'est dans les règles UNEEK. Laisse 0 pour une taille que tu ne proposes pas.</p>
       <p id="stockError" style="display:none;color:var(--red);font-size:12px;margin-top:6px;font-weight:500"></p>
     </div>
 
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn-submit" onclick="submitProduct()">Soumettre</button>
+      <button class="btn-submit" id="btnSoumettreProduit" onclick="submitProduct()">Soumettre</button>
     </div>
     <p class="modal-note" id="modalNote">Soumis pour validation par UNEEK avant publication.</p>
   </div>
@@ -1022,7 +1031,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-09-21-photos-stockage-1';
+  const APP_VERSION = '2026-09-22-taille-unique-retrait-1';
 
   async function checkAppVersion() {
     try {
@@ -1139,6 +1148,20 @@
     });
   }
 
+  // Meme regle qu'a l'envoi, mais utilisable avant : a la creation les
+  // trois champs sont exiges ; en modification on ne bloque que si le
+  // createur les avait deja remplis (sinon corriger le stock d'un vieux
+  // produit deviendrait impossible).
+  function detailsManquantsMaintenant() {
+    const d = lireDetails();
+    const manque = detailsIncomplets(d);
+    if (!manque.length) return [];
+    const dejaRempli = isEditMode && originalProduct
+      && originalProduct.details && originalProduct.details !== '{}';
+    if (!isEditMode || dejaRempli || Object.keys(d).length > 0) return manque;
+    return [];
+  }
+
   function detailsIncomplets(d) {
     const manque = [];
     if (!d.composition) manque.push('la composition');
@@ -1215,6 +1238,7 @@
     if (el) el.classList.add('active');
     // Les listes n'etaient chargees qu'a la connexion : une demande soumise
     // depuis n'apparaissait pas tant qu'on ne rechargeait pas toute la page.
+    SECTION_OUVERTE = id;
     if (!currentBrand) return;
     if (id === 'mapage') chargerMaPage();
     else if (id === 'edits') loadEdits();
@@ -1330,6 +1354,7 @@
   async function loadDashboard() {
     if (!currentBrand) return;
     await Promise.all([loadProducts(), loadOrders(), loadEdits(), chargerEtatStripe()]);
+    demarrerRafraichissement();
   }
 
   // --- PAIEMENTS (Stripe) ---
@@ -1554,9 +1579,14 @@
         const statusBadge = statusMap[e.status] || '<span class="badge badge-orange">' + e.status + '</span>';
         const date = e.created_at ? new Date(e.created_at).toLocaleDateString('fr-BE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
         const note = e.admin_note || '—';
-        html += '<tr><td class="bold">' + esc(name) + '</td><td>' + typeBadge + '</td><td class="sec">' + date + '</td><td>' + statusBadge + '</td><td class="sec">' + note + '</td></tr>';
+        // Une demande encore en attente peut etre retiree par son auteur.
+        // Une demande deja traitee reste dans l'historique : rien a retirer.
+        const actions = e.status === 'pending'
+          ? '<button class="btn-retirer" onclick="confirmDeleteEdit(\'' + escJs(e.id) + '\', \'' + escJs(name) + '\')">Retirer</button>'
+          : '<span class="sec">—</span>';
+        html += '<tr><td class="bold">' + esc(name) + '</td><td>' + typeBadge + '</td><td class="sec">' + date + '</td><td>' + statusBadge + '</td><td class="sec">' + note + '</td><td>' + actions + '</td></tr>';
       });
-      document.getElementById('edits-table').innerHTML = html || '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune demande</td></tr>';
+      document.getElementById('edits-table').innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune demande</td></tr>';
     } catch (err) {
       console.error('Error loading edits:', err);
     }
@@ -1653,7 +1683,7 @@
     const wrap = document.getElementById('imgPreviews');
     wrap.innerHTML = selectedImages.map((src, i) =>
       '<div class="img-thumb">' +
-        '<img src="' + src + '" alt="Photo ' + (i + 1) + '">' +
+        '<img src="' + esc(String(src)) + '" alt="Photo ' + (i + 1) + '">' +
         '<button type="button" class="x" title="Retirer" onclick="removeImage(' + i + ')">&times;</button>' +
         (i === 0 ? '<span class="main">Principale</span>' : '') +
       '</div>').join('');
@@ -1667,27 +1697,66 @@
     renderImagePreviews();
   }
 
+  // « Image illisible » ne disait ni pourquoi ni quoi faire. Neuf fois sur
+  // dix c'est une photo prise avec un iPhone : le format HEIC, que Chrome et
+  // Firefox ne savent pas ouvrir. On ne refuse rien d'avance — Safari, lui,
+  // sait les lire — on explique seulement quand la lecture a echoue.
+  function motifEchecPhoto(f) {
+    const nom = f.name || 'la photo';
+    if (/\.(heic|heif)$/i.test(nom) || /heic|heif/i.test(f.type || '')) {
+      return nom + " : format HEIC (photo iPhone), illisible ici. Sur ton "
+           + "iPhone : R\u00e9glages \u203a Appareil photo \u203a Formats \u203a "
+           + "\u00ab Plus compatible \u00bb, puis reprends la photo \u2014 ou envoie-la en JPEG.";
+    }
+    if (f.type && f.type.indexOf('image/') !== 0) {
+      return nom + " n'est pas une image (" + (f.type || 'type inconnu') + ").";
+    }
+    if (f.size > 25 * 1024 * 1024) {
+      return nom + ' est trop lourde (' + Math.round(f.size / 1048576) + ' Mo, maximum 25 Mo).';
+    }
+    return nom + " n'a pas pu \u00eatre lue. Essaie un JPEG ou un PNG.";
+  }
+
   async function onFilesChosen(input) {
     const files = Array.from(input.files || []);
+    input.value = '';
+    if (!files.length) return;
+    const cnt = document.getElementById('imgCount');
+    const libelleAvant = cnt ? cnt.textContent : '';
+    if (cnt && files.length > 1) cnt.textContent = 'Lecture des photos\u2026';
     let refuses = 0;
+    const echecs = [];
     for (const f of files) {
       if (selectedImages.length >= MAX_IMAGES) { refuses++; continue; }
       try {
         selectedImages.push(await resizeAndReadFile(f, 800));
       } catch (e) {
-        showToast('Image illisible : ' + f.name);
+        echecs.push(motifEchecPhoto(f));
       }
     }
-    input.value = '';
-    if (refuses > 0) showToast('Maximum ' + MAX_IMAGES + ' photos — ' + refuses + ' ignorée(s)');
+    if (cnt && files.length > 1) cnt.textContent = libelleAvant;
     renderImagePreviews();
+    // Un seul message a la fois : on montre le premier motif, en disant
+    // combien d'autres photos sont concernees.
+    if (echecs.length) {
+      showToast(echecs[0] + (echecs.length > 1 ? ' (+ ' + (echecs.length - 1) + ' autre(s))' : ''), true);
+    } else if (refuses > 0) {
+      showToast('Maximum ' + MAX_IMAGES + ' photos \u2014 ' + refuses + ' ignor\u00e9e(s)', true);
+    }
   }
 
   function addImageUrl() {
     const field = document.getElementById('f-img');
     const v = field.value.trim();
     if (!v) return;
-    if (selectedImages.length >= MAX_IMAGES) { showToast('Maximum ' + MAX_IMAGES + ' photos'); return; }
+    if (selectedImages.length >= MAX_IMAGES) { showToast('Maximum ' + MAX_IMAGES + ' photos', true); return; }
+    // N'importe quel texte partait comme adresse de photo : le produit
+    // s'affichait ensuite avec une image cassee, sans que personne sache
+    // pourquoi. On exige une vraie adresse.
+    if (!/^(https?:\/\/|data:image\/)/i.test(v)) {
+      showToast("Ce n'est pas une adresse de photo : elle doit commencer par https://", true);
+      return;
+    }
     selectedImages.push(v);
     field.value = '';
     renderImagePreviews();
@@ -1714,7 +1783,9 @@
     document.getElementById('imgSection').classList.add('show');
     document.getElementById('stockSection').style.display = '';
     document.querySelectorAll('#sizeChecks input').forEach((cb, i) => { cb.checked = [1,2,3,4].includes(i); });
-    updateSizeGrid();
+    const cbUnique = document.getElementById('tailleUnique');
+    if (cbUnique) cbUnique.checked = false;
+    basculerTailleUnique();
     document.getElementById('modalNote').textContent = 'Soumis pour validation par UNEEK avant publication.';
     document.getElementById('productModal').classList.add('show');
   }
@@ -1759,6 +1830,15 @@
     document.querySelectorAll('#sizeChecks input').forEach(cb => {
       cb.checked = taillesDuProduit.indexOf(cb.value) !== -1;
     });
+    // Un produit deja enregistre en taille unique rouvre avec la case cochee.
+    const estUnique = taillesDuProduit.length === 1
+      && String(taillesDuProduit[0]).trim().toLowerCase() === 'unique';
+    const cbUnique = document.getElementById('tailleUnique');
+    if (cbUnique) cbUnique.checked = estUnique;
+    const liste = document.getElementById('sizeChecks');
+    const titre = document.getElementById('labelTailles');
+    if (liste) liste.style.display = estUnique ? 'none' : '';
+    if (titre) titre.style.display = estUnique ? 'none' : '';
     updateSizeGrid(stock);
     document.getElementById('modalNote').innerHTML =
       "Le <strong>stock</strong> est mis \u00e0 jour imm\u00e9diatement.<br>Les autres changements (nom, prix, photo, variantes\u2026) sont soumis \u00e0 la validation d'UNEEK.";
@@ -1911,7 +1991,12 @@
             else { w = Math.round(w * maxSize / h); h = maxSize; }
           }
           canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const ctx = canvas.getContext('2d');
+          // JPEG ne connait pas la transparence : sans ce fond blanc, un PNG
+          // detoure ressortait sur fond NOIR sur toute la boutique.
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
           resolve(canvas.toDataURL('image/jpeg', 0.8));
         };
         img.onerror = () => reject(new Error('Image illisible'));
@@ -1969,26 +2054,68 @@
   }
 
   // Envoi reel du produit. submitProduct sert de garde-fou avant d'y arriver.
+  // Deux clics sur « Soumettre » pendant que les photos montaient, et le
+  // produit partait DEUX fois : deux demandes a valider pour UNEEK, deux
+  // fiches identiques. Le bouton est desormais tenu jusqu'au retour.
+  var ENVOI_PRODUIT = false;
+
   async function submitProduct() {
+    if (ENVOI_PRODUIT) return;
     // Si la page est perimee, ce code n'est pas celui du serveur : on previent.
     if (!(await checkAppVersion())) {
-      showToast('Page périmée — recharge avant de soumettre');
+      showToast('Page p\u00e9rim\u00e9e \u2014 recharge avant de soumettre', true);
+      return;
+    }
+
+    // Les champs manquants etaient signales APRES l'envoi des photos :
+    // plusieurs secondes d'attente pour finir sur « Il manque la coupe »,
+    // sans savoir ou regarder. On verifie d'abord, et on montre le champ.
+    if (!document.getElementById('f-name').value.trim()) {
+      showToast('Le nom du produit est obligatoire', true);
+      pointerChamp('f-name'); return;
+    }
+    const prixSaisi = document.getElementById('f-price').value;
+    if (!prixSaisi || !(parseFloat(prixSaisi) > 0)) {
+      showToast('Le prix est obligatoire, et supérieur à 0', true);
+      pointerChamp('f-price'); return;
+    }
+    const manquants = detailsManquantsMaintenant();
+    if (manquants.length > 0) {
+      showToast('Il manque ' + manquants.join(', '), true);
+      if (!document.getElementById('f-composition').value.trim()) pointerChamp('f-composition');
+      else if (!document.getElementById('f-coupe').value.trim()) pointerChamp('f-coupe');
+      else pointerChamp('f-entretien');
       return;
     }
     // Poids total : les photos partent en base64, Vercel refuse au-dela de 4,5 Mo.
     const poids = selectedImages.reduce((n, s) => n + s.length, 0);
     if (poids > 3500000) {
-      showToast('Photos trop lourdes (' + Math.round(poids / 1048576) + ' Mo) — retires-en une ou deux');
+      showToast('Photos trop lourdes (' + Math.round(poids / 1048576) + ' Mo) \u2014 retires-en une ou deux', true);
       return;
     }
     if (!isEditMode && selectedImages.length === 0) {
       ask('Aucune photo sélectionnée',
           "Ce produit sera soumis sans image et s'affichera sans photo sur le site. Tu peux annuler et en ajouter jusqu'à 5 maintenant.",
           'Soumettre sans photo',
-          doSubmitProduct);
+          lancerEnvoiProduit);
       return;
     }
-    return doSubmitProduct();
+    return lancerEnvoiProduit();
+  }
+
+  // Le bouton est tenu du premier clic jusqu'au retour du serveur, quoi
+  // qu'il arrive — y compris si doSubmitProduct part en erreur.
+  async function lancerEnvoiProduit() {
+    const btn = document.getElementById('btnSoumettreProduit');
+    const libelle = btn ? btn.textContent : '';
+    ENVOI_PRODUIT = true;
+    if (btn) { btn.disabled = true; btn.textContent = 'Envoi\u2026'; }
+    try {
+      return await doSubmitProduct();
+    } finally {
+      ENVOI_PRODUIT = false;
+      if (btn) { btn.disabled = false; btn.textContent = libelle; }
+    }
   }
 
   async function doSubmitProduct() {
@@ -2009,14 +2136,10 @@
     if (!isEditMode || imagesOntChange()) await televerserPhotos();
 
     const details = lireDetails();
-    const manqueDetails = detailsIncomplets(details);
-    // A la creation, les trois champs sont exiges. En modification, on ne
-    // bloque que si le createur a commence a les remplir : sinon corriger
-    // le stock d'un ancien produit deviendrait impossible.
-    const dejaRempli = isEditMode && originalProduct
-      && originalProduct.details && originalProduct.details !== '{}';
-    if ((!isEditMode || dejaRempli || Object.keys(details).length > 0) && manqueDetails.length > 0) {
-      showToast('Il manque ' + manqueDetails.join(', '));
+    // Derniere barriere : le controle a deja eu lieu avant l'envoi des photos.
+    const manqueDetails = detailsManquantsMaintenant();
+    if (manqueDetails.length > 0) {
+      showToast('Il manque ' + manqueDetails.join(', '), true);
       return;
     }
 
@@ -2120,12 +2243,22 @@
       deja[(inp.dataset.couleur || '') + '|' + inp.dataset.taille] = inp.value;
     });
 
+    // Taille unique : un bonnet ou une paire de chaussettes n'a pas de S/M/L.
+    // On garde exactement la meme mecanique, avec une seule "taille" nommee
+    // Unique - que rangTaille() place deja en dernier partout (boutique,
+    // panneau admin, panneau createur), sans rien changer d'autre.
+    const unique = estTailleUnique();
     const tailles = [];
-    document.querySelectorAll('#sizeChecks input:checked').forEach(cb => tailles.push(cb.value));
+    if (unique) {
+      tailles.push('Unique');
+    } else {
+      document.querySelectorAll('#sizeChecks input:checked').forEach(cb => tailles.push(cb.value));
+    }
 
-    label.textContent = couleurs.length
-      ? 'Stock initial par couleur et par taille'
-      : 'Stock initial par taille';
+    label.textContent = unique
+      ? (couleurs.length ? 'Stock initial par couleur' : 'Stock initial')
+      : (couleurs.length ? 'Stock initial par couleur et par taille'
+                         : 'Stock initial par taille');
 
     grid.className = couleurs.length ? 'stock-matrix' : 'size-grid';
     grid.innerHTML = '';
@@ -2163,6 +2296,29 @@
       ligne.appendChild(cellules);
       grid.appendChild(ligne);
     });
+  }
+
+  function estTailleUnique() {
+    const cb = document.getElementById('tailleUnique');
+    return !!(cb && cb.checked);
+  }
+
+  // Coche/decoche : on masque la liste des tailles, qui n'a plus de sens,
+  // et on redessine la grille. Les cases cochees restent cochees, donc
+  // decocher "taille unique" rend la saisie d'avant.
+  function basculerTailleUnique() {
+    const unique = estTailleUnique();
+    const liste = document.getElementById('sizeChecks');
+    const titre = document.getElementById('labelTailles');
+    if (liste) liste.style.display = unique ? 'none' : '';
+    if (titre) titre.style.display = unique ? 'none' : '';
+    const note = document.getElementById('noteStock');
+    if (note) {
+      note.textContent = unique
+        ? "Minimum 3 pi\u00e8ces - c'est dans les r\u00e8gles UNEEK."
+        : "Minimum 3 pi\u00e8ces par taille propos\u00e9e - c'est dans les r\u00e8gles UNEEK. Laisse 0 pour une taille que tu ne proposes pas.";
+    }
+    updateSizeGrid();
   }
 
   // Lit la grille et renvoie la forme adaptee : plate ou par couleur.
@@ -2251,11 +2407,118 @@
     return '<button class="btn-ship" onclick="markShipped(\'' + order.id + '\', this)">Expédié</button>';
   }
 
-  function showToast(msg) {
+  // Un message d'erreur ne doit pas s'afficher en vert : la couleur est la
+  // premiere chose qu'on lit. showToast(msg, true) affiche en rouge.
+  // Le minuteur du message precedent etait laisse en place : deux messages
+  // a la suite et le premier effacait le second au bout de 3 secondes.
+  var MINUTEUR_TOAST = null;
+  function showToast(msg, erreur) {
     const t = document.getElementById('toast');
     t.textContent = msg;
-    t.className = 'toast show';
-    setTimeout(() => t.classList.remove('show'), 3000);
+    t.className = 'toast show' + (erreur ? ' toast-erreur' : '');
+    if (MINUTEUR_TOAST) clearTimeout(MINUTEUR_TOAST);
+    MINUTEUR_TOAST = setTimeout(() => t.classList.remove('show'), erreur ? 5000 : 3000);
+  }
+
+  // Amene le premier champ fautif sous les yeux et l'entoure de rouge.
+  // Le cadre part des que le createur corrige : pas de rouge qui colle.
+  function pointerChamp(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('champ-manquant');
+    const oter = function () {
+      el.classList.remove('champ-manquant');
+      el.removeEventListener('input', oter);
+      el.removeEventListener('change', oter);
+    };
+    el.addEventListener('input', oter);
+    el.addEventListener('change', oter);
+    try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) { el.scrollIntoView(); }
+    try { el.focus({ preventScroll: true }); } catch (e) { /* sans consequence */ }
+  }
+
+  // Une valeur glissee dans un onclick traverse DEUX analyseurs : le parseur
+  // HTML de l'attribut, puis le parseur JavaScript. On echappe pour
+  // JavaScript d'abord, pour HTML ensuite — esc() seul ne suffirait pas.
+  function escJs(v) {
+    return esc(String(v == null ? '' : v).replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+  }
+
+  var SECTION_OUVERTE = 'overview';
+
+  function RECHARGER_SECTION() {
+    if (SECTION_OUVERTE === 'orders') loadOrders();
+    else if (SECTION_OUVERTE === 'edits') loadEdits();
+    else if (SECTION_OUVERTE === 'products') loadProducts();
+    // Sur l'accueil : les trois listes, mais pas l'etat Stripe, qui ne
+    // change pas tout seul et couterait un appel de plus toutes les 45 s.
+    else if (SECTION_OUVERTE === 'overview') { loadProducts(); loadOrders(); loadEdits(); }
+  }
+
+  // --- RAFRAICHISSEMENT AUTOMATIQUE ---------------------------------
+  // Axel : « j'en ai marre de devoir rafraichir ma page pour voir si
+  // nouvelle demande ou commande ».
+  //
+  // Trois regles, pour que ce soit utile sans etre couteux :
+  //   1. on ne recharge QUE la section ouverte - pas tout le panneau ;
+  //   2. on s'arrete quand l'onglet est en arriere-plan (document.hidden) :
+  //      inutile d'appeler le serveur pour une page que personne ne regarde,
+  //      et ca evite de faire grimper la facture Vercel ;
+  //   3. on recharge tout de suite quand l'onglet redevient visible - c'est
+  //      le moment ou l'on veut voir ce qui est arrive pendant l'absence.
+  //
+  // Une erreur reseau ne casse rien : la fonction rechargee a deja son
+  // propre try/catch, et le minuteur continue.
+  var MINUTEUR_AUTO = null;
+  var DELAI_AUTO = 45000;
+
+  function rafraichirSectionCourante() {
+    if (document.hidden) return;
+    // Jamais pendant une saisie : recharger sous les doigts d'un createur
+    // en train de remplir un formulaire lui ferait perdre son travail.
+    if (document.querySelector('.modal-bg.show, .confirm-bg.show, .confirm-overlay.show')) return;
+    try { RECHARGER_SECTION(); } catch (e) { /* on retentera dans 45 s */ }
+  }
+
+  function demarrerRafraichissement() {
+    if (MINUTEUR_AUTO) return;
+    MINUTEUR_AUTO = setInterval(rafraichirSectionCourante, DELAI_AUTO);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) rafraichirSectionCourante();
+    });
+  }
+
+  // --- RETIRER UNE DEMANDE EN ATTENTE ---
+  let editTargetId = null;
+
+  function confirmDeleteEdit(editId, nom) {
+    editTargetId = editId;
+    document.getElementById('confirmDeleteTitre').textContent = 'Retirer cette demande ?';
+    document.getElementById('confirmDeleteMsg').textContent =
+      'Ta demande pour "' + nom + '" sera retirée et UNEEK ne la verra plus. '
+      + 'Tu pourras toujours la refaire plus tard.';
+    document.getElementById('confirmDeleteBtn').onclick = () => executeDeleteEdit();
+    document.getElementById('confirmDeleteBg').classList.add('show');
+  }
+
+  async function executeDeleteEdit() {
+    if (!editTargetId) return;
+    const cible = editTargetId;
+    editTargetId = null;
+    document.getElementById('confirmDeleteBg').classList.remove('show');
+    try {
+      const res = await fetch(API_BASE + '/creator/edits', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify({ edit_id: cible, brand_id: currentBrand.id })
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.error || 'Le retrait n\'a pas abouti', true); return; }
+      showToast('✓ Demande retirée');
+      setTimeout(() => { loadEdits(); loadProducts(); }, 400);
+    } catch (err) {
+      showToast('Pas de réseau — réessaie dans un instant', true);
+    }
   }
 
   // --- DELETE PRODUCT ---
@@ -2263,6 +2526,7 @@
 
   function confirmDeleteProduct(productId, productName) {
     deleteTargetId = productId;
+    document.getElementById('confirmDeleteTitre').textContent = 'Supprimer ce produit ?';
     if (!productName) {
       const found = loadedProducts.find(p => String(p.id) === String(productId));
       productName = found ? found.name : 'ce produit';
@@ -2279,19 +2543,25 @@
 
   async function executeDeleteProduct() {
     if (!deleteTargetId) return;
+    // LE BUG DU 21 SEPTEMBRE : closeConfirmDelete() remet deleteTargetId a
+    // null, et il etait appele AVANT que le corps de la requete soit
+    // construit. On envoyait donc product_id: null, le serveur repondait
+    // « product_id requis », et ce refus s'affichait dans le bandeau vert du
+    // succes. On retient l'identifiant AVANT de fermer la fenetre.
+    const cible = deleteTargetId;
     closeConfirmDelete();
     try {
       const res = await fetch(API_BASE + '/creator/products', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
-        body: JSON.stringify({ product_id: deleteTargetId, brand_id: currentBrand.id })
+        body: JSON.stringify({ product_id: cible, brand_id: currentBrand.id })
       });
       const data = await res.json();
-      if (!res.ok) { showToast('Erreur: ' + (data.error || 'Suppression échouée')); return; }
+      if (!res.ok) { showToast(data.error || 'La suppression n\'a pas abouti', true); return; }
       showToast('✓ Produit supprimé');
       setTimeout(() => loadProducts(), 500);
     } catch (err) {
-      showToast('Erreur: ' + err.message);
+      showToast('Pas de réseau — réessaie dans un instant', true);
     }
   }
 
