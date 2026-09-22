@@ -123,6 +123,40 @@ export function ecrireStock(ss, taille, couleur, valeur) {
 // Les cas de reference. Le garde-fou s'en sert pour verifier que les copies
 // restees dans les pages HTML repondent exactement comme ce fichier.
 // Toute regle ajoutee ici doit etre ajoutee a cette liste.
+// La liste des combinaisons d'un stock, triee, sous forme de texte :
+//   { S: 3, M: 0 }                  -> "|M||S"
+//   { Rouge: { S: 1 }, Bleu: {} }   -> "Bleu|  (rien)  Rouge|S"  (a peu pres)
+// On s'en sert pour repondre a UNE question : le createur a-t-il seulement
+// recompte ses pieces, ou a-t-il ajoute/retire une taille ou une couleur ?
+export function combinaisonsDe(ss) {
+  if (!ss || typeof ss !== "object") return [];
+  const out = [];
+  if (stockParCouleur(ss)) {
+    Object.keys(ss).forEach(function (coul) {
+      const t = ss[coul] || {};
+      const tailles = Object.keys(t);
+      // Une couleur sans aucune taille compte quand meme : elle existe.
+      if (!tailles.length) out.push(coul + "|");
+      tailles.forEach(function (taille) { out.push(coul + "|" + taille); });
+    });
+  } else {
+    Object.keys(ss).forEach(function (taille) { out.push("|" + taille); });
+  }
+  out.sort();
+  return out;
+}
+
+// true si les deux stocks proposent exactement les memes couleurs et les
+// memes tailles — les QUANTITES peuvent differer, c'est meme le but.
+export function memesCombinaisons(a, b) {
+  const ca = combinaisonsDe(a), cb = combinaisonsDe(b);
+  if (ca.length !== cb.length) return false;
+  for (let i = 0; i < ca.length; i++) {
+    if (ca[i] !== cb[i]) return false;
+  }
+  return true;
+}
+
 export const CAS_DE_REFERENCE = [
   null,
   undefined,

@@ -6,6 +6,7 @@
 import { supabaseAdmin } from "../lib/supabase.js";
 import { controlerAcces } from "../lib/session.js";
 import { alerteAdmin, esc } from "../lib/email.js";
+import { memesCombinaisons } from "../lib/stock.js";
 
 // sizes_stock a deux formes : plate { S: 3 } ou par couleur { Rouge: { S: 3 } }.
 function aplatirStock(ss) {
@@ -177,7 +178,20 @@ export default async function handler(req, res) {
         }
         // Le stock est operationnel, pas editorial : il s'applique tout de
         // suite, sans validation. Tout le reste passe par l'admin.
+        //
+        // MAIS : « operationnel » veut dire RECOMPTER des pieces, pas ajouter
+        // une couleur. La boutique lit les couleurs d'un produit dans
+        // sizes_stock ; appliquer tout de suite un stock qui contient une
+        // couleur neuve, c'est la publier sans validation. C'est arrive le
+        // 22 septembre : une couleur « Rose » s'affichait sur la boutique
+        // alors que la demande attendait encore, et retirer la demande ne
+        // l'enlevait pas — elle n'en faisait pas partie.
+        //
+        // Donc : memes tailles et memes couleurs qu'avant -> recomptage,
+        // applique tout de suite. La moindre combinaison en plus ou en
+        // moins -> c'est le catalogue, ca passe par UNEEK.
         let stockApplied = false;
+        let stockEnAttente = false;
         if (sizes_stock && Object.keys(sizes_stock).length > 0) {
           const fautives = combinaisonsSousLeMinimum(sizes_stock);
           if (fautives.length > 0) {
@@ -210,6 +224,34 @@ export default async function handler(req, res) {
           });
           const totalStock = lignes.reduce((n, l) => n + l.qte, 0);
 
+          // Ce que le produit propose AUJOURD'HUI. Une lecture ratee ne doit
+          // surtout pas faire croire que rien n'a change : au moindre doute
+          // on passe par la validation, jamais l'inverse.
+          const { data: actuel, error: errActuel } = await supabaseAdmin
+            .from("products")
+            .select("sizes_stock")
+            .eq("id", product_id)
+            .eq("brand_id", brand_id)
+            .maybeSingle();
+
+          if (errActuel) {
+            console.error("Error reading current stock:", errActuel);
+            return res.status(500).json({ error: "Erreur serveur" });
+          }
+          if (!actuel) {
+            return res.status(404).json({ error: "Produit non trouvé" });
+          }
+
+          const simpleRecomptage = memesCombinaisons(actuel.sizes_stock, sizes_stock);
+
+          if (!simpleRecomptage) {
+            // Le catalogue change : le stock part dans la demande, et la
+            // table products n'est pas touchee. L'admin l'appliquera en
+            // validant — api/admin/pending.js sait deja le faire.
+            changes.sizes_stock = sizes_stock;
+            stockEnAttente = true;
+          } else {
+
           const { error: stockError } = await supabaseAdmin
             .from("products")
             .update({
@@ -226,6 +268,7 @@ export default async function handler(req, res) {
             return res.status(500).json({ error: "Erreur mise à jour du stock" });
           }
           stockApplied = true;
+          }
         }
 
         // Rien d'autre que le stock : pas de demande a creer.
@@ -272,9 +315,13 @@ export default async function handler(req, res) {
         return res.status(200).json({
           success: true,
           stock_applied: stockApplied,
-          message: stockApplied
-            ? "Stock mis à jour. Les autres changements sont soumis à validation UNEEK."
-            : "Modification soumise — en attente de validation par UNEEK",
+          stock_en_attente: stockEnAttente,
+          message: stockEnAttente
+            ? "Tu as ajouté ou retiré une taille ou une couleur : le stock part "
+              + "avec la demande et s'appliquera quand UNEEK aura validé."
+            : (stockApplied
+              ? "Stock mis à jour. Les autres changements sont soumis à validation UNEEK."
+              : "Modification soumise — en attente de validation par UNEEK"),
           edit_id: edit.id,
         });
       }

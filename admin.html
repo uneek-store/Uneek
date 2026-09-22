@@ -587,7 +587,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-09-22-rafraichissement-2';
+  const APP_VERSION = '2026-09-22-banc-essai-3';
 
   async function checkAppVersion() {
     try {
@@ -1660,11 +1660,17 @@
   }
   function closeLightbox() { document.getElementById('lightbox').classList.remove('show'); }
 
+  // Le minuteur du message precedent restait en place : deux messages a la
+  // suite, et le premier effacait le second au bout de 3 secondes. Corrige
+  // cote createur le 22 septembre, ici aussi.
+  var MINUTEUR_TOAST = null;
   function showToast(msg, type) {
     const t = document.getElementById('toast');
     t.textContent = msg;
     t.className = 'toast show toast-' + type;
-    setTimeout(() => t.classList.remove('show'), 3000);
+    if (MINUTEUR_TOAST) clearTimeout(MINUTEUR_TOAST);
+    MINUTEUR_TOAST = setTimeout(() => t.classList.remove('show'),
+      type === 'red' ? 5000 : 3000);
   }
 
   // Allow Enter key on login

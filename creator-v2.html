@@ -986,9 +986,13 @@
     <label>Coupe *</label>
     <select id="f-coupe" style="width:100%;padding:11px 13px;border:1px solid var(--gray-200);border-radius:6px;font-size:14px;outline:none;background:#fff">
       <option value="">— Choisir —</option>
-      <option>Ample</option>
-      <option>Classique</option>
-      <option>Ajustée</option>
+      <!-- L'attribut value est OBLIGATOIRE ici : sans lui, la valeur d'une
+           option est son texte, et i18n.js traduit les textes. Un createur
+           en anglais envoyait « Loose » au lieu de « Ample », le serveur
+           refusait, et il ne pouvait plus ajouter le moindre produit. -->
+      <option value="Ample">Ample</option>
+      <option value="Classique">Classique</option>
+      <option value="Ajustée">Ajustée</option>
     </select>
 
     <label>Entretien *</label>
@@ -1074,7 +1078,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-09-22-mot-de-passe-oublie-1';
+  const APP_VERSION = '2026-09-22-coupe-et-couleur-3';
 
   async function checkAppVersion() {
     try {
@@ -2220,8 +2224,34 @@
   // fiches identiques. Le bouton est desormais tenu jusqu'au retour.
   var ENVOI_PRODUIT = false;
 
+  // Pose le verrou et tient le bouton. Renvoie la fonction a appeler pour
+  // tout relacher — quoi qu'il arrive, y compris sur une erreur.
+  function tenirLeBouton() {
+    ENVOI_PRODUIT = true;
+    const btn = document.getElementById('btnSoumettreProduit');
+    const libelle = btn ? btn.textContent : '';
+    if (btn) btn.disabled = true;
+    return function relacher() {
+      ENVOI_PRODUIT = false;
+      if (btn) { btn.disabled = false; btn.textContent = libelle; }
+    };
+  }
+
   async function submitProduct() {
+    // LE VERROU SE POSE ICI, avant le premier await. C'etait la faute :
+    // il etait pose apres, et trois clics rapides passaient tous les trois
+    // pendant l'attente de checkAppVersion(). Mesure au banc d'essai le
+    // 22 septembre : trois clics, trois demandes.
     if (ENVOI_PRODUIT) return;
+    const relacher = tenirLeBouton();
+    try {
+      return await deroulerSoumission();
+    } finally {
+      relacher();
+    }
+  }
+
+  async function deroulerSoumission() {
     // Si la page est perimee, ce code n'est pas celui du serveur : on previent.
     if (!(await checkAppVersion())) {
       showToast('Page p\u00e9rim\u00e9e \u2014 recharge avant de soumettre', true);
@@ -2255,27 +2285,30 @@
       return;
     }
     if (!isEditMode && selectedImages.length === 0) {
+      // Ici submitProduct va rendre la main, donc relacher le verrou : la
+      // confirmation repasse par lancerEnvoiProduit(), qui le reprend.
       ask('Aucune photo sélectionnée',
           "Ce produit sera soumis sans image et s'affichera sans photo sur le site. Tu peux annuler et en ajouter jusqu'à 5 maintenant.",
           'Soumettre sans photo',
           lancerEnvoiProduit);
       return;
     }
-    return lancerEnvoiProduit();
+    const btn = document.getElementById('btnSoumettreProduit');
+    if (btn) btn.textContent = 'Envoi\u2026';
+    return await doSubmitProduct();
   }
 
-  // Le bouton est tenu du premier clic jusqu'au retour du serveur, quoi
-  // qu'il arrive — y compris si doSubmitProduct part en erreur.
+  // Le chemin « je confirme sans photo » : submitProduct est deja sorti et
+  // a relache le verrou, on le reprend ici pour la duree de l'envoi.
   async function lancerEnvoiProduit() {
+    if (ENVOI_PRODUIT) return;
+    const relacher = tenirLeBouton();
     const btn = document.getElementById('btnSoumettreProduit');
-    const libelle = btn ? btn.textContent : '';
-    ENVOI_PRODUIT = true;
-    if (btn) { btn.disabled = true; btn.textContent = 'Envoi\u2026'; }
+    if (btn) btn.textContent = 'Envoi\u2026';
     try {
       return await doSubmitProduct();
     } finally {
-      ENVOI_PRODUIT = false;
-      if (btn) { btn.disabled = false; btn.textContent = libelle; }
+      relacher();
     }
   }
 
@@ -2288,7 +2321,7 @@
     const variantsRaw = document.getElementById('f-variants').value;
     const variants = variantsRaw ? variantsRaw.split(',').map(v => v.trim()).filter(v => v) : [];
 
-    if (!name || !price) { showToast('Nom et prix requis'); return; }
+    if (!name || !price) { showToast('Nom et prix requis', true); return; }
 
     // En modification, on ne televerse que si les photos ont reellement
     // change. Sinon on remplacerait des photos intactes par de nouvelles
@@ -2366,7 +2399,10 @@
           err.textContent = data.error;
           err.style.display = 'block';
         }
-        showToast(data.error || 'Erreur lors de l\'envoi');
+        // Le refus du serveur s'affichait sur fond VERT, la couleur du
+        // succes : un createur lisait « Il manque la coupe » comme une
+        // bonne nouvelle. Meme faute que le bandeau du 21 septembre.
+        showToast(data.error || 'Erreur lors de l\'envoi', true);
         return;
       }
       closeModal();
@@ -2374,6 +2410,10 @@
         showToast('✓ Nouveau produit soumis — UNEEK validera avant publication');
       } else if (data.stock_only) {
         showToast('✓ Stock mis à jour');
+      } else if (data.stock_en_attente) {
+        // Une taille ou une couleur en plus (ou en moins) n'est pas un
+        // recomptage : la boutique ne doit pas l'afficher avant UNEEK.
+        showToast("Taille ou couleur modifiée — le stock s'appliquera après validation d'UNEEK");
       } else if (data.stock_applied) {
         showToast('✓ Stock mis à jour — les autres changements attendent UNEEK');
       } else {
@@ -2381,7 +2421,7 @@
       }
       setTimeout(() => { loadProducts(); loadEdits(); }, 1000);
     } catch (err) {
-      showToast('Erreur: ' + err.message);
+      showToast('Erreur: ' + err.message, true);
     }
   }
 
@@ -2536,14 +2576,14 @@
       let data = null;
       try { data = await res.json(); } catch (e) {}
       if (!res.ok) {
-        showToast('Erreur : ' + ((data && data.error) || 'expédition non enregistrée'));
+        showToast('Erreur : ' + ((data && data.error) || 'expédition non enregistrée'), true);
         if (btn) { btn.disabled = false; btn.innerHTML = repos; }
         return;
       }
       showToast('✓ Marqué comme expédié — le client est notifié');
       setTimeout(() => loadOrders(), 1000);
     } catch (err) {
-      showToast('Erreur: ' + err.message);
+      showToast('Erreur: ' + err.message, true);
       if (btn) { btn.disabled = false; btn.innerHTML = repos; }
     }
   }
