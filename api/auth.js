@@ -3,7 +3,9 @@
 
 import { supabaseAdmin } from "./lib/supabase.js";
 import { creerJeton, lireJeton, jetonDeLaRequete, controlerAcces,
-  creerJetonClient, lireJetonClient } from "./lib/session.js";
+  creerJetonClient, lireJetonClient,
+  creerBilletReinit, lireBilletReinit } from "./lib/session.js";
+import { codeReinitialisation } from "./lib/email.js";
 import { limiter } from "./lib/limite.js";
 import { normaliser } from "./lib/email-langues.js";
 import crypto from "crypto";
@@ -57,7 +59,10 @@ export default async function handler(req, res) {
     // 10 essais par tranche de 5 minutes suffisent largement a quelqu'un qui
     // se trompe de touche.
     const ACTIONS_SENSIBLES = ["login", "register", "register_creator",
-      "customer_login", "customer_register", "change_password", "change_email"];
+      "customer_login", "customer_register", "change_password", "change_email",
+      // Le code de reinitialisation fait 6 chiffres : sans plafond, on le
+      // devine en quelques minutes avec une simple boucle.
+      "mot_de_passe_oublie", "reinitialiser_mot_de_passe"];
     if (ACTIONS_SENSIBLES.includes(action)) {
       if (limiter(req, res, {
         cle: "identifiants",
@@ -304,6 +309,103 @@ export default async function handler(req, res) {
 
       return res.status(200).json({ success: true, message: "Mot de passe mis à jour" });
     }
+    // --- MOT DE PASSE OUBLIE : etape 1, demander un code ---
+    //
+    // La reponse est VOLONTAIREMENT la meme que le compte existe ou non.
+    // Sinon, cette page dirait a n'importe qui quelles adresses ont un
+    // compte createur chez UNEEK — une liste qui ne regarde personne.
+    // Le billet renvoye est inutilisable sans le code, qui part par e-mail.
+    if (action === "mot_de_passe_oublie") {
+      const adresse = String(email || "").trim().toLowerCase();
+      const REPONSE_NEUTRE = {
+        success: true,
+        message: "Si un compte existe pour cette adresse, un code vient de partir.",
+      };
+      if (!adresse) return res.status(400).json({ error: "Adresse e-mail requise" });
+
+      const { data: compte, error: errCompte } = await supabaseAdmin
+        .from("creator_accounts")
+        .select("id, email, full_name")
+        .eq("email", adresse)
+        .maybeSingle();
+
+      // supabase-js ne leve pas : sans cette verification, une base en panne
+      // ressemblerait a un compte inexistant et le createur attendrait un
+      // e-mail qui ne viendrait jamais.
+      if (errCompte) {
+        console.error("[mot de passe oublie] lecture du compte :", errCompte);
+        return res.status(500).json({ error: "Erreur serveur" });
+      }
+      if (!compte) {
+        console.log("[mot de passe oublie] aucune adresse " + adresse + " \u2014 reponse neutre");
+        return res.status(200).json(REPONSE_NEUTRE);
+      }
+
+      // 6 chiffres, tires au sort par le generateur cryptographique.
+      const code = String(crypto.randomInt(0, 1000000)).padStart(6, "0");
+      const billet = creerBilletReinit(compte.id, code);
+      if (!billet) {
+        console.error("[mot de passe oublie] AUTH_SECRET absente : impossible de signer");
+        return res.status(500).json({ error: "Erreur serveur" });
+      }
+
+      const envoi = await codeReinitialisation(compte.email, compte.full_name, code);
+      if (!envoi || envoi.sent !== true) {
+        // Ici on ne fait PAS semblant : le createur attendrait un e-mail qui
+        // ne viendra pas. Le billet n'est pas renvoye.
+        console.error("[mot de passe oublie] e-mail non parti :", JSON.stringify(envoi));
+        return res.status(502).json({
+          error: "L'e-mail n'a pas pu partir. Reessaie dans un instant, ou ecris a contact@uneek.store.",
+        });
+      }
+
+      return res.status(200).json({ ...REPONSE_NEUTRE, ticket: billet });
+    }
+
+    // --- MOT DE PASSE OUBLIE : etape 2, poser le nouveau mot de passe ---
+    if (action === "reinitialiser_mot_de_passe") {
+      const { ticket, code, new_password } = req.body;
+      if (!ticket || !code || !new_password) {
+        return res.status(400).json({ error: "Code et nouveau mot de passe requis" });
+      }
+      if (String(new_password).length < 6) {
+        return res.status(400).json({ error: "Le mot de passe doit faire au moins 6 caract\u00e8res" });
+      }
+
+      const lu = lireBilletReinit(ticket, code);
+      if (!lu.ok) {
+        console.warn("[mot de passe oublie] refus \u2014 " + lu.raison);
+        // Un seul message pour toutes les causes : dire « billet expire »
+        // plutot que « code incorrect » apprendrait a un attaquant que son
+        // code, lui, etait bon.
+        return res.status(401).json({
+          error: "Code incorrect ou p\u00e9rim\u00e9. Redemande un code et r\u00e9essaie.",
+        });
+      }
+
+      const { data: majCompte, error: errMaj } = await supabaseAdmin
+        .from("creator_accounts")
+        .update({ password_hash: hashPassword(new_password) })
+        .eq("id", lu.compteId)
+        .select("id, email")
+        .maybeSingle();
+
+      if (errMaj) {
+        console.error("[mot de passe oublie] mise a jour :", errMaj);
+        return res.status(500).json({ error: "Erreur mise \u00e0 jour" });
+      }
+      if (!majCompte) {
+        // Le compte a disparu entre la demande et la validation.
+        return res.status(404).json({ error: "Compte introuvable" });
+      }
+
+      console.log("[mot de passe oublie] mot de passe change pour " + majCompte.email);
+      return res.status(200).json({
+        success: true,
+        message: "Mot de passe mis \u00e0 jour. Tu peux te connecter.",
+      });
+    }
+
     // --- REGISTER CREATEUR (auto-inscription par code d'invitation) ---
     if (action === "register_creator") {
       const { invite_code } = req.body;

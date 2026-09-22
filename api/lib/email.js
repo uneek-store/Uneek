@@ -431,6 +431,38 @@ export async function reponseValidation(destinataire, nomCreateur, info, langue)
 }
 
 // 4. Alerte interne (uniquement pour l'admin UNEEK).
+// Le code de reinitialisation de mot de passe.
+//
+// Volontairement sobre et sans aucun lien cliquable vers un formulaire : un
+// e-mail de mot de passe avec un gros bouton est exactement ce a quoi
+// ressemble un hameconnage, et on ne veut pas habituer les createurs a
+// cliquer dessus. Le code se recopie a la main, dans l'onglet deja ouvert.
+export async function codeReinitialisation(destinataire, prenom, code) {
+  const corps =
+    '<p style="margin:0 0 14px;font-size:16px">Bonjour '
+    + esc((prenom || "").split(" ")[0]) + ',</p>'
+    + '<p style="margin:0 0 20px">Tu as demand\u00e9 \u00e0 changer le mot de passe de ton '
+    + 'espace cr\u00e9ateur UNEEK. Voici ton code :</p>'
+    + '<div style="background:#000;color:#fff;border-radius:8px;padding:24px;'
+    + 'text-align:center;margin:0 0 24px">'
+    + '<div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;'
+    + 'color:#aaa;margin-bottom:10px">Ton code</div>'
+    + '<div style="font-size:32px;font-weight:700;letter-spacing:8px">'
+    + esc(code) + '</div></div>'
+    + '<p style="margin:0 0 18px;font-size:14px">Recopie-le dans l\'onglet o\u00f9 tu as '
+    + 'fait la demande, puis choisis ton nouveau mot de passe. '
+    + '<strong>Ce code est valable 15 minutes.</strong></p>'
+    + '<p style="margin:0;font-size:13px;color:#666">Tu n\'as rien demand\u00e9 ? '
+    + 'Ignore cet e-mail : sans ce code, personne ne peut changer ton mot de '
+    + 'passe, et le tien continue de fonctionner.</p>';
+
+  return envoyer({
+    to: destinataire,
+    subject: "UNEEK \u2014 ton code pour changer de mot de passe",
+    html: gabarit("Changer ton mot de passe", corps),
+  });
+}
+
 export async function alerteAdmin(titre, lignes, lienTexte) {
   const corps =
     bloqueInfo(titre, lignes)

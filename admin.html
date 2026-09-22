@@ -587,7 +587,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-09-22-rafraichissement-1';
+  const APP_VERSION = '2026-09-22-rafraichissement-2';
 
   async function checkAppVersion() {
     try {
@@ -944,8 +944,17 @@
   var MINUTEUR_AUTO = null;
   var DELAI_AUTO = 45000;
 
+
+  // Un onglet laisse ouvert continue d'executer l'ANCIEN code apres un
+  // deploiement : c'est ainsi qu'un bug deja corrige se remontre. Le bandeau
+  // rouge existait deja, mais n'etait verifie qu'a la soumission d'un
+  // produit. On le verifie au demarrage, puis un tour sur dix (~7 minutes).
+  var TOURS_AUTO = 0;
+
   function rafraichirSectionCourante() {
     if (document.hidden) return;
+    TOURS_AUTO++;
+    if (TOURS_AUTO % 10 === 0) checkAppVersion();
     // Jamais pendant une saisie : recharger sous les doigts d'un createur
     // en train de remplir un formulaire lui ferait perdre son travail.
     if (document.querySelector('.modal-bg.show, .confirm-bg.show, .confirm-overlay.show')) return;
@@ -954,6 +963,7 @@
 
   function demarrerRafraichissement() {
     if (MINUTEUR_AUTO) return;
+    checkAppVersion();
     MINUTEUR_AUTO = setInterval(rafraichirSectionCourante, DELAI_AUTO);
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden) rafraichirSectionCourante();

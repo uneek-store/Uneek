@@ -88,6 +88,18 @@ export function lireJeton(jeton) {
     return { ok: false, raison: "jeton client presente comme jeton createur" };
   }
 
+  // Troisieme famille depuis le 22 septembre : le billet de reinitialisation
+  // de mot de passe. Il est signe du meme secret, donc il passerait la
+  // verification de signature. Sans ces deux lignes il serait accepte comme
+  // une session — avec un id absent, certes, mais autant fermer la porte
+  // plutot que compter sur ce que chaque appelant fera d'un id manquant.
+  if (charge.typ) {
+    return { ok: false, raison: "ce jeton n'est pas une session (typ=" + charge.typ + ")" };
+  }
+  if (!charge.id) {
+    return { ok: false, raison: "jeton sans identifiant de compte" };
+  }
+
   return { ok: true, session: charge };
 }
 
@@ -150,6 +162,75 @@ export function lireJetonClient(jeton) {
   }
 
   return { ok: true, customerId: String(charge.cid) };
+}
+
+// --- billet de reinitialisation de mot de passe ----------------------------
+//
+// Voir l'en-tete de /api/auth, action "mot_de_passe_oublie", pour le
+// raisonnement complet. En deux phrases : le billet part au navigateur, le
+// code part dans la boite mail, et il faut les deux pour changer le mot de
+// passe. Le billet ne contient JAMAIS le code en clair — seulement son
+// empreinte, salee avec l'identifiant du compte.
+
+const DUREE_REINIT_MS = 15 * 60 * 1000; // 15 minutes
+
+function empreinteCode(code, compteId) {
+  return crypto.createHash("sha256")
+    .update(String(code) + "|" + String(compteId) + "|" + secret())
+    .digest("base64url");
+}
+
+export function creerBilletReinit(compteId, code) {
+  if (!secret() || !compteId || !code) return null;
+  const charge = {
+    typ: "reinit",
+    rid: String(compteId),
+    cod: empreinteCode(code, compteId),
+    exp: Date.now() + DUREE_REINIT_MS,
+  };
+  const corps = Buffer.from(JSON.stringify(charge)).toString("base64url");
+  return corps + "." + signature(corps);
+}
+
+// Renvoie { ok, compteId } ou { ok: false, raison }.
+export function lireBilletReinit(billet, code) {
+  if (!secret()) return { ok: false, raison: "AUTH_SECRET absente du serveur" };
+  if (!billet || typeof billet !== "string") return { ok: false, raison: "billet manquant" };
+
+  const parts = billet.split(".");
+  if (parts.length !== 2) return { ok: false, raison: "billet illisible" };
+
+  const attendue = signature(parts[0]);
+  const a = Buffer.from(parts[1]);
+  const b = Buffer.from(attendue);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return { ok: false, raison: "billet non signe par ce serveur" };
+  }
+
+  let charge;
+  try {
+    charge = JSON.parse(Buffer.from(parts[0], "base64url").toString("utf-8"));
+  } catch {
+    return { ok: false, raison: "billet illisible" };
+  }
+
+  if (!charge || charge.typ !== "reinit" || !charge.rid || !charge.cod) {
+    return { ok: false, raison: "ce n'est pas un billet de reinitialisation" };
+  }
+  if (!charge.exp || charge.exp < Date.now()) {
+    return { ok: false, raison: "billet expire" };
+  }
+
+  // Comparaison a temps constant : comparer avec === laisserait deviner le
+  // code chiffre par chiffre en mesurant le temps de reponse.
+  const attenduCode = Buffer.from(String(charge.cod));
+  const recuCode = Buffer.from(empreinteCode(String(code == null ? "" : code).trim(), charge.rid));
+  if (attenduCode.length !== recuCode.length
+      || !crypto.timingSafeEqual(attenduCode, recuCode)) {
+    return { ok: false, raison: "code incorrect" };
+  }
+
+  return { ok: true, compteId: String(charge.rid) };
 }
 
 function marqueDemandee(req) {

@@ -497,11 +497,54 @@
     <input type="password" id="loginPassword" placeholder="••••••••" />
     <button class="login-btn" onclick="doLogin()">Se connecter</button>
     <div class="login-error" id="loginError">Email ou mot de passe incorrect</div>
+    <div style="text-align:center;margin-top:14px">
+      <a href="#" onclick="showOubli();return false" style="font-size:13px;color:var(--gray-500);text-decoration:underline">Mot de passe oublié ?</a>
+    </div>
     <div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-200)">
       <span style="font-size:13px;color:var(--gray-500)">Pas encore de compte ?</span><br>
       <a href="#" onclick="showRegister();return false" style="font-size:13px;color:var(--black);font-weight:600;text-decoration:underline">Créer un compte avec mon code</a>
     </div>
   </div>
+  <!-- MOT DE PASSE OUBLIE -->
+  <div class="login-box" id="oubliBox" style="display:none">
+    <h1>UNEEK</h1>
+    <p id="oubliSousTitre">Mot de passe oublié</p>
+
+    <!-- etape 1 : l'adresse -->
+    <div id="oubliEtape1">
+      <p style="font-size:13px;color:var(--gray-500);margin:0 0 14px;line-height:1.5">
+        Saisis l'adresse de ton compte créateur. On t'envoie un code à six chiffres.
+      </p>
+      <label>Email</label>
+      <input type="email" id="oubliEmail" placeholder="ton@email.com" />
+      <button class="login-btn" id="oubliBtn1" onclick="demanderCode()">Recevoir mon code</button>
+    </div>
+
+    <!-- etape 2 : le code et le nouveau mot de passe -->
+    <div id="oubliEtape2" style="display:none">
+      <p style="font-size:13px;color:var(--gray-500);margin:0 0 14px;line-height:1.5">
+        Le code est parti par e-mail. Il est valable <strong>15 minutes</strong>.
+        Pense à regarder dans les indésirables.
+      </p>
+      <label>Code reçu</label>
+      <input type="text" id="oubliCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" style="font-family:monospace;font-weight:600;letter-spacing:6px;text-align:center;font-size:18px" />
+      <label>Nouveau mot de passe</label>
+      <input type="password" id="oubliMdp" placeholder="Au moins 6 caractères" />
+      <label>Confirme le nouveau mot de passe</label>
+      <input type="password" id="oubliMdp2" placeholder="Répète-le" />
+      <button class="login-btn" id="oubliBtn2" onclick="validerCode()">Changer mon mot de passe</button>
+      <div style="text-align:center;margin-top:12px">
+        <a href="#" onclick="demanderCode(true);return false" style="font-size:12px;color:var(--gray-500);text-decoration:underline">Je n'ai rien reçu — renvoyer un code</a>
+      </div>
+    </div>
+
+    <div class="login-error" id="oubliError"></div>
+    <div class="login-error" id="oubliSuccess" style="color:var(--green)"></div>
+    <div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-200)">
+      <a href="#" onclick="showLogin();return false" style="font-size:13px;color:var(--gray-500);text-decoration:underline">← Retour à la connexion</a>
+    </div>
+  </div>
+
   <!-- INSCRIPTION PAR CODE D'INVITATION -->
   <div class="login-box" id="registerBox" style="display:none">
     <h1>UNEEK</h1>
@@ -1031,7 +1074,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-09-22-taille-unique-retrait-1';
+  const APP_VERSION = '2026-09-22-mot-de-passe-oublie-1';
 
   async function checkAppVersion() {
     try {
@@ -1056,11 +1099,128 @@
   // --- INSCRIPTION PAR CODE D'INVITATION ---
   function showRegister() {
     document.getElementById('loginBox').style.display = 'none';
+    document.getElementById('oubliBox').style.display = 'none';
     document.getElementById('registerBox').style.display = 'block';
   }
   function showLogin() {
     document.getElementById('registerBox').style.display = 'none';
+    document.getElementById('oubliBox').style.display = 'none';
     document.getElementById('loginBox').style.display = 'block';
+  }
+
+  // --- MOT DE PASSE OUBLIE ---
+  //
+  // Le « billet » signe par le serveur ne sert a rien sans le code recu par
+  // e-mail, et il ne quitte jamais cette variable : ni localStorage, ni
+  // cookie, ni adresse. Fermer l'onglet l'efface, c'est voulu.
+  var BILLET_REINIT = null;
+
+  function showOubli() {
+    document.getElementById('loginBox').style.display = 'none';
+    document.getElementById('registerBox').style.display = 'none';
+    document.getElementById('oubliBox').style.display = 'block';
+    // On repart toujours de l'etape 1, y compris apres un aller-retour.
+    BILLET_REINIT = null;
+    document.getElementById('oubliEtape1').style.display = 'block';
+    document.getElementById('oubliEtape2').style.display = 'none';
+    document.getElementById('oubliSousTitre').textContent = 'Mot de passe oubli\u00e9';
+    document.getElementById('oubliCode').value = '';
+    document.getElementById('oubliMdp').value = '';
+    document.getElementById('oubliMdp2').value = '';
+    direOubli('', '');
+    // L'adresse deja tapee sur l'ecran de connexion est reprise : personne
+    // n'a envie de la retaper parce qu'il s'est trompe de mot de passe.
+    const dejaTapee = document.getElementById('loginEmail').value.trim();
+    if (dejaTapee) document.getElementById('oubliEmail').value = dejaTapee;
+    document.getElementById('oubliEmail').focus();
+  }
+
+  function direOubli(erreur, succes) {
+    const e = document.getElementById('oubliError');
+    const s = document.getElementById('oubliSuccess');
+    e.textContent = erreur || '';
+    e.style.display = erreur ? 'block' : 'none';
+    s.textContent = succes || '';
+    s.style.display = succes ? 'block' : 'none';
+  }
+
+  async function demanderCode(renvoi) {
+    const email = document.getElementById('oubliEmail').value.trim();
+    if (!email) { direOubli('Saisis ton adresse e-mail.', ''); return; }
+
+    const btn = document.getElementById(renvoi ? 'oubliBtn2' : 'oubliBtn1');
+    const libelle = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Envoi\u2026';
+    direOubli('', '');
+    try {
+      const res = await fetch(API_BASE + '/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'mot_de_passe_oublie', email })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { direOubli(data.error || "L'envoi n'a pas abouti.", ''); return; }
+
+      // Pas de billet : le serveur repond volontairement la meme chose quand
+      // l'adresse n'a pas de compte. On passe quand meme a l'etape 2 — dire
+      // « cette adresse n'existe pas » reviendrait a publier la liste des
+      // createurs d'UNEEK a qui veut la demander.
+      BILLET_REINIT = data.ticket || null;
+      document.getElementById('oubliEtape1').style.display = 'none';
+      document.getElementById('oubliEtape2').style.display = 'block';
+      document.getElementById('oubliSousTitre').textContent = 'Ton nouveau mot de passe';
+      direOubli('', data.message || 'Si un compte existe pour cette adresse, un code vient de partir.');
+      document.getElementById('oubliCode').focus();
+    } catch (err) {
+      direOubli('Pas de r\u00e9seau \u2014 r\u00e9essaie dans un instant.', '');
+    } finally {
+      btn.disabled = false; btn.textContent = libelle;
+    }
+  }
+
+  async function validerCode() {
+    const code = document.getElementById('oubliCode').value.trim();
+    const mdp = document.getElementById('oubliMdp').value;
+    const mdp2 = document.getElementById('oubliMdp2').value;
+
+    if (!code) { direOubli('Saisis le code re\u00e7u par e-mail.', ''); return; }
+    if (mdp.length < 6) { direOubli('Le mot de passe doit faire au moins 6 caract\u00e8res.', ''); return; }
+    if (mdp !== mdp2) { direOubli('Les deux mots de passe ne sont pas identiques.', ''); return; }
+    if (!BILLET_REINIT) {
+      direOubli('Ce code ne correspond \u00e0 aucune demande. Redemande un code.', '');
+      return;
+    }
+
+    const btn = document.getElementById('oubliBtn2');
+    const libelle = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Changement\u2026';
+    direOubli('', '');
+    try {
+      const res = await fetch(API_BASE + '/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'reinitialiser_mot_de_passe',
+          ticket: BILLET_REINIT, code, new_password: mdp
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { direOubli(data.error || "Le changement n'a pas abouti.", ''); return; }
+
+      BILLET_REINIT = null;
+      showLogin();
+      document.getElementById('loginEmail').value = document.getElementById('oubliEmail').value.trim();
+      document.getElementById('loginPassword').value = '';
+      document.getElementById('loginPassword').focus();
+      const err = document.getElementById('loginError');
+      err.textContent = '\u2713 Mot de passe chang\u00e9 \u2014 connecte-toi avec le nouveau.';
+      err.style.color = 'var(--green)';
+      err.style.display = 'block';
+    } catch (e) {
+      direOubli('Pas de r\u00e9seau \u2014 r\u00e9essaie dans un instant.', '');
+    } finally {
+      btn.disabled = false; btn.textContent = libelle;
+    }
   }
 
   async function doRegister() {
@@ -1188,6 +1348,7 @@
     const password = document.getElementById('loginPassword').value;
     const errorEl = document.getElementById('loginError');
     errorEl.style.display = 'none';
+    errorEl.style.color = '';
 
     try {
       const res = await fetch(API_BASE + '/auth', {
@@ -2472,8 +2633,17 @@
   var MINUTEUR_AUTO = null;
   var DELAI_AUTO = 45000;
 
+
+  // Un onglet laisse ouvert continue d'executer l'ANCIEN code apres un
+  // deploiement : c'est ainsi qu'un bug deja corrige se remontre. Le bandeau
+  // rouge existait deja, mais n'etait verifie qu'a la soumission d'un
+  // produit. On le verifie au demarrage, puis un tour sur dix (~7 minutes).
+  var TOURS_AUTO = 0;
+
   function rafraichirSectionCourante() {
     if (document.hidden) return;
+    TOURS_AUTO++;
+    if (TOURS_AUTO % 10 === 0) checkAppVersion();
     // Jamais pendant une saisie : recharger sous les doigts d'un createur
     // en train de remplir un formulaire lui ferait perdre son travail.
     if (document.querySelector('.modal-bg.show, .confirm-bg.show, .confirm-overlay.show')) return;
@@ -2482,6 +2652,7 @@
 
   function demarrerRafraichissement() {
     if (MINUTEUR_AUTO) return;
+    checkAppVersion();
     MINUTEUR_AUTO = setInterval(rafraichirSectionCourante, DELAI_AUTO);
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden) rafraichirSectionCourante();
@@ -2489,23 +2660,23 @@
   }
 
   // --- RETIRER UNE DEMANDE EN ATTENTE ---
-  let editTargetId = null;
-
   function confirmDeleteEdit(editId, nom) {
     editTargetId = editId;
     document.getElementById('confirmDeleteTitre').textContent = 'Retirer cette demande ?';
     document.getElementById('confirmDeleteMsg').textContent =
       'Ta demande pour "' + nom + '" sera retirée et UNEEK ne la verra plus. '
       + 'Tu pourras toujours la refaire plus tard.';
-    document.getElementById('confirmDeleteBtn').onclick = () => executeDeleteEdit();
+    document.getElementById('confirmDeleteBtn').onclick = () => executeDeleteEdit(editId);
     document.getElementById('confirmDeleteBg').classList.add('show');
   }
 
-  async function executeDeleteEdit() {
-    if (!editTargetId) return;
-    const cible = editTargetId;
-    editTargetId = null;
-    document.getElementById('confirmDeleteBg').classList.remove('show');
+  async function executeDeleteEdit(idDeLaDemande) {
+    const cible = idDeLaDemande || editTargetId;
+    if (!cible) {
+      showToast("Demande introuvable — ferme la fenêtre et réessaie", true);
+      return;
+    }
+    closeConfirmDelete();
     try {
       const res = await fetch(API_BASE + '/creator/edits', {
         method: 'DELETE',
@@ -2522,7 +2693,11 @@
   }
 
   // --- DELETE PRODUCT ---
+  // Les deux cibles sont declarees ici, ensemble : closeConfirmDelete() les
+  // remet toutes les deux a zero, et une declaration "let" plus bas dans le
+  // fichier leverait une erreur au moment ou cette fonction y touche.
   let deleteTargetId = null;
+  var editTargetId = null;
 
   function confirmDeleteProduct(productId, productName) {
     deleteTargetId = productId;
@@ -2532,23 +2707,34 @@
       productName = found ? found.name : 'ce produit';
     }
     document.getElementById('confirmDeleteMsg').textContent = 'Le produit "' + productName + '" sera définitivement supprimé. Cette action est irréversible.';
-    document.getElementById('confirmDeleteBtn').onclick = () => executeDeleteProduct();
+    // L'identifiant voyage AVEC le bouton, pas dans une variable que
+    // n'importe quoi peut remettre a null entre-temps.
+    document.getElementById('confirmDeleteBtn').onclick = () => executeDeleteProduct(productId);
     document.getElementById('confirmDeleteBg').classList.add('show');
   }
 
+  // Les DEUX cibles repartent a zero : la fenetre sert au produit comme a
+  // la demande, en laisser une derriere soi melangerait les deux.
   function closeConfirmDelete() {
     document.getElementById('confirmDeleteBg').classList.remove('show');
     deleteTargetId = null;
+    editTargetId = null;
   }
 
-  async function executeDeleteProduct() {
-    if (!deleteTargetId) return;
-    // LE BUG DU 21 SEPTEMBRE : closeConfirmDelete() remet deleteTargetId a
-    // null, et il etait appele AVANT que le corps de la requete soit
-    // construit. On envoyait donc product_id: null, le serveur repondait
-    // « product_id requis », et ce refus s'affichait dans le bandeau vert du
-    // succes. On retient l'identifiant AVANT de fermer la fenetre.
-    const cible = deleteTargetId;
+  // L'identifiant arrive en argument. Le repli sur deleteTargetId n'est la
+  // que pour un ancien appel sans argument ; il n'y en a plus dans le code.
+  //
+  // Histoire de ce bout de code, pour que personne ne le « simplifie » :
+  // closeConfirmDelete() remet deleteTargetId a null, et il etait appele
+  // AVANT que le corps de la requete soit construit. On envoyait donc
+  // product_id: null, le serveur repondait « product_id requis », et ce
+  // refus s'affichait dans le bandeau VERT du succes. Deux fautes d'un coup.
+  async function executeDeleteProduct(idDuProduit) {
+    const cible = idDuProduit || deleteTargetId;
+    if (!cible) {
+      showToast("Produit introuvable — ferme la fenêtre et réessaie", true);
+      return;
+    }
     closeConfirmDelete();
     try {
       const res = await fetch(API_BASE + '/creator/products', {
