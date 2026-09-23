@@ -34,6 +34,15 @@ export const TABLES = [
   // ce qui alimente l'onglet Statistiques du panneau createur. Sans elle dans
   // cette liste, l'historique d'audience serait perdu en cas de restauration.
   "product_events",
+  // Ajoutee le 23 septembre, TROISIEME fois que le meme oubli se produit :
+  // transfer_logs est la preuve de ce qu'UNEEK a REELLEMENT vire a chaque
+  // createur — le compte bancaire vise, le montant, et l'identifiant du
+  // virement chez Stripe. pending_transfers dit ce qu'on doit ; transfer_logs
+  // dit ce qu'on a paye. Sans elle, une restauration laisserait croire que
+  // des virements deja faits restent dus. Trouvee en refermant les tables
+  // signalees par Supabase : elle n'etait ni dans cette liste, ni dans le
+  // schema du garde-fou.
+  "transfer_logs",
 ];
 
 // Volontairement absente de la liste : "admin_notifications". La sauvegarde du
