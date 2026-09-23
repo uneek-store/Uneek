@@ -3948,5 +3948,56 @@
   });
 })();
 </script>
+
+<!-- ============================================================
+     LIEN DIRECT VERS LE FORMULAIRE D'INSCRIPTION
+     Ajoute le 23 septembre. Aucun code existant n'est modifie.
+
+     POURQUOI
+     L'e-mail de bienvenue envoyait le createur sur /creator, ou c'est
+     l'ecran de CONNEXION qui s'affiche. Il devait ensuite reperer, en
+     petit et tout en bas, « Creer un compte avec mon code ». Plusieurs
+     s'y sont perdus. Desormais l'e-mail pointe sur :
+         /creator?inscription=1
+     et le formulaire s'ouvre directement.
+
+     Accepte aussi ?code=UNEEK-XXXX, qui ouvre le formulaire ET prerempli
+     le code. Non utilise par l'e-mail pour l'instant : un code dans une
+     adresse se retrouve dans l'historique du navigateur et dans l'entete
+     Referer. Si on s'en sert un jour, le code est retire de la barre
+     d'adresse aussitot apres (history.replaceState ci-dessous).
+
+     Ne peut rien casser : si showRegister n'existe pas, on ne fait rien.
+     ============================================================ -->
+<script>
+(function () {
+  try {
+    var params = new URLSearchParams(window.location.search || '');
+    var veutInscription = params.has('inscription') || params.has('code');
+    if (!veutInscription) return;
+    if (typeof showRegister !== 'function') return;
+
+    showRegister();
+
+    var code = (params.get('code') || '').trim().toUpperCase();
+    if (code) {
+      var champ = document.getElementById('regCode');
+      if (champ) champ.value = code;
+      var email = document.getElementById('regEmail');
+      if (email) email.focus();
+    }
+
+    // On nettoie l'adresse : ni « inscription », ni surtout le code ne
+    // restent affiches. Le formulaire, lui, reste ouvert.
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  } catch (err) {
+    // Un navigateur sans URLSearchParams retombe simplement sur l'ecran
+    // de connexion : l'ancien comportement, pas une page cassee.
+    console.warn('[inscription] lien direct ignore :', err && err.message);
+  }
+})();
+</script>
 </body>
 </html>
