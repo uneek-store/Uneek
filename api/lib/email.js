@@ -340,14 +340,17 @@ export async function candidatureAcceptee(destinataire, contactName, brandName, 
     + esc(inviteCode) + '</div></div>'
     + '<div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;'
     + 'color:#888;margin:0 0 8px">Pour commencer</div>'
+    // Le lien pointe sur ?inscription=1 : le formulaire de creation de compte
+    // s'ouvre directement. Avant, /creator affichait l'ecran de connexion et
+    // il fallait repérer « Créer un compte avec mon code » en petit, en bas.
     + '<ol style="margin:0 0 22px;padding-left:20px;font-size:14px;color:#333;line-height:1.8">'
-    + '<li>Va sur <a href="' + SITE + '/creator" style="color:#000">uneek.store/creator</a></li>'
-    + '<li>Choisis « Créer mon compte » et saisis ton code</li>'
-    + '<li>Ajoute tes premières pièces : photos, tailles, stock et prix</li>'
+    + '<li><a href="' + SITE + '/creator?inscription=1" '
+    + 'style="color:#000;font-weight:600">Ouvre le formulaire de création de compte</a>'
+    + ' (le lien t\'y emmène directement)</li>'
+    + '<li>Recopie le code ci-dessus, mets ton adresse e-mail et choisis ton mot de passe</li>'
+    + '<li>Connecte-toi, puis ajoute tes premières pièces : photos, tailles, stock et prix</li>'
     + '</ol>'
-    + '<p style="margin:0 0 22px;font-size:14px">Tu trouveras ci-dessous le guide de '
-    + 'démarrage, avec la marche à suivre et toutes les explications.</p>'
-    + '<p style="margin:0 0 18px"><a href="' + SITE + '/creator" '
+    + '<p style="margin:0 0 18px"><a href="' + SITE + '/creator?inscription=1" '
     + 'style="display:inline-block;background:#000;color:#fff;text-decoration:none;'
     + 'padding:13px 26px;border-radius:6px;font-size:15px">Créer mon compte</a></p>'
     + '<p style="margin:0;font-size:13px;color:#666">Ce code est personnel et ne fonctionne '
