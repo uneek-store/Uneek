@@ -43,6 +43,10 @@ export const TABLES = [
   // signalees par Supabase : elle n'etait ni dans cette liste, ni dans le
   // schema du garde-fou.
   "transfer_logs",
+  // Ajoutee le 30 septembre, avec le compteur de visites de la vue d'ensemble
+  // admin (outils/sql/2026-09-30-visites.sql). Aucune donnee personnelle
+  // dedans, mais c'est tout l'historique de frequentation du site.
+  "site_visits",
 ];
 
 // Volontairement absente de la liste : "admin_notifications". La sauvegarde du

@@ -232,6 +232,40 @@
       .fin-cases { grid-template-columns: 1fr; }
       .fin-case-val { font-size: 26px; }
     }
+    /* FREQUENTATION (vue d'ensemble) */
+    .vis-tete { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 8px 0 12px; }
+    .vis-titre { font-family: var(--font-display); font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 12px; }
+    .vis-live { font-family: var(--font-body); font-size: 12px; font-weight: 400; color: var(--gray-500); display: inline-flex; align-items: center; gap: 6px; }
+    .vis-live i { width: 8px; height: 8px; border-radius: 50%; background: var(--gray-300); display: inline-block; }
+    .vis-live.on i { background: var(--green); box-shadow: 0 0 0 3px var(--green-bg); }
+    .vis-choix { display: inline-flex; background: var(--white); border: 1px solid var(--gray-200); border-radius: 8px; padding: 2px; }
+    .vis-choix button { border: none; background: none; padding: 5px 12px; font-size: 12px; border-radius: 6px; cursor: pointer; color: var(--gray-500); font-family: var(--font-body); }
+    .vis-choix button.actif { background: var(--black); color: var(--white); }
+    .stat-sous { font-size: 11.5px; color: var(--gray-500); margin-top: 3px; }
+    .vis-note { font-size: 12.5px; color: var(--gray-600); background: var(--orange-bg); border: 1px solid #FDE68A; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; display: none; }
+    .vis-jours { display: flex; align-items: flex-end; gap: 2px; height: 130px; padding: 18px 18px 0; }
+    .vis-jour { flex: 1; min-width: 2px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; position: relative; }
+    .vis-jour .tout { background: #DDD6FE; border-radius: 3px 3px 0 0; position: relative; }
+    .vis-jour .act { position: absolute; left: 0; right: 0; bottom: 0; background: #7C3AED; border-radius: 3px 3px 0 0; }
+    .vis-jour:hover .tout { opacity: .8; }
+    .vis-axe { display: flex; justify-content: space-between; font-size: 11px; color: var(--gray-400); padding: 6px 18px 14px; }
+    .vis-grille { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; }
+    .vis-grille > .card { margin-bottom: 16px; }
+    .vis-carte-tete { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .vis-carte { display: block; width: 100%; height: 320px; background: #F7F9FC; }
+    .vis-carte path { vector-effect: non-scaling-stroke; }
+    .vis-pays { padding: 10px 18px 16px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px 20px; }
+    .vis-pays-l { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 12.5px; align-items: center; }
+    .vis-pays-l .barre { grid-column: 1 / -1; height: 4px; background: var(--gray-100); border-radius: 2px; overflow: hidden; }
+    .vis-pays-l .barre b { display: block; height: 100%; background: #7C3AED; }
+    .vis-pays-l .n { color: var(--gray-500); font-variant-numeric: tabular-nums; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .vis-vide { text-align: center; padding: 24px; color: var(--gray-400); font-size: 13px; }
+    @media (max-width: 820px) {
+      .vis-grille { grid-template-columns: 1fr; }
+      .vis-carte { height: 240px; }
+    }
+
     /* MOBILE RESPONSIVE */
     @media (max-width: 768px) {
       .sidebar { position: fixed; left: 0; top: 0; right: 0; bottom: auto; width: 100%; height: auto; padding: 12px 0 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 0; z-index: 10; overflow-x: auto; }
@@ -304,6 +338,54 @@
         <div class="stat-card"><div class="stat-label">En attente</div><div class="stat-value" id="stat-pending">0</div></div>
         <div class="stat-card"><div class="stat-label">Marques actives</div><div class="stat-value" id="stat-brands">0</div></div>
       </div>
+
+      <!-- FREQUENTATION : visites, conversion, carte, produits regardes -->
+      <div class="vis-tete">
+        <div class="vis-titre">Fr&eacute;quentation <span class="vis-live" id="vis-live" title="Visites actives dans les 5 derni&egrave;res minutes"><i></i><span id="vis-live-n">0 en ce moment</span></span></div>
+        <div class="vis-choix" id="vis-choix">
+          <button data-j="7">7 jours</button><button data-j="30" class="actif">30 jours</button><button data-j="90">90 jours</button>
+        </div>
+      </div>
+      <div class="vis-note" id="vis-note"></div>
+      <div class="stats">
+        <div class="stat-card"><div class="stat-label">Visites</div><div class="stat-value" id="vis-visites">&mdash;</div><div class="stat-sous" id="vis-visites-sous">&nbsp;</div></div>
+        <div class="stat-card"><div class="stat-label">Visites actives</div><div class="stat-value" id="vis-actives">&mdash;</div><div class="stat-sous" id="vis-actives-sous">2 pages vues ou plus</div></div>
+        <div class="stat-card"><div class="stat-label">Commandes pay&eacute;es</div><div class="stat-value" id="vis-commandes">&mdash;</div><div class="stat-sous" id="vis-commandes-sous">&nbsp;</div></div>
+        <div class="stat-card"><div class="stat-label">Taux de conversion</div><div class="stat-value" id="vis-conversion">&mdash;</div><div class="stat-sous">commandes &divide; visites</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header vis-carte-tete"><span>Visites par jour</span><span class="fin-legende"><span><i style="width:10px;height:10px;border-radius:3px;background:#DDD6FE;display:inline-block"></i>Visites</span><span><i style="width:10px;height:10px;border-radius:3px;background:#7C3AED;display:inline-block"></i>Actives</span></span></div>
+        <div class="vis-jours" id="vis-jours"></div>
+        <div class="vis-axe" id="vis-axe"></div>
+      </div>
+      <div class="vis-grille">
+        <div class="card">
+          <div class="card-header vis-carte-tete"><span>D'o&ugrave; viennent les visiteurs</span>
+            <span class="vis-choix" id="vis-zoom"><button data-z="be">Belgique</button><button data-z="eu" class="actif">Europe</button><button data-z="monde">Monde</button></span>
+          </div>
+          <svg class="vis-carte" id="vis-carte" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="vis-pays" id="vis-pays"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">Produits les plus regard&eacute;s</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Produit</th><th class="num">Vues</th><th class="num">Paniers</th></tr></thead>
+              <tbody id="vis-produits"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">Visites et commandes, mois par mois</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Mois</th><th class="num">Visites</th><th class="num">Actives</th><th class="num">Commandes pay&eacute;es</th><th class="num">Conversion</th></tr></thead>
+            <tbody id="vis-mois"></tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-header">Derni&egrave;res commandes</div>
         <div class="table-wrap">
@@ -573,6 +655,9 @@
         return;
       }
       authToken = data.token;
+      // Ce navigateur est celui de l'admin : ses propres passages sur la
+      // boutique ne doivent pas gonfler le compteur de visites.
+      try { localStorage.setItem('uneek_ne_pas_compter', '1'); } catch (e) { /* rien */ }
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('app').style.display = 'block';
       loadDashboard();
@@ -587,7 +672,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-09-30-numero-de-suivi';
+  const APP_VERSION = '2026-09-30-frequentation';
 
   async function checkAppVersion() {
     try {
@@ -1113,6 +1198,7 @@
       'en attente': loadPending,
       candidatures: loadApplications,
       finances: loadVersements,
+      'fréquentation': loadVisites,
     };
     const noms = Object.keys(chargeurs);
     const issues = await Promise.allSettled(noms.map((n) => chargeurs[n]()));
@@ -1121,6 +1207,189 @@
         console.error('[admin] chargement de « ' + noms[i] + ' » échoué :', issue.reason);
       }
     });
+  }
+
+  // --- FREQUENTATION ------------------------------------------------
+  // Ajoute le 30 septembre 2026. Les chiffres viennent de /api/admin/visites
+  // (voir ce fichier pour ce qu'est une visite, et ce qu'on ne garde pas).
+  var VIS_JOURS = 30;
+  var VIS_ZOOM = 'eu';
+  var VIS_DATA = null;
+  var VIS_NOMS_PAYS = null;
+  try { VIS_NOMS_PAYS = new Intl.DisplayNames(['fr'], { type: 'region' }); } catch (e) { VIS_NOMS_PAYS = null; }
+
+  function nomPays(code) {
+    if (!code || code === '??') return 'Inconnu';
+    try { return (VIS_NOMS_PAYS && VIS_NOMS_PAYS.of(code)) || code; } catch (e) { return code; }
+  }
+  function nombre(n) { return (Number(n) || 0).toLocaleString('fr-BE'); }
+  function pourcent(p) { return p === null || p === undefined ? '—' : String(p).replace('.', ',') + ' %'; }
+
+  (function () {
+    var choix = document.getElementById('vis-choix');
+    if (choix) choix.addEventListener('click', function (ev) {
+      var b = ev.target.closest('button[data-j]');
+      if (!b) return;
+      VIS_JOURS = parseInt(b.dataset.j, 10) || 30;
+      [].forEach.call(choix.querySelectorAll('button'), function (x) { x.classList.toggle('actif', x === b); });
+      loadVisites();
+    });
+    var zoom = document.getElementById('vis-zoom');
+    if (zoom) zoom.addEventListener('click', function (ev) {
+      var b = ev.target.closest('button[data-z]');
+      if (!b) return;
+      VIS_ZOOM = b.dataset.z;
+      [].forEach.call(zoom.querySelectorAll('button'), function (x) { x.classList.toggle('actif', x === b); });
+      dessinerCarte();
+    });
+  })();
+
+  async function loadVisites() {
+    const note = document.getElementById('vis-note');
+    if (!note) return;
+    try {
+      const res = await fetch(API_BASE + '/admin/visites?jours=' + VIS_JOURS, {
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || ('erreur ' + res.status));
+      VIS_DATA = d;
+      if (d.table_absente) {
+        note.textContent = "Le compteur de visites n'est pas encore activé : lance outils/sql/2026-09-30-visites.sql dans Supabase (SQL Editor). Les produits regardés et les commandes s'affichent déjà.";
+        note.style.display = 'block';
+      } else if (d.tronque) {
+        note.textContent = 'Beaucoup de visites : les chiffres ont atteint le plafond de lecture et peuvent être sous-estimés.';
+        note.style.display = 'block';
+      } else {
+        note.style.display = 'none';
+      }
+      afficherVisites();
+      dessinerCarte();
+    } catch (err) {
+      console.error('Error loading visites:', err);
+      note.textContent = 'Fréquentation indisponible pour le moment.';
+      note.style.display = 'block';
+    }
+  }
+
+  function afficherVisites() {
+    const d = VIS_DATA;
+    if (!d) return;
+    const p = d.periode || {};
+    const set = function (id, t) { const el = document.getElementById(id); if (el) el.textContent = t; };
+    set('vis-visites', nombre(p.visites));
+    set('vis-visites-sous', nombre(d.aujourdhui) + " aujourd'hui");
+    set('vis-actives', nombre(p.actives));
+    set('vis-actives-sous', (p.visites ? Math.round((p.actives / p.visites) * 100) + ' %' : '0 %') + ' des visites · 2 pages ou +');
+    set('vis-commandes', nombre(p.commandes));
+    set('vis-commandes-sous', 'sur les ' + d.jours + ' derniers jours');
+    set('vis-conversion', pourcent(p.conversion));
+    const live = document.getElementById('vis-live');
+    if (live) live.classList.toggle('on', (d.en_ce_moment || 0) > 0);
+    set('vis-live-n', nombre(d.en_ce_moment) + ' en ce moment');
+
+    // Barres par jour : l'echelle est celle du jour le plus charge.
+    const jours = d.par_jour || [];
+    const max = Math.max.apply(null, jours.map(function (j) { return j.visites; }).concat([1]));
+    const zone = document.getElementById('vis-jours');
+    if (zone) zone.innerHTML = jours.map(function (j) {
+      const h = j.visites ? Math.max(3, Math.round((j.visites / max) * 100)) : 0;
+      const ha = j.visites ? Math.round((j.actives / j.visites) * 100) : 0;
+      const date = new Date(j.jour + 'T12:00:00').toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric', month: 'short' });
+      return '<div class="vis-jour" title="' + esc(date) + ' : ' + j.visites + ' visite' + (j.visites > 1 ? 's' : '') + ', ' + j.actives + ' active' + (j.actives > 1 ? 's' : '') + '">'
+        + (h ? '<div class="tout" style="height:' + h + '%"><div class="act" style="height:' + ha + '%"></div></div>' : '')
+        + '</div>';
+    }).join('');
+    const axe = document.getElementById('vis-axe');
+    if (axe && jours.length) {
+      const f = function (j) { return new Date(j.jour + 'T12:00:00').toLocaleDateString('fr-BE', { day: 'numeric', month: 'short' }); };
+      axe.innerHTML = '<span>' + esc(f(jours[0])) + '</span><span>' + esc(f(jours[Math.floor(jours.length / 2)])) + '</span><span>' + esc(f(jours[jours.length - 1])) + '</span>';
+    }
+
+    // Pays
+    const pays = d.pays || [];
+    const total = pays.reduce(function (a, x) { return a + x.visites; }, 0) || 1;
+    const lp = document.getElementById('vis-pays');
+    if (lp) lp.innerHTML = pays.length ? pays.slice(0, 8).map(function (x) {
+      return '<div class="vis-pays-l"><span>' + esc(nomPays(x.code)) + '</span><span class="n">' + nombre(x.visites) + ' · ' + Math.round((x.visites / total) * 100) + ' %</span>'
+        + '<div class="barre"><b style="width:' + Math.max(2, Math.round((x.visites / pays[0].visites) * 100)) + '%"></b></div></div>';
+    }).join('') : '<div class="vis-vide" style="grid-column:1/-1">Pas encore de visite sur la période</div>';
+
+    // Produits les plus regardes
+    const tp = document.getElementById('vis-produits');
+    const prods = d.produits || [];
+    if (tp) tp.innerHTML = prods.length ? prods.map(function (x) {
+      return '<tr><td><div class="bold">' + esc(x.nom) + '</div>' + (x.marque ? '<div style="font-size:11.5px;color:var(--gray-500)">' + esc(x.marque) + '</div>' : '') + '</td>'
+        + '<td class="num">' + nombre(x.vues) + '</td><td class="num">' + nombre(x.paniers) + '</td></tr>';
+    }).join('') : '<tr><td colspan="3" class="vis-vide">Aucune fiche produit regardée sur la période</td></tr>';
+
+    // Mois par mois, le plus recent en haut
+    const tm = document.getElementById('vis-mois');
+    if (tm) tm.innerHTML = (d.mois || []).slice().reverse().map(function (m) {
+      return '<tr><td class="bold" style="text-transform:capitalize">' + esc(m.nom) + '</td><td class="num">' + nombre(m.visites) + '</td><td class="num">' + nombre(m.actives) + '</td>'
+        + '<td class="num">' + nombre(m.commandes) + '</td><td class="num">' + pourcent(m.conversion) + '</td></tr>';
+    }).join('');
+  }
+
+  // La carte (01-Site/code/carte-monde.js, ~38 Ko compresse) n'est chargee
+  // qu'au premier dessin : l'ecran de connexion n'en a pas besoin.
+  var CARTE_PROMESSE = null;
+  function chargerCarte() {
+    if (window.UNEEK_CARTE) return Promise.resolve(window.UNEEK_CARTE);
+    if (!CARTE_PROMESSE) CARTE_PROMESSE = new Promise(function (ok, ko) {
+      const sc = document.createElement('script');
+      sc.src = '/carte-monde.js?v=' + encodeURIComponent(APP_VERSION);
+      sc.onload = function () { window.UNEEK_CARTE ? ok(window.UNEEK_CARTE) : ko(new Error('carte vide')); };
+      sc.onerror = function () { CARTE_PROMESSE = null; ko(new Error('carte introuvable')); };
+      document.head.appendChild(sc);
+    });
+    return CARTE_PROMESSE;
+  }
+
+  const VIS_CADRES = {
+    be: [2.2, 49.3, 6.7, 51.7],
+    eu: [-12, 34, 35, 62],
+    monde: [-170, -58, 190, 84],
+  };
+
+  async function dessinerCarte() {
+    const svg = document.getElementById('vis-carte');
+    if (!svg || !VIS_DATA) return;
+    let C;
+    try { C = await chargerCarte(); } catch (e) { svg.innerHTML = ''; return; }
+    const S = C.echelle, k = C.k;
+    const X = function (lon) { return (lon + 180) * k * S; };
+    const Y = function (lat) { return (85 - lat) * S; };
+    const c = VIS_CADRES[VIS_ZOOM] || VIS_CADRES.eu;
+    const x0 = X(c[0]), x1 = X(c[2]), y0 = Y(c[3]), y1 = Y(c[1]);
+    svg.setAttribute('viewBox', x0 + ' ' + y0 + ' ' + (x1 - x0) + ' ' + (y1 - y0));
+
+    // Pays colores selon leurs visites (echelle racine : un pays a 3 visites
+    // reste visible a cote d'un pays a 300).
+    const parPays = {};
+    (VIS_DATA.pays || []).forEach(function (x) { parPays[x.code] = x.visites; });
+    const maxP = Math.max.apply(null, Object.keys(parPays).map(function (c) { return parPays[c]; }).concat([1]));
+    const teinte = function (n) {
+      if (!n) return '#E9EBEF';
+      const t = Math.sqrt(n / maxP);
+      const m = function (a, b) { return Math.round(a + (b - a) * t); };
+      return 'rgb(' + m(221, 91) + ',' + m(214, 33) + ',' + m(254, 182) + ')';
+    };
+    let h = C.pays.map(function (p) {
+      const n = parPays[p[0]] || 0;
+      return '<path d="' + p[1] + '" fill="' + teinte(n) + '" stroke="#fff" stroke-width="0.8"><title>' + esc(nomPays(p[0])) + ' : ' + nombre(n) + ' visite' + (n > 1 ? 's' : '') + '</title></path>';
+    }).join('');
+
+    // Villes : un point par ville, surface proportionnelle aux visites.
+    const villes = VIS_DATA.villes || [];
+    const maxV = Math.max.apply(null, villes.map(function (v) { return v.visites; }).concat([1]));
+    const unite = (x1 - x0) / 900;   // ~1 pixel a l'ecran
+    h += villes.slice().reverse().map(function (v) {
+      const r = (3 + 9 * Math.sqrt(v.visites / maxV)) * unite;
+      return '<circle cx="' + X(v.lon).toFixed(1) + '" cy="' + Y(v.lat).toFixed(1) + '" r="' + r.toFixed(2) + '" fill="#0A0A0A" fill-opacity="0.75" stroke="#fff" stroke-width="' + (1.2 * unite).toFixed(2) + '">'
+        + '<title>' + esc((v.ville || 'Ville inconnue') + ', ' + nomPays(v.pays)) + ' : ' + nombre(v.visites) + ' visite' + (v.visites > 1 ? 's' : '') + '</title></circle>';
+    }).join('');
+    svg.innerHTML = h;
   }
 
   async function loadOrders() {

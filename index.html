@@ -2271,6 +2271,93 @@ init();
     };
   }
 })();
+
+/* ==========================================================
+   COMPTEUR DE VISITES — pour la vue d'ensemble du panneau admin
+   (ajoute le 30 septembre 2026).
+
+   Une visite = quelqu'un ouvre le site et navigue, jusqu'a ce
+   qu'il ferme l'onglet. On envoie la premiere page, puis le
+   nombre de pages vues a chaque changement de page.
+
+   Le numero de visite est tire au hasard et vit dans
+   sessionStorage : il meurt avec l'onglet, il ne reconnait
+   personne d'une fois sur l'autre. Pas de cookie, pas de compte.
+
+   Le navigateur de l'admin ne se compte pas : le panneau admin
+   pose 'uneek_ne_pas_compter' a la connexion (meme domaine).
+
+   Meme regle que plus haut : ne jamais gener la boutique.
+   ========================================================== */
+(function () {
+  try {
+    try { if (localStorage.getItem('uneek_ne_pas_compter') === '1') return; } catch (err) {}
+
+    var CLE = 'uneek_visite';
+    var etat = null;
+    try { etat = JSON.parse(sessionStorage.getItem(CLE) || 'null'); } catch (err) { etat = null; }
+    if (!etat || typeof etat.s !== 'string' || typeof etat.n !== 'number') {
+      var hasard = (window.crypto && typeof crypto.randomUUID === 'function')
+        ? crypto.randomUUID()
+        : (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2));
+      etat = { s: hasard, n: 0 };
+    }
+    var derniere = null;
+
+    function sauver() {
+      try { sessionStorage.setItem(CLE, JSON.stringify(etat)); } catch (err) {}
+    }
+
+    function envoyer(corps) {
+      try {
+        fetch('/api/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(corps),
+          keepalive: true
+        }).catch(function () { /* pas critique */ });
+      } catch (err) {}
+    }
+
+    // D'ou arrive la personne : ?utm_source=... si le lien en porte un,
+    // sinon le site precedent. Le serveur n'en garde que le nom de domaine.
+    function source() {
+      try {
+        var utm = new URLSearchParams(location.search).get('utm_source');
+        if (utm) return utm;
+      } catch (err) {}
+      return document.referrer || null;
+    }
+
+    function pageVue() {
+      try {
+        if (typeof dataLoaded !== 'undefined' && !dataLoaded) return; // ecran « Chargement... »
+        var ici = location.pathname;
+        if (ici === derniere) return;   // meme page redessinee : pas une page de plus
+        derniere = ici;
+        etat.n += 1;
+        sauver();
+        if (etat.n === 1) {
+          envoyer({ type: 'visite', session: etat.s, entree: (typeof currentPage === 'string' ? currentPage : null), source: source() });
+        } else if (etat.n <= 500) {
+          envoyer({ type: 'page', session: etat.s, pages: etat.n });
+        }
+      } catch (err) {}
+    }
+
+    if (typeof renderPage === 'function') {
+      var _renderPageVisite = renderPage;
+      renderPage = function () {
+        var r = _renderPageVisite.apply(this, arguments);
+        pageVue();
+        return r;
+      };
+    }
+    // Si les produits sont deja charges quand ce bloc s'execute, la
+    // premiere page est deja affichee : on la compte tout de suite.
+    pageVue();
+  } catch (err) { /* rien : la boutique passe avant */ }
+})();
 </script>
 <script src="/cookie-banner.js"></script>
 </body>
