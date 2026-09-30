@@ -364,7 +364,10 @@ export async function candidatureAcceptee(destinataire, contactName, brandName, 
 }
 
 // 5. La marque a expedie : on previent le client.
-export async function commandeExpediee(order, articles, nomMarque) {
+// suivi (30 septembre 2026) : { numero, transporteur, lien } — donne par le
+// createur au moment de l'expedition. Absent pour un ancien envoi : le bloc
+// n'apparait simplement pas.
+export async function commandeExpediee(order, articles, nomMarque, suivi) {
   // Meme langue que la confirmation : elle a ete enregistree sur la commande
   // au moment de l'achat, precisement pour ce message-ci.
   const lg = choisirLangue(order);
@@ -382,6 +385,17 @@ export async function commandeExpediee(order, articles, nomMarque) {
     + '<div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;'
     + 'color:#888;margin:20px 0 4px">' + t("e_ce_qui_arrive", lg) + '</div>'
     + tableauArticles(articles, false, lg)
+    + (suivi && suivi.numero
+      ? bloqueInfo(t("e_suivi", lg), [
+          suivi.transporteur ? t("e_transporteur", lg) + (lg === "fr" ? " : " : ": ") + esc(suivi.transporteur) : null,
+          '<strong>' + esc(suivi.numero) + '</strong>',
+          suivi.lien
+            ? '<a href="' + esc(suivi.lien) + '" style="display:inline-block;margin-top:8px;background:#000;'
+              + 'color:#fff;text-decoration:none;padding:10px 18px;border-radius:6px;font-size:14px">'
+              + t("e_suivre", lg) + '</a>'
+            : null,
+        ])
+      : '')
     + bloqueInfo(t("bloc_livraison", lg), [
         esc(order.customer_name),
         esc(order.shipping_address),

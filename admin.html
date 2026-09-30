@@ -329,7 +329,7 @@
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Commande</th><th>Client</th><th>Surnom emballage</th><th>Produit</th><th>Qt&eacute;</th><th>Marque</th><th>Total</th><th>Commission</th><th>Statut</th></tr></thead>
+            <thead><tr><th>Commande</th><th>Client</th><th>Adresse</th><th>Surnom emballage</th><th>Produit</th><th>Qt&eacute;</th><th>Suivi</th><th>Marque</th><th>Total</th><th>Commission</th><th>Statut</th></tr></thead>
             <tbody id="orders-table"></tbody>
           </table>
         </div>
@@ -587,7 +587,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-09-22-banc-essai-3';
+  const APP_VERSION = '2026-09-30-numero-de-suivi';
 
   async function checkAppVersion() {
     try {
@@ -972,6 +972,25 @@
 
 
   // Surnom a inscrire sur l'emballage, tel que le client l'a demande.
+  // Colonne "Suivi" (30 septembre 2026) : numero saisi par le createur a
+  // l'expedition, cliquable, avec le transporteur et la date d'envoi. C'est
+  // ici que l'admin verifie qu'un colis est vraiment parti.
+  function suiviHtml(item) {
+    if (!item.tracking_number) {
+      return ['shipped', 'delivered'].includes(item.fulfillment_status)
+        ? '<span style="font-size:11px;color:var(--gray-400)">sans numéro</span>'
+        : '<span class="sec">—</span>';
+    }
+    const lien = item.tracking_url
+      ? '<a href="' + esc(item.tracking_url) + '" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">' + esc(item.tracking_number) + '</a>'
+      : esc(item.tracking_number);
+    const det = [];
+    if (item.tracking_carrier_name) det.push(esc(item.tracking_carrier_name));
+    if (item.shipped_at) det.push(dateCommande(item.shipped_at));
+    return '<span style="font-size:12px;white-space:nowrap">' + lien + '</span>'
+      + (det.length ? '<div style="font-size:11px;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + det.join(' · ') + '</div>' : '');
+  }
+
   function surnomHtml(order) {
     const v = (order.customer_nickname || '').trim();
     return v
@@ -1150,7 +1169,7 @@
           // complet juste en dessous qui le faisait deja.
           overviewHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div>' + impaye + '</td><td class="sec">' + esc(order.customer_name) + '</td><td class="sec">' + esc(prodLabel) + '</td><td class="sec">' + esc(item.brand_name || '') + '</td><td>' + (item.quantity || 1) + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
 
-          ordersHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div>' + impaye + '</td><td class="sec">' + esc(order.customer_name) + '</td><td>' + surnomHtml(order) + '</td><td class="sec">' + esc(prodLabel) + '</td><td>' + (item.quantity || 1) + '</td><td class="sec">' + (item.brand_name || '') + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>€' + itemCommission.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
+          ordersHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div>' + impaye + '</td><td class="sec">' + esc(order.customer_name) + (order.customer_email ? '<div style="font-size:11px;color:var(--gray-400);margin-top:2px">' + esc(order.customer_email) + '</div>' : '') + '</td><td class="sec" style="font-size:12px;max-width:220px">' + esc(order.shipping_address || '') + '</td><td>' + surnomHtml(order) + '</td><td class="sec">' + esc(prodLabel) + '</td><td>' + (item.quantity || 1) + '</td><td>' + suiviHtml(item) + '</td><td class="sec">' + esc(item.brand_name || '') + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>€' + itemCommission.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
 
           totalCommission += itemCommission;
         });
@@ -1159,7 +1178,7 @@
       });
 
       document.getElementById('overview-orders').innerHTML = overviewHtml || '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
-      document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
+      document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
       // "Commandes ce mois" et "Revenus UNEEK" sont remplis par
       // loadVersements() : ils ne comptent que les commandes encaissees
       // du mois en cours. Ici on comptait toutes les commandes de tous

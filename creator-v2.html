@@ -523,8 +523,7 @@
     <!-- etape 2 : le code et le nouveau mot de passe -->
     <div id="oubliEtape2" style="display:none">
       <p style="font-size:13px;color:var(--gray-500);margin:0 0 14px;line-height:1.5">
-        Le code est parti par e-mail. Il est valable <strong>15 minutes</strong>.
-        Pense à regarder dans les indésirables.
+        Le code est parti par e-mail. Il est valable 15 minutes. Pense à regarder dans les indésirables.
       </p>
       <label>Code reçu</label>
       <input type="text" id="oubliCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" style="font-family:monospace;font-weight:600;letter-spacing:6px;text-align:center;font-size:18px" />
@@ -722,7 +721,7 @@
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Commande</th><th>Produit</th><th>Qté</th><th>Taille / Couleur</th><th>Client</th><th>Surnom emballage</th><th>Adresse</th><th>Statut</th><th></th></tr></thead>
+            <thead><tr><th>Commande</th><th>Produit</th><th>Qté</th><th>Taille / Couleur</th><th>Suivi</th><th>Client</th><th>Surnom emballage</th><th>Adresse</th><th>Statut</th><th></th></tr></thead>
             <tbody id="orders-table"></tbody>
           </table>
         </div>
@@ -1062,6 +1061,43 @@
   </div>
 </div>
 
+<!-- NUMERO DE SUIVI (30 septembre 2026) : obligatoire pour marquer un colis expedie -->
+<div class="modal-bg" id="shipModal">
+  <div class="modal">
+    <h3>Colis expédié</h3>
+    <p class="modal-note" id="shipResume" style="margin-top:-6px"></p>
+
+    <label for="ship-carrier">Transporteur</label>
+    <select id="ship-carrier">
+      <option value="">Choisis…</option>
+      <option value="mondial_relay">Mondial Relay</option>
+      <option value="bpost">bpost</option>
+      <option value="postnl">PostNL</option>
+      <option value="colissimo">Colissimo / La Poste</option>
+      <option value="dhl">DHL</option>
+      <option value="dpd">DPD</option>
+      <option value="gls">GLS</option>
+      <option value="ups">UPS</option>
+      <option value="hermes">Hermes</option>
+      <option value="correos">Correos</option>
+      <option value="seur">SEUR</option>
+      <option value="vinted_go">Vinted Go</option>
+      <option value="autre">Autre</option>
+    </select>
+
+    <label for="ship-number">Numéro de suivi</label>
+    <input id="ship-number" autocomplete="off" spellcheck="false" placeholder="ex : 3SABCD0123456" />
+    <p class="modal-note" style="margin-top:8px">Tu le trouves sur le reçu du dépôt ou dans l'appli du transporteur. Le client le reçoit par e-mail pour suivre son colis.</p>
+    <p class="modal-note" style="margin-top:6px">Tous les articles de cette commande pour ta marque partent dans ce colis.</p>
+    <p class="modal-note" id="shipErreur" style="margin-top:8px;color:var(--red)" hidden></p>
+
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeShipModal()">Annuler</button>
+      <button class="btn-submit" id="btnConfirmerEnvoi" onclick="confirmShipment()">Confirmer l'envoi</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -1078,7 +1114,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-09-22-coupe-et-couleur-3';
+  const APP_VERSION = '2026-09-30-numero-de-suivi';
 
   async function checkAppVersion() {
     try {
@@ -1642,6 +1678,7 @@
       });
       const data = await res.json();
       const orders = data.orders || data || [];
+      DERNIERES_COMMANDES = orders;
 
       const priority = { 'pending': 0, 'processing': 0, 'shipped': 1, 'delivered': 1, 'returned': 2 };
       orders.sort((a, b) => (priority[a.shipping_status] || 0) - (priority[b.shipping_status] || 0));
@@ -1678,19 +1715,19 @@
           items.forEach((item, idx) => {
             const rowCls = isFaded ? 'faded grp' : 'grp';
             if (idx === 0) {
-              ordersHtml += '<tr class="' + rowCls + '"><td class="bold" rowspan="' + items.length + '">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div></td><td class="sec">' + esc(item.product_name || item.name) + '</td><td>' + (item.quantity || 1) + '</td><td>' + tailleEtCouleur(item) + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.customer_name || '') + '</td><td rowspan="' + items.length + '">' + surnomHtml(order) + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.shipping_address || '') + '</td><td rowspan="' + items.length + '">' + statusBadge + '</td><td rowspan="' + items.length + '">' + getActionBtn(order) + '</td></tr>';
+              ordersHtml += '<tr class="' + rowCls + '"><td class="bold" rowspan="' + items.length + '">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div></td><td class="sec">' + esc(item.product_name || item.name) + '</td><td>' + (item.quantity || 1) + '</td><td>' + tailleEtCouleur(item) + '</td><td rowspan="' + items.length + '">' + suiviHtml(order) + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.customer_name || '') + '</td><td rowspan="' + items.length + '">' + surnomHtml(order) + '</td><td class="sec" rowspan="' + items.length + '">' + esc(order.shipping_address || '') + '</td><td rowspan="' + items.length + '">' + statusBadge + '</td><td rowspan="' + items.length + '">' + getActionBtn(order) + '</td></tr>';
             } else {
               ordersHtml += '<tr class="' + rowCls + ' grp-sub"><td class="sec">' + esc(item.product_name || item.name) + '</td><td>' + (item.quantity || 1) + '</td><td>' + tailleEtCouleur(item) + '</td></tr>';
             }
           });
         } else {
           const item = items[0];
-          ordersHtml += '<tr' + fadedAttr + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div></td><td class="sec">' + esc(item.product_name || item.name || '') + '</td><td>' + (item.quantity || 1) + '</td><td>' + tailleEtCouleur(item) + '</td><td class="sec">' + esc(order.customer_name || '') + '</td><td>' + surnomHtml(order) + '</td><td class="sec">' + esc(order.shipping_address || '') + '</td><td>' + statusBadge + '</td><td>' + getActionBtn(order) + '</td></tr>';
+          ordersHtml += '<tr' + fadedAttr + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div></td><td class="sec">' + esc(item.product_name || item.name || '') + '</td><td>' + (item.quantity || 1) + '</td><td>' + tailleEtCouleur(item) + '</td><td>' + suiviHtml(order) + '</td><td class="sec">' + esc(order.customer_name || '') + '</td><td>' + surnomHtml(order) + '</td><td class="sec">' + esc(order.shipping_address || '') + '</td><td>' + statusBadge + '</td><td>' + getActionBtn(order) + '</td></tr>';
         }
       });
 
       document.getElementById('overview-orders').innerHTML = overviewHtml || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
-      document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="9" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
+      document.getElementById('orders-table').innerHTML = ordersHtml || '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune commande</td></tr>';
       document.getElementById('stat-sales').textContent = totalSales;
       document.getElementById('stat-ca').textContent = '€' + totalCA.toFixed(0);
       document.getElementById('stat-revenue').textContent = '€' + totalRevenue.toFixed(0);
@@ -2556,36 +2593,92 @@
   }
 
   // --- SHIP ORDER ---
-  async function markShipped(orderId, btn) {
-    // Pendant l'envoi le bouton tourne : l'API previent aussi le client par
-    // e-mail, ce qui prend une seconde ou deux. Sans ca, rien ne bouge et on
-    // clique deux fois.
-    const repos = btn ? btn.innerHTML : null;
-    if (btn) {
-      btn.disabled = true;
-      btn.innerHTML = '<span class="rondelle"></span>';
+  // Depuis le 30 septembre 2026, "Expédié" ouvre une fenetre : transporteur
+  // et numero de suivi sont obligatoires. Le serveur refuse sans eux — cette
+  // fenetre ne fait que le demander proprement.
+  var ENVOI_EN_COURS = null;   // { orderId, btn }
+  var DERNIERES_COMMANDES = [];
+
+  function markShipped(orderId, btn) {
+    ENVOI_EN_COURS = { orderId: orderId, btn: btn || null };
+    const o = (DERNIERES_COMMANDES || []).find(x => String(x.id) === String(orderId)) || {};
+    const numero = o.order_number ? shortOrder(o.order_number) : '';
+    document.getElementById('shipResume').textContent =
+      [numero, o.customer_name || '', o.product_name || ''].filter(Boolean).join(' · ');
+    document.getElementById('ship-carrier').value = '';
+    document.getElementById('ship-number').value = '';
+    const err = document.getElementById('shipErreur');
+    err.textContent = ''; err.hidden = true;
+    const bouton = document.getElementById('btnConfirmerEnvoi');
+    bouton.disabled = false; bouton.textContent = "Confirmer l'envoi";
+    document.getElementById('shipModal').classList.add('show');
+    setTimeout(() => { document.getElementById('ship-carrier').focus(); }, 50);
+  }
+
+  function closeShipModal() {
+    document.getElementById('shipModal').classList.remove('show');
+    ENVOI_EN_COURS = null;
+  }
+
+  function erreurEnvoi(msg) {
+    const err = document.getElementById('shipErreur');
+    err.textContent = msg; err.hidden = false;
+  }
+
+  async function confirmShipment() {
+    if (!ENVOI_EN_COURS) return;
+    const transporteur = document.getElementById('ship-carrier').value;
+    const numero = (document.getElementById('ship-number').value || '').trim();
+    if (!transporteur) { erreurEnvoi('Choisis le transporteur'); return; }
+    const compact = numero.replace(/[\s\-]+/g, '');
+    if (!/^[A-Za-z0-9]{6,40}$/.test(compact)) {
+      erreurEnvoi('Numéro de suivi manquant ou invalide (6 à 40 lettres ou chiffres)');
+      return;
     }
+    // Pendant l'envoi le bouton tourne : l'API previent aussi le client par
+    // e-mail, ce qui prend une seconde ou deux. Sans ca, on clique deux fois.
+    const bouton = document.getElementById('btnConfirmerEnvoi');
+    bouton.disabled = true;
+    bouton.innerHTML = '<span class="rondelle"></span>';
     try {
       const res = await fetch(API_BASE + '/creator/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
-        body: JSON.stringify({ order_item_id: orderId, action: 'ship' })
+        body: JSON.stringify({
+          order_item_id: ENVOI_EN_COURS.orderId,
+          action: 'ship',
+          tracking_carrier: transporteur,
+          tracking_number: numero,
+        })
       });
       // Le v1 annoncait "expedie" meme quand le serveur refusait : on ne le
       // dit plus que si c'est vrai.
       let data = null;
       try { data = await res.json(); } catch (e) {}
       if (!res.ok) {
-        showToast('Erreur : ' + ((data && data.error) || 'expédition non enregistrée'), true);
-        if (btn) { btn.disabled = false; btn.innerHTML = repos; }
+        erreurEnvoi((data && data.error) || 'Expédition non enregistrée');
+        bouton.disabled = false; bouton.textContent = "Confirmer l'envoi";
         return;
       }
+      closeShipModal();
       showToast('✓ Marqué comme expédié — le client est notifié');
-      setTimeout(() => loadOrders(), 1000);
+      setTimeout(() => loadOrders(), 800);
     } catch (err) {
-      showToast('Erreur: ' + err.message, true);
-      if (btn) { btn.disabled = false; btn.innerHTML = repos; }
+      erreurEnvoi('Erreur: ' + err.message);
+      bouton.disabled = false; bouton.textContent = "Confirmer l'envoi";
     }
+  }
+
+  // Colonne "Suivi" : transporteur + numero, cliquable vers le suivi.
+  function suiviHtml(order) {
+    if (!order.tracking_number) return '<span class="sec">—</span>';
+    const lien = order.tracking_url
+      ? '<a href="' + esc(order.tracking_url) + '" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">' + esc(order.tracking_number) + '</a>'
+      : esc(order.tracking_number);
+    const qui = order.tracking_carrier_name
+      ? '<div style="font-size:11px;color:var(--gray-400);margin-top:2px">' + esc(order.tracking_carrier_name) + '</div>'
+      : '';
+    return '<span style="font-size:12px;white-space:nowrap">' + lien + '</span>' + qui;
   }
 
   // --- HELPERS ---

@@ -7,6 +7,7 @@ import { supabaseAdmin } from "./lib/supabase.js";
 import { stockParCouleur, lireStock, ecrireStock, stockTotal } from "./lib/stock.js";
 import { controlerAcces } from "./lib/session.js";
 import { limiter } from "./lib/limite.js";
+import { nomTransporteur, lienSuivi } from "./lib/suivi.js";
 import crypto from "crypto";
 import {
   confirmationCommande,
@@ -282,6 +283,11 @@ export default async function handler(req, res) {
           commission_amount: item.commission_amount || 0,
           creator_payout: item.creator_payout || 0,
           fulfillment_status: item.fulfillment_status || "pending",
+          // Numero de suivi saisi par le createur (30 septembre 2026).
+          tracking_number: item.tracking_number || null,
+          tracking_carrier_name: nomTransporteur(item.tracking_carrier) || null,
+          tracking_url: item.tracking_number ? lienSuivi(item.tracking_number) : null,
+          shipped_at: item.shipped_at || null,
         }));
 
         // Statut global d'expédition basé sur les items
