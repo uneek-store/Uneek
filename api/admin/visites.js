@@ -135,12 +135,21 @@ export default async function handler(req, res) {
 
     // Appel léger, toutes les 15 s depuis la vue d'ensemble : seulement les
     // visites encore vivantes.
+    // Une seule lecture : tout ce qui a bougé depuis 26 h couvre à la fois
+    // les visites vivantes et celles commencées aujourd'hui (heure belge).
     if (q.direct === "1") {
-      const seuil = new Date(Date.now() - EN_CE_MOMENT_MS).toISOString();
-      const r = await lireVisites((req2) => req2.gte("updated_at", seuil));
-      if (r.error) return res.status(200).json({ table_absente: true, en_ce_moment: 0, direct: [] });
-      const liste = trierDirect(r.lignes.map(enDirect));
-      return res.status(200).json({ en_ce_moment: liste.length, direct: liste.slice(0, DIRECT_MAX) });
+      const maintenant = Date.now();
+      const depuis26h = new Date(maintenant - 26 * 3600000).toISOString();
+      const r = await lireVisites((req2) => req2.gte("updated_at", depuis26h));
+      if (r.error) return res.status(200).json({ table_absente: true, en_ce_moment: 0, direct: [], aujourdhui: 0 });
+      const auj = jourDe(new Date(maintenant).toISOString());
+      const vivantes = r.lignes.filter((l) => new Date(l.updated_at || l.created_at).getTime() >= maintenant - EN_CE_MOMENT_MS);
+      const liste = trierDirect(vivantes.map(enDirect));
+      return res.status(200).json({
+        en_ce_moment: liste.length,
+        direct: liste.slice(0, DIRECT_MAX),
+        aujourdhui: r.lignes.filter((l) => jourDe(l.created_at) === auj).length,
+      });
     }
 
     const jours = JOURS_PERMIS.indexOf(parseInt(q.jours, 10)) !== -1 ? parseInt(q.jours, 10) : 30;

@@ -269,8 +269,11 @@
     .vis-grille > .card { margin-bottom: 16px; }
     .vis-carte-tete { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
     .vis-carte-zone { position: relative; }
-    .vis-carte { display: block; width: 100%; height: 340px; background: #F7F9FC; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
-    .vis-carte:active { cursor: grabbing; }
+    .vis-carte { display: block; width: 100%; height: 340px; background: #F7F9FC; touch-action: pan-y; cursor: pointer; user-select: none; -webkit-user-select: none; }
+    .vis-carte-zone.actif .vis-carte { touch-action: none; cursor: grab; }
+    .vis-carte-zone.actif .vis-carte:active { cursor: grabbing; }
+    .vis-carte-zone.actif { box-shadow: inset 0 0 0 2px #7C3AED; }
+    .vis-carte-aide.attire { background: var(--black); color: var(--white); }
     .vis-carte path { vector-effect: non-scaling-stroke; }
     .vis-carte-btns { position: absolute; top: 10px; left: 10px; display: flex; flex-direction: column; background: var(--white); border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
     .vis-carte-btns button { width: 32px; height: 32px; border: none; background: none; font-size: 18px; line-height: 1; cursor: pointer; color: var(--gray-800); font-family: var(--font-body); }
@@ -369,7 +372,7 @@
       <!-- FREQUENTATION : en direct, visites, conversion, carte, produits regardes -->
       <div class="vis-tete">
         <div class="vis-titre">Fr&eacute;quentation</div>
-        <span class="vis-live" id="vis-live" title="En direct, mis &agrave; jour toutes les 15 secondes"><i></i><b id="vis-live-n">0</b><span id="vis-live-txt">personne sur le site en ce moment</span></span>
+        <span class="vis-live" id="vis-live" title="En direct, mis &agrave; jour toutes les 5 secondes"><i></i><b id="vis-live-n">0</b><span id="vis-live-txt">personne sur le site en ce moment</span></span>
       </div>
       <div class="vis-note" id="vis-note"></div>
       <div class="vis-periode">
@@ -392,10 +395,10 @@
           <div class="card-header vis-carte-tete"><span>D'o&ugrave; viennent les visiteurs</span>
             <span class="vis-choix" id="vis-zoom"><button data-z="be">Belgique</button><button data-z="eu" class="actif">Europe</button><button data-z="monde">Monde</button></span>
           </div>
-          <div class="vis-carte-zone">
+          <div class="vis-carte-zone" id="vis-carte-zone">
             <svg class="vis-carte" id="vis-carte"></svg>
             <div class="vis-carte-btns"><button id="vis-plus" title="Zoomer">+</button><button id="vis-moins" title="D&eacute;zoomer">&minus;</button></div>
-            <div class="vis-carte-aide">Molette ou 2 doigts pour zoomer &middot; glisser pour se d&eacute;placer</div>
+            <div class="vis-carte-aide" id="vis-carte-aide">Clique sur la carte pour zoomer et te d&eacute;placer</div>
           </div>
           <div class="vis-pays" id="vis-pays"></div>
         </div>
@@ -706,7 +709,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-09-30-frequentation-2';
+  const APP_VERSION = '2026-09-30-frequentation-3';
 
   async function checkAppVersion() {
     try {
@@ -1343,10 +1346,14 @@
       const d = await res.json();
       VIS_DIRECT = d.direct || [];
       afficherDirect(d.en_ce_moment);
+      if (typeof d.aujourdhui === 'number') visTexte('vis-visites-sous', nombre(d.aujourdhui) + " aujourd'hui");
       dessinerPointsCarte();
     } catch (e) { /* le direct n'est pas critique */ }
   }
-  setInterval(rafraichirDirect, 15000);
+  // Toutes les 5 s (Axel : « que ce soit vraiment direct live »), et tout de
+  // suite quand on revient sur l'onglet. Onglet cache : aucun appel.
+  setInterval(rafraichirDirect, 5000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) rafraichirDirect(); });
 
   function afficherDirect(total) {
     const n = typeof total === 'number' ? total : VIS_DIRECT.length;
@@ -1606,6 +1613,32 @@
     if (!svg) return;
     const doigts = new Map();
     let depart = null, deplace = false;
+
+    // La carte ne capte la molette et le glisser qu'apres un clic dessus :
+    // sinon, faire defiler la page en passant la souris dessus zoomait la
+    // carte au lieu de descendre (retour d'Axel). Elle se desactive quand
+    // la souris sort, ou quand on clique ailleurs.
+    const zone = document.getElementById('vis-carte-zone');
+    const aide = document.getElementById('vis-carte-aide');
+    let active = false;
+    let minuteurAide = null;
+    function activer(oui) {
+      active = oui;
+      if (zone) zone.classList.toggle('actif', oui);
+      if (aide) aide.textContent = oui
+        ? 'Molette ou 2 doigts pour zoomer · glisser pour se déplacer'
+        : 'Clique sur la carte pour zoomer et te déplacer';
+    }
+    function rappeler() {
+      if (!aide) return;
+      aide.classList.add('attire');
+      clearTimeout(minuteurAide);
+      minuteurAide = setTimeout(function () { aide.classList.remove('attire'); }, 1200);
+    }
+    if (zone) zone.addEventListener('mouseleave', function () { activer(false); });
+    document.addEventListener('pointerdown', function (ev) {
+      if (active && zone && !zone.contains(ev.target)) activer(false);
+    });
     function fraction(x, y) {
       const r = svg.getBoundingClientRect();
       return [(x - r.left) / r.width, (y - r.top) / r.height];
@@ -1623,6 +1656,12 @@
     svg.addEventListener('pointermove', function (ev) {
       if (!doigts.has(ev.pointerId)) { if (ev.pointerType === 'mouse') info(ev); return; }
       if (!VIS_VUE) return;
+      if (!active) {
+        // Pas encore active : on laisse la page defiler (au doigt), on note
+        // juste que ce n'etait pas un simple clic.
+        if (Math.abs(ev.clientX - depart.x) + Math.abs(ev.clientY - depart.y) > 4) deplace = true;
+        return;
+      }
       const avant = doigts.get(ev.pointerId);
       const r = svg.getBoundingClientRect();
       if (doigts.size === 1) {
@@ -1643,18 +1682,23 @@
       doigts.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
     });
     function lacher(ev) {
-      if (doigts.has(ev.pointerId) && doigts.size === 1 && !deplace) info(ev);   // un simple toucher : on montre l'info
+      if (doigts.has(ev.pointerId) && doigts.size === 1 && !deplace) {
+        if (!active) activer(true);    // un simple clic : la carte devient manoeuvrable
+        info(ev);                      // et on montre l'info du point touche
+      }
       doigts.delete(ev.pointerId);
     }
     svg.addEventListener('pointerup', lacher);
     svg.addEventListener('pointercancel', function (ev) { doigts.delete(ev.pointerId); });
     svg.addEventListener('mouseleave', cacherBulle);
     svg.addEventListener('wheel', function (ev) {
+      if (!active) { rappeler(); return; }   // la page defile normalement
       ev.preventDefault();
       const f = fraction(ev.clientX, ev.clientY);
       zoomer(ev.deltaY < 0 ? 1.25 : 0.8, f[0], f[1]);
     }, { passive: false });
     svg.addEventListener('dblclick', function (ev) {
+      if (!active) activer(true);
       const f = fraction(ev.clientX, ev.clientY);
       zoomer(2, f[0], f[1]);
     });
