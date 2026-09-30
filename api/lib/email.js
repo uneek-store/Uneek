@@ -399,7 +399,8 @@ export async function commandeExpediee(order, articles, nomMarque, suivi) {
     + bloqueInfo(t("bloc_livraison", lg), [
         esc(order.customer_name),
         esc(order.shipping_address),
-        surnom ? t("e_cherche", lg, { surnom: surnom }) : null,
+        // "Cherche {surnom} ecrit a la main sur le colis" retire le 30/09 a la
+        // demande d'Axel : la phrase n'apparait plus dans l'avis d'expedition.
       ])
     + '<p style="margin:20px 0 18px;font-size:14px">' + t("e_merci", lg) + '</p>'
     + '<p style="margin:0;font-size:13px;color:#666">' + t("e_souci", lg) + '</p>';
