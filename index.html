@@ -838,6 +838,7 @@ const ROUTES = {
   register: 'inscription',
   profile: 'profil',
   cgv: 'cgv',
+  retours: 'retours',
   privacy: 'confidentialite',
   legal: 'mentions-legales'
 };
@@ -993,13 +994,15 @@ function majTitre(page, data) {
       shop: 'Shop', brands: 'Les Marques', manifesto: 'Manifesto',
       partner: 'Devenir Partenaire', checkout: 'Commande', login: 'Connexion',
       register: 'Inscription', profile: 'Mon profil', cgv: 'CGV',
+      retours: 'Retours et remboursements',
       privacy: 'Confidentialité', legal: 'Mentions légales'
     };
     const textes = {
       shop: 'Toutes les pièces des marques indépendantes belges réunies sur UNEEK.',
       brands: 'Les marques indépendantes belges présentes sur UNEEK : leur histoire, leurs pièces.',
       manifesto: 'Pourquoi UNEEK existe : soutenir les créateurs indépendants, pièce par pièce.',
-      partner: 'Tu crées une marque indépendante ? Rejoins UNEEK et vends tes pièces.'
+      partner: 'Tu crées une marque indépendante ? Rejoins UNEEK et vends tes pièces.',
+      retours: '14 jours pour changer d\'avis. Comment renvoyer une pièce achetée sur UNEEK, et ce qui est remboursé.'
     };
     if (noms[page]) t = noms[page] + ' — UNEEK';
     if (textes[page]) description = textes[page];

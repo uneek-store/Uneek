@@ -26,6 +26,7 @@ const PAGES_FIXES = [
   { chemin: "/marques", priorite: "0.8", frequence: "weekly" },
   { chemin: "/manifesto", priorite: "0.6", frequence: "monthly" },
   { chemin: "/devenir-partenaire", priorite: "0.6", frequence: "monthly" },
+  { chemin: "/retours", priorite: "0.4", frequence: "yearly" },
   { chemin: "/cgv", priorite: "0.2", frequence: "yearly" },
   { chemin: "/confidentialite", priorite: "0.2", frequence: "yearly" },
   { chemin: "/mentions-legales", priorite: "0.2", frequence: "yearly" },
