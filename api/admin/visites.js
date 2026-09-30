@@ -33,7 +33,11 @@ const JOURS_PERMIS = [7, 30, 90];
 const MOIS_AFFICHES = 6;
 const TRANCHE = 1000;
 const PLAFOND = 100000;
-const EN_CE_MOMENT_MS = 5 * 60 * 1000;
+// « En direct » = un signe de vie depuis moins de 3 minutes. La boutique en
+// envoie un par minute tant que l'onglet est au premier plan.
+const EN_CE_MOMENT_MS = 3 * 60 * 1000;
+const DIRECT_MAX = 50;
+const COLONNES = "created_at, updated_at, pages, country, city, lat, lon, source";
 
 const NOMS_MOIS = ["janvier", "février", "mars", "avril", "mai", "juin",
   "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
@@ -86,6 +90,30 @@ async function toutLire(construire) {
   return { lignes, error: null, tronque: true };
 }
 
+// Lit site_visits avec les colonnes « en direct » (page, page_detail), et
+// sans elles si elles n'existent pas encore (ancienne version du SQL).
+async function lireVisites(filtrer) {
+  const r = await toutLire(() => filtrer(supabaseAdmin.from("site_visits").select(COLONNES + ", page, page_detail")));
+  if (!r.error) return r;
+  const sans = await toutLire(() => filtrer(supabaseAdmin.from("site_visits").select(COLONNES)));
+  return sans.error ? r : sans;
+}
+
+// Une ligne du bloc « En direct ». Jamais le numéro de visite.
+function enDirect(l) {
+  return {
+    ville: l.city || null, pays: l.country || null,
+    lat: l.lat === null || l.lat === undefined ? null : Number(l.lat),
+    lon: l.lon === null || l.lon === undefined ? null : Number(l.lon),
+    page: l.page || null, detail: l.page_detail || null,
+    pages: Number(l.pages) || 1, source: l.source || null,
+    arrivee: l.created_at, vu: l.updated_at || l.created_at,
+  };
+}
+function trierDirect(liste) {
+  return liste.sort((a, b) => new Date(b.vu).getTime() - new Date(a.vu).getTime());
+}
+
 function taux(commandes, visites) {
   if (!visites) return null;
   return Math.round((commandes / visites) * 1000) / 10;   // en %, une décimale
@@ -104,6 +132,17 @@ export default async function handler(req, res) {
 
   try {
     const q = req.query || {};
+
+    // Appel léger, toutes les 15 s depuis la vue d'ensemble : seulement les
+    // visites encore vivantes.
+    if (q.direct === "1") {
+      const seuil = new Date(Date.now() - EN_CE_MOMENT_MS).toISOString();
+      const r = await lireVisites((req2) => req2.gte("updated_at", seuil));
+      if (r.error) return res.status(200).json({ table_absente: true, en_ce_moment: 0, direct: [] });
+      const liste = trierDirect(r.lignes.map(enDirect));
+      return res.status(200).json({ en_ce_moment: liste.length, direct: liste.slice(0, DIRECT_MAX) });
+    }
+
     const jours = JOURS_PERMIS.indexOf(parseInt(q.jours, 10)) !== -1 ? parseInt(q.jours, 10) : 30;
     const maintenant = new Date();
     const cleMois = moisPrecedents(MOIS_AFFICHES, maintenant);
@@ -117,9 +156,7 @@ export default async function handler(req, res) {
     const avantPeriode = (iso) => { const t = new Date(iso).getTime(); return isNaN(t) || t < tPeriode; };
 
     // --- 1. les visites ---
-    const v = await toutLire(() => supabaseAdmin
-      .from("site_visits")
-      .select("created_at, updated_at, pages, country, city, lat, lon, source")
+    const v = await lireVisites((req2) => req2
       .gte("created_at", depuis)
       .order("created_at", { ascending: true }));
     const tableAbsente = !!v.error;
@@ -144,7 +181,8 @@ export default async function handler(req, res) {
 
     const periode = { visites: 0, actives: 0, pages: 0, commandes: 0 };
     const pays = {}, villes = {}, sources = {};
-    let enCeMoment = 0, duJour = 0;
+    let duJour = 0;
+    const vivantes = [];
     const seuilMoment = maintenant.getTime() - EN_CE_MOMENT_MS;
 
     visites.forEach((l) => {
@@ -155,7 +193,7 @@ export default async function handler(req, res) {
       if (m) { m.visites++; if (active) m.actives++; }
       if (jour === aujourdhui) duJour++;
       const maj = new Date(l.updated_at || l.created_at).getTime();
-      if (maj >= seuilMoment) enCeMoment++;
+      if (maj >= seuilMoment) vivantes.push(enDirect(l));
 
       if (avantPeriode(l.created_at)) return;
       const j = parJour[jour];
@@ -235,7 +273,8 @@ export default async function handler(req, res) {
       jours,
       table_absente: tableAbsente,
       tronque: v.tronque || o.tronque || e.tronque,
-      en_ce_moment: enCeMoment,
+      en_ce_moment: vivantes.length,
+      direct: trierDirect(vivantes).slice(0, DIRECT_MAX),
       aujourdhui: duJour,
       periode: Object.assign(periode, { conversion: taux(periode.commandes, periode.visites) }),
       par_jour: cleJours.map((c) => Object.assign({ jour: c }, parJour[c])),

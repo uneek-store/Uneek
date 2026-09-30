@@ -2329,6 +2329,16 @@ init();
       return document.referrer || null;
     }
 
+    // Le nom de la piece ou de la marque regardee : l'admin le voit dans
+    // « En direct ». Rien d'autre (c'est le catalogue public).
+    function detail() {
+      try {
+        if (currentPage === 'product') { var p = trouverProduit(pageData); return p ? p.name : null; }
+        if (currentPage === 'brand') { var b = getBrandBySlug(pageData); return b ? b.name : null; }
+      } catch (err) {}
+      return null;
+    }
+
     function pageVue() {
       try {
         if (typeof dataLoaded !== 'undefined' && !dataLoaded) return; // ecran « Chargement... »
@@ -2338,9 +2348,9 @@ init();
         etat.n += 1;
         sauver();
         if (etat.n === 1) {
-          envoyer({ type: 'visite', session: etat.s, entree: (typeof currentPage === 'string' ? currentPage : null), source: source() });
+          envoyer({ type: 'visite', session: etat.s, entree: (typeof currentPage === 'string' ? currentPage : null), detail: detail(), source: source() });
         } else if (etat.n <= 500) {
-          envoyer({ type: 'page', session: etat.s, pages: etat.n });
+          envoyer({ type: 'page', session: etat.s, pages: etat.n, page: (typeof currentPage === 'string' ? currentPage : null), detail: detail() });
         }
       } catch (err) {}
     }
@@ -2353,6 +2363,13 @@ init();
         return r;
       };
     }
+    // Un signe de vie par minute tant que l'onglet est au premier plan : la
+    // personne reste « en direct » dans l'admin meme si elle lit longtemps
+    // la meme fiche. Onglet en arriere-plan : rien ne part.
+    setInterval(function () {
+      try { if (etat.n >= 1 && !document.hidden) envoyer({ type: 'ping', session: etat.s }); } catch (err) {}
+    }, 60000);
+
     // Si les produits sont deja charges quand ce bloc s'execute, la
     // premiere page est deja affichee : on la compte tout de suite.
     pageVue();

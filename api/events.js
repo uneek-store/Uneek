@@ -70,17 +70,54 @@ export function sourceDe(v) {
   return t;
 }
 
+// Pour le bloc « En direct » de l'admin (ajouté le 30 septembre au soir) :
+// la page où se trouve le visiteur (home, product…) et, sur une fiche
+// produit ou une page marque, son NOM tel qu'affiché sur le site. C'est du
+// catalogue public, rien de personnel.
+function pageDe(v) {
+  return typeof v === "string" && /^[a-z-]{2,24}$/.test(v) ? v : null;
+}
+function detailDe(v) {
+  if (typeof v !== "string") return null;
+  const t = v.replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, 60);
+  return t || null;
+}
+
+// Si les colonnes page / page_detail n'existent pas encore (ancienne version
+// du SQL), la base refuse TOUTE l'écriture. On réessaie alors sans elles :
+// le compteur continue de tourner, seul le détail « en direct » manque.
+async function ecrireVisite(operation, valeurs, session) {
+  const essai = (v) => operation === "insert"
+    ? supabaseAdmin.from("site_visits").insert(v)
+    : supabaseAdmin.from("site_visits").update(v).eq("session", session);
+  let { error } = await essai(valeurs);
+  if (error && ("page" in valeurs || "page_detail" in valeurs)) {
+    const sans = Object.assign({}, valeurs);
+    delete sans.page;
+    delete sans.page_detail;
+    ({ error } = await essai(sans));
+  }
+  return error;
+}
+
 async function noterVisite(req, corps) {
   const session = typeof corps.session === "string" ? corps.session.trim() : "";
   if (!SESSION_VALIDE.test(session)) return;
 
+  if (corps.type === "ping") {
+    // Toujours là, sur la même page : la visite reste « en direct ».
+    const error = await ecrireVisite("update", { updated_at: new Date().toISOString() }, session);
+    if (error) console.warn("[events] visite (ping) ignorée :", error.message);
+    return;
+  }
+
   if (corps.type === "page") {
     const pages = parseInt(corps.pages, 10);
     if (!isFinite(pages) || pages < 2) return;
-    const { error } = await supabaseAdmin
-      .from("site_visits")
-      .update({ pages: Math.min(pages, PAGES_MAX), updated_at: new Date().toISOString() })
-      .eq("session", session);
+    const maj = { pages: Math.min(pages, PAGES_MAX), updated_at: new Date().toISOString() };
+    const page = pageDe(corps.page);
+    if (page) { maj.page = page; maj.page_detail = detailDe(corps.detail); }
+    const error = await ecrireVisite("update", maj, session);
     if (error) console.warn("[events] visite (page) ignorée :", error.message);
     return;
   }
@@ -96,8 +133,10 @@ async function noterVisite(req, corps) {
     lon: coordonnee(req.headers && req.headers["x-vercel-ip-longitude"], 180),
     source: sourceDe(corps.source),
     entree: entree && /^[a-z-]+$/.test(entree) ? entree : null,
+    page: entree && /^[a-z-]+$/.test(entree) ? entree : null,
+    page_detail: detailDe(corps.detail),
   };
-  const { error } = await supabaseAdmin.from("site_visits").insert(ligne);
+  const error = await ecrireVisite("insert", ligne);
   // Même session envoyée deux fois (double chargement) : la contrainte
   // unique refuse la seconde, et c'est exactement ce qu'on veut.
   if (error) console.warn("[events] visite ignorée :", error.message);
@@ -139,7 +178,7 @@ export default async function handler(req, res) {
     }
     if (!corps || typeof corps !== "object") return res.status(204).end();
 
-    if (corps.type === "visite" || corps.type === "page") {
+    if (corps.type === "visite" || corps.type === "page" || corps.type === "ping") {
       await noterVisite(req, corps);
       return res.status(204).end();
     }
