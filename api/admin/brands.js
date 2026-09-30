@@ -1,5 +1,6 @@
 // API : /api/admin/brands
-// GET    → liste des marques AVEC l'e-mail du créateur (réservé admin)
+// GET    → liste des marques AVEC l'e-mail du créateur et la formule (réservé admin)
+// PATCH  → mettre en pause / réactiver, OU changer la formule (gratuit / pro / ambassadeur)
 // DELETE → supprimer une marque et notifier le créateur
 
 import { supabaseAdmin } from "../lib/supabase.js";
@@ -9,6 +10,7 @@ import { controlerAcces } from "../lib/session.js";
 // inventee aurait ecrit a une vraie personne. Elle utilisait aussi un autre
 // expediteur (onboarding@resend.dev). Tout passe par le module commun.
 import { envoyer, alerteAdmin, esc } from "../lib/email.js";
+import { formuleValide } from "../lib/formules.js";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -26,10 +28,18 @@ export default async function handler(req, res) {
   // faire sur l'adresse publique, et le panneau admin en a besoin.
   if (req.method === "GET") {
     try {
-      const { data, error } = await supabaseAdmin
+      // La formule (30 septembre) : si la colonne n'existe pas encore (SQL
+      // pas lancé), on relit SANS elle — l'onglet Marques ne doit jamais
+      // tomber à cause d'elle.
+      const COLONNES = "id, name, slug, tagline, city, year, image_url, logo_url, email, is_active, products(count), creator_accounts(full_name, email)";
+      let { data, error } = await supabaseAdmin
         .from("brands")
-        .select("id, name, slug, tagline, city, year, image_url, logo_url, email, is_active, products(count), creator_accounts(full_name, email)")
+        .select(COLONNES + ", formule")
         .order("name");
+      if (error) {
+        const r = await supabaseAdmin.from("brands").select(COLONNES).order("name");
+        if (!r.error) { data = r.data; error = null; }
+      }
 
       if (error) {
         console.error("Error fetching admin brands:", error);
@@ -56,6 +66,39 @@ export default async function handler(req, res) {
   // --- PATCH : mettre une marque en pause, ou la reactiver ---
   // Rien n'est supprime : on bascule is_active. Une marque en pause reste
   // dans la liste ci-dessus, sinon l'admin ne pourrait plus la reactiver.
+  // --- PATCH { brand_id, formule } : changer la formule d'une marque ---
+  // Seul l'admin passe ici (controlerAcces plus haut). La date du changement
+  // est gardée : utile le jour où Stripe changera aussi des formules.
+  if (req.method === "PATCH" && req.body && req.body.formule !== undefined && req.body.is_active === undefined) {
+    const { brand_id, formule } = req.body;
+    if (!brand_id) return res.status(400).json({ error: "brand_id requis" });
+    if (!formuleValide(formule)) {
+      return res.status(400).json({ error: "formule inconnue : gratuit, pro ou ambassadeur" });
+    }
+    try {
+      const { data, error } = await supabaseAdmin
+        .from("brands")
+        .update({ formule, formule_modifiee_le: new Date().toISOString() })
+        .eq("id", brand_id)
+        .select("id, name, formule")
+        .maybeSingle();
+      if (error) {
+        const colonne = /formule/.test(error.message || "");
+        console.error("Error updating brand formule:", error);
+        return res.status(colonne ? 409 : 500).json({
+          error: colonne
+            ? "La colonne formule n'existe pas encore : lance outils/sql/2026-09-30-formules.sql dans Supabase."
+            : "Erreur serveur",
+        });
+      }
+      if (!data) return res.status(404).json({ error: "Marque introuvable" });
+      return res.status(200).json({ success: true, brand_id: data.id, formule: data.formule });
+    } catch (err) {
+      console.error("Patch brand formule error:", err);
+      return res.status(500).json({ error: "Erreur serveur" });
+    }
+  }
+
   if (req.method === "PATCH") {
     const { brand_id, is_active } = req.body || {};
     if (!brand_id) return res.status(400).json({ error: "brand_id requis" });

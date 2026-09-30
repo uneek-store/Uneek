@@ -104,6 +104,14 @@ async function noterVisite(req, corps) {
   const session = typeof corps.session === "string" ? corps.session.trim() : "";
   if (!SESSION_VALIDE.test(session)) return;
 
+  if (corps.type === "depart") {
+    // Onglet ferme ou mis en arriere-plan : la personne quitte le « direct »
+    // tout de suite. On recule son dernier signe de vie ; rien d'autre ne change.
+    const error = await ecrireVisite("update", { updated_at: new Date(Date.now() - 10 * 60 * 1000).toISOString() }, session);
+    if (error) console.warn("[events] visite (depart) ignorée :", error.message);
+    return;
+  }
+
   if (corps.type === "ping") {
     // Toujours là, sur la même page : la visite reste « en direct ».
     const error = await ecrireVisite("update", { updated_at: new Date().toISOString() }, session);
@@ -123,14 +131,18 @@ async function noterVisite(req, corps) {
   }
 
   const pays = entete(req, "x-vercel-ip-country", 8);
+  // Sans ville, les coordonnees que donne Vercel sont le CENTRE DU PAYS
+  // (pour la Belgique : pres de Namur). Un point la serait faux : on ne
+  // garde alors que le pays (retour d'Axel : Liege affiche dans le sud).
+  const ville = entete(req, "x-vercel-ip-city", 80);
   const entree = texteCourt(corps.entree, 24);
   const ligne = {
     session,
     pages: 1,
     country: pays && /^[A-Za-z]{2}$/.test(pays) ? pays.toUpperCase() : null,
-    city: entete(req, "x-vercel-ip-city", 80),
-    lat: coordonnee(req.headers && req.headers["x-vercel-ip-latitude"], 90),
-    lon: coordonnee(req.headers && req.headers["x-vercel-ip-longitude"], 180),
+    city: ville,
+    lat: ville ? coordonnee(req.headers && req.headers["x-vercel-ip-latitude"], 90) : null,
+    lon: ville ? coordonnee(req.headers && req.headers["x-vercel-ip-longitude"], 180) : null,
     source: sourceDe(corps.source),
     entree: entree && /^[a-z-]+$/.test(entree) ? entree : null,
     page: entree && /^[a-z-]+$/.test(entree) ? entree : null,
@@ -178,7 +190,7 @@ export default async function handler(req, res) {
     }
     if (!corps || typeof corps !== "object") return res.status(204).end();
 
-    if (corps.type === "visite" || corps.type === "page" || corps.type === "ping") {
+    if (corps.type === "visite" || corps.type === "page" || corps.type === "ping" || corps.type === "depart") {
       await noterVisite(req, corps);
       return res.status(204).end();
     }

@@ -2368,7 +2368,27 @@ init();
     // la meme fiche. Onglet en arriere-plan : rien ne part.
     setInterval(function () {
       try { if (etat.n >= 1 && !document.hidden) envoyer({ type: 'ping', session: etat.s }); } catch (err) {}
-    }, 60000);
+    }, 30000);
+
+    // La personne ferme l'onglet, verrouille son telephone ou change
+    // d'application : elle sort du « direct » tout de suite, au lieu d'y
+    // rester jusqu'a 2 minutes. Quand elle revient, elle y reapparait.
+    // sendBeacon part meme si la page se ferme.
+    function depart() {
+      try {
+        if (etat.n < 1) return;
+        var corps = JSON.stringify({ type: 'depart', session: etat.s });
+        if (navigator.sendBeacon && navigator.sendBeacon('/api/events', corps)) return;
+        envoyer({ type: 'depart', session: etat.s });
+      } catch (err) {}
+    }
+    document.addEventListener('visibilitychange', function () {
+      try {
+        if (document.hidden) depart();
+        else if (etat.n >= 1) envoyer({ type: 'ping', session: etat.s });
+      } catch (err) {}
+    });
+    window.addEventListener('pagehide', depart);
 
     // Si les produits sont deja charges quand ce bloc s'execute, la
     // premiere page est deja affichee : on la compte tout de suite.

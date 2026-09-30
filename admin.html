@@ -232,6 +232,15 @@
       .fin-cases { grid-template-columns: 1fr; }
       .fin-case-val { font-size: 26px; }
     }
+    /* FORMULE DES MARQUES (onglet Marques) */
+    .formule { padding: 5px 26px 5px 10px; border-radius: 50px; font-size: 12px; font-weight: 500; font-family: var(--font-body); border: 1px solid transparent; cursor: pointer; -webkit-appearance: none; appearance: none; background-repeat: no-repeat; background-position: right 9px center; background-size: 9px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23737373' stroke-width='1.5'/%3E%3C/svg%3E"); }
+    .formule.f-ambassadeur { background-color: #F3EEFF; color: #6D28D9; border-color: #DDD6FE; }
+    .formule.f-pro { background-color: var(--green-bg); color: #15803D; border-color: #BBF7D0; }
+    .formule.f-gratuit { background-color: var(--gray-100); color: var(--gray-600); border-color: var(--gray-200); }
+    .formule:disabled { opacity: .5; cursor: wait; }
+    .formule-note { display: none; font-size: 12.5px; color: var(--gray-600); background: var(--orange-bg); border: 1px solid #FDE68A; border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; }
+    .formule-legende { font-size: 12px; color: var(--gray-500); margin: -8px 0 14px; }
+
     /* FREQUENTATION (vue d'ensemble) */
     .vis-tete { display: flex; align-items: center; gap: 10px 18px; flex-wrap: wrap; margin: 8px 0 10px; }
     .vis-periode { margin-bottom: 10px; }
@@ -372,7 +381,7 @@
       <!-- FREQUENTATION : en direct, visites, conversion, carte, produits regardes -->
       <div class="vis-tete">
         <div class="vis-titre">Fr&eacute;quentation</div>
-        <span class="vis-live" id="vis-live" title="En direct, mis &agrave; jour toutes les 5 secondes"><i></i><b id="vis-live-n">0</b><span id="vis-live-txt">personne sur le site en ce moment</span></span>
+        <span class="vis-live" id="vis-live" title="En direct, mis &agrave; jour toutes les 3 secondes"><i></i><b id="vis-live-n">0</b><span id="vis-live-txt">personne sur le site en ce moment</span></span>
       </div>
       <div class="vis-note" id="vis-note"></div>
       <div class="vis-periode">
@@ -474,10 +483,12 @@
     <div id="sec-brands" class="section">
       <div class="page-title">Marques</div>
       <div class="page-sub">Cr&eacute;ateurs partenaires</div>
+      <div class="formule-legende"><b>Formule</b> &mdash; Gratuit : les stats de base (toute nouvelle marque) &middot; Pro : tout, payant &middot; Ambassadeur : tout offert, &agrave; vie. Pour l'instant tu choisis ici ; plus tard, Pro se posera tout seul au paiement.</div>
+      <div class="formule-note" id="formule-note">Les formules ne sont pas encore activ&eacute;es : lance <b>outils/sql/2026-09-30-formules.sql</b> dans Supabase (SQL Editor). En attendant, toutes les marques comptent comme gratuites.</div>
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Marque</th><th>Ville</th><th>Email</th><th>Produits</th><th>Statut</th><th></th></tr></thead>
+            <thead><tr><th>Marque</th><th>Ville</th><th>Email</th><th>Produits</th><th>Statut</th><th></th><th>Formule</th></tr></thead>
             <tbody id="brands-table"></tbody>
           </table>
         </div>
@@ -709,7 +720,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-09-30-frequentation-3';
+  const APP_VERSION = '2026-09-30-formules-2';
 
   async function checkAppVersion() {
     try {
@@ -1350,9 +1361,9 @@
       dessinerPointsCarte();
     } catch (e) { /* le direct n'est pas critique */ }
   }
-  // Toutes les 5 s (Axel : « que ce soit vraiment direct live »), et tout de
+  // Toutes les 3 s (Axel : « que ce soit vraiment direct live »), et tout de
   // suite quand on revient sur l'onglet. Onglet cache : aucun appel.
-  setInterval(rafraichirDirect, 5000);
+  setInterval(rafraichirDirect, 3000);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) rafraichirDirect(); });
 
   function afficherDirect(total) {
@@ -1562,11 +1573,16 @@
     const gV = document.getElementById('vis-g-villes');
     const gD = document.getElementById('vis-g-direct');
     if (!svg || !gV || !gD || !VIS_VUE || !window.UNEEK_CARTE) return;
+    // Taille des points : a peu pres constante a l'ecran, mais plus petite
+    // quand on dezoome (Monde), plus grande quand on zoome (Belgique) — un
+    // gros point sur la vue Monde couvrait un pays entier.
     const unite = VIS_VUE.w / (svg.clientWidth || 600);
+    const zoom = window.UNEEK_CARTE.largeur / VIS_VUE.w;
+    const echelle = Math.min(1.3, Math.max(0.4, 0.4 + 0.25 * Math.log2(Math.max(zoom, 1))));
     const villes = (VIS_DATA && VIS_DATA.villes) || [];
     const maxV = Math.max.apply(null, villes.map(function (v) { return v.visites; }).concat([1]));
     gV.innerHTML = villes.slice().reverse().map(function (v) {
-      const r = (3 + 9 * Math.sqrt(v.visites / maxV)) * unite;
+      const r = (2.5 + 7.5 * Math.sqrt(v.visites / maxV)) * echelle * unite;
       const info = '<b>' + esc((v.ville || 'Ville inconnue') + ', ' + nomPays(v.pays)) + '</b><br>' + nombre(v.visites) + ' visite' + (v.visites > 1 ? 's' : '');
       return '<circle cx="' + projX(v.lon).toFixed(1) + '" cy="' + projY(v.lat).toFixed(1) + '" r="' + r.toFixed(2) + '" fill="#0A0A0A" fill-opacity="0.75" stroke="#fff" stroke-width="' + (1.2 * unite).toFixed(2) + '" data-info="' + esc(info) + '"></circle>';
     }).join('');
@@ -1574,8 +1590,8 @@
     gD.innerHTML = VIS_DIRECT.filter(function (v) { return v.lat !== null && v.lat !== undefined && v.lon !== null && v.lon !== undefined; }).map(function (v) {
       const cx = projX(Number(v.lon)).toFixed(1), cy = projY(Number(v.lat)).toFixed(1);
       const info = '<b>En direct : ' + esc(v.ville || nomPays(v.pays)) + '</b><br>regarde ' + esc(nomPage(v.page, v.detail));
-      return '<circle class="vis-pulse" cx="' + cx + '" cy="' + cy + '" r="' + (6 * unite).toFixed(2) + '" fill="#22C55E"></circle>'
-        + '<circle cx="' + cx + '" cy="' + cy + '" r="' + (5 * unite).toFixed(2) + '" fill="#22C55E" stroke="#fff" stroke-width="' + (1.5 * unite).toFixed(2) + '" data-info="' + esc(info) + '"></circle>';
+      return '<circle class="vis-pulse" cx="' + cx + '" cy="' + cy + '" r="' + (6 * echelle * unite).toFixed(2) + '" fill="#22C55E"></circle>'
+        + '<circle cx="' + cx + '" cy="' + cy + '" r="' + (5 * echelle * unite).toFixed(2) + '" fill="#22C55E" stroke="#fff" stroke-width="' + (1.5 * unite).toFixed(2) + '" data-info="' + esc(info) + '"></circle>';
     }).join('');
   }
 
@@ -2042,12 +2058,54 @@
       brands.forEach(b => {
         const safeName = String(b.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         html += '<tr><td class="bold">' + esc(b.name) + '</td><td class="sec">' + esc(b.city || '') + '</td><td class="sec">' + esc(b.email || '') + '</td><td>' + (b.product_count || 0) + '</td><td><span class="badge badge-green">Active</span></td>' +
-          '<td><button class="btn-delete-brand" onclick="askDeleteBrand(\'' + b.id + '\', \'' + safeName + '\')">Supprimer</button></td></tr>';
+          '<td><button class="btn-delete-brand" onclick="askDeleteBrand(\'' + b.id + '\', \'' + safeName + '\')">Supprimer</button></td>' +
+          '<td>' + menuFormule(b) + '</td></tr>';
       });
-      document.getElementById('brands-table').innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune marque</td></tr>';
+      const note = document.getElementById('formule-note');
+      if (note) note.style.display = brands.length && brands.every(function (b) { return b.formule === undefined; }) ? 'block' : 'none';
+      document.getElementById('brands-table').innerHTML = html || '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune marque</td></tr>';
       document.getElementById('stat-brands').textContent = brands.length;
     } catch (err) {
       console.error('Error loading brands:', err);
+    }
+  }
+
+  // --- FORMULE D'UNE MARQUE (30 septembre 2026) ---------------------
+  // Gratuit / Pro / Ambassadeur. Toute marque demarre en gratuit ; plus tard,
+  // Stripe posera « pro » au paiement. Ambassadeur : Axel seul, a la main.
+  // Le serveur verifie la valeur (api/lib/formules.js) : ce menu n'est
+  // qu'une facon commode de la changer.
+  const FORMULES_LIBELLES = { ambassadeur: 'Ambassadeur', pro: 'Pro', gratuit: 'Gratuit' };
+
+  function menuFormule(b) {
+    if (b.formule === undefined) return '<span class="sec">&mdash;</span>';
+    const f = FORMULES_LIBELLES[b.formule] ? b.formule : 'gratuit';
+    return '<select class="formule f-' + f + '" data-id="' + esc(b.id) + '" data-nom="' + esc(b.name || '') + '" data-avant="' + f + '" onchange="changerFormule(this)">'
+      + ['ambassadeur', 'pro', 'gratuit'].map(function (k) {
+        return '<option value="' + k + '"' + (k === f ? ' selected' : '') + '>' + FORMULES_LIBELLES[k] + '</option>';
+      }).join('') + '</select>';
+  }
+
+  async function changerFormule(menu) {
+    const id = menu.dataset.id, nom = menu.dataset.nom, avant = menu.dataset.avant, voulue = menu.value;
+    menu.disabled = true;
+    try {
+      const res = await fetch(API_BASE + '/admin/brands', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify({ brand_id: id, formule: voulue })
+      });
+      const d = await res.json().catch(function () { return {}; });
+      if (!res.ok) throw new Error(d.error || ('erreur ' + res.status));
+      menu.dataset.avant = voulue;
+      menu.className = 'formule f-' + voulue;
+      showToast('✓ ' + nom + ' passe en ' + FORMULES_LIBELLES[voulue], 'green');
+    } catch (err) {
+      menu.value = avant;                      // on revient a ce qui est vraiment en base
+      menu.className = 'formule f-' + avant;
+      showToast('Formule non changée : ' + err.message, 'red');
+    } finally {
+      menu.disabled = false;
     }
   }
 

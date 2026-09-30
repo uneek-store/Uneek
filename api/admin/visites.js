@@ -33,9 +33,10 @@ const JOURS_PERMIS = [7, 30, 90];
 const MOIS_AFFICHES = 6;
 const TRANCHE = 1000;
 const PLAFOND = 100000;
-// « En direct » = un signe de vie depuis moins de 3 minutes. La boutique en
-// envoie un par minute tant que l'onglet est au premier plan.
-const EN_CE_MOMENT_MS = 3 * 60 * 1000;
+// « En direct » = un signe de vie depuis moins de 2 minutes. La boutique en
+// envoie un toutes les 30 s tant que l'onglet est au premier plan, et
+// signale son depart quand il se ferme ou passe en arriere-plan.
+const EN_CE_MOMENT_MS = 2 * 60 * 1000;
 const DIRECT_MAX = 50;
 const COLONNES = "created_at, updated_at, pages, country, city, lat, lon, source";
 
