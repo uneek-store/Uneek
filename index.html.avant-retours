@@ -799,14 +799,13 @@ function footerHTML() {
       <div>
         <div class="footer-col-title">Support</div>
         <span class="footer-link" onclick="navigate('manifesto')">FAQ</span>
-        <span class="footer-link" onclick="navigate('retours')">Livraison & Retours</span>
+        <span class="footer-link" onclick="navigate('cgv')">Livraison & Retours</span>
         <span class="footer-link" onclick="navigate('partner')">Devenir Partenaire</span>
         <span class="footer-link" onclick="window.location.href='mailto:contact@uneek.store'">Contact</span>
       </div>
       <div>
         <div class="footer-col-title">Légal</div>
         <span class="footer-link" onclick="navigate('cgv')">CGV</span>
-        <span class="footer-link" onclick="navigate('retours')">Retours</span>
         <span class="footer-link" onclick="navigate('privacy')">Politique de confidentialité</span>
         <span class="footer-link" onclick="navigate('legal')">Mentions légales</span>
       </div>
@@ -1267,17 +1266,6 @@ function productPage() {
             </button>
           </div>
 
-          <!-- Mention obligatoire AVANT l'achat. Les frais de renvoi ne sont
-               a la charge du client que s'il en est informe avant de payer.
-               Elle est ici, et au checkout : deux fois, expres. -->
-          <div style="display:flex;gap:10px;align-items:flex-start;padding:14px 16px;background:var(--gray-50,#F7F7F7);border-radius:var(--radius-sm);margin-bottom:28px">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="flex:none;margin-top:2px;opacity:0.45"><path d="M3 12a9 9 0 1 0 9-9 9 9 0 0 0-6.36 2.64L3 8"/><path d="M3 3v5h5"/></svg>
-            <div style="font-size:13px;line-height:1.6;color:var(--gray-600);font-weight:300">
-              Retour possible sous 14 jours — frais de renvoi à ta charge.
-              <span class="footer-link" onclick="navigate('retours')" style="display:inline;color:var(--black);text-decoration:underline;cursor:pointer;font-weight:400">Comment ça marche</span>
-            </div>
-          </div>
-
           ${p.description ? `<div style="padding:28px 0;border-top:1px solid var(--gray-200)">
             <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px">Description</div>
             <p style="font-size:14px;line-height:1.7;color:var(--gray-500);font-weight:300">${p.description}</p>
@@ -1385,7 +1373,6 @@ function manifestoPage() {
     ["C'est quoi UNEEK exactement ?", "UNEEK est une marketplace qui regroupe des marques de mode indépendantes soigneusement sélectionnées. On donne une vitrine aux créateurs qui méritent d'être vus."],
     ["Comment sont sélectionnées les marques ?", "Chaque marque est évaluée sur la qualité de ses créations, son originalité et son histoire. On refuse volontairement le mass market."],
     ["Quels sont les délais de livraison ?", "Entre 3 et 7 jours ouvrés en Belgique et en France. Chaque commande est préparée directement par la marque."],
-    ["Je peux renvoyer une pièce ?", "Oui, tu as 14 jours après réception pour changer d'avis, sans justification. La pièce doit être non portée, avec ses étiquettes. Écris-nous à contact@uneek.store avec ton numéro de commande, on t'indique où la renvoyer. Les frais de renvoi sont à ta charge ; on te rembourse le reste, frais de livraison compris."],
     ["Comment devenir partenaire UNEEK ?", "Si tu es un créateur indépendant, tu peux postuler via notre formulaire 'Devenir Partenaire' accessible depuis le menu."],
   ];
   return `<div>
@@ -1558,11 +1545,6 @@ function checkoutPage() {
           <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:12px;color:var(--gray-600);font-weight:300"><span>Sous-total</span><span>${total} &euro;</span></div>
           <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:12px;color:var(--gray-600);font-weight:300"><span>Livraison</span><span>Gratuite</span></div>
           <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:600;padding-top:20px;border-top:1px solid var(--gray-300);margin-top:20px;margin-bottom:28px"><span>Total</span><span>${total} &euro;</span></div>
-          <!-- Meme mention, au moment ou le client engage son argent. -->
-          <div style="font-size:12px;line-height:1.6;color:var(--gray-500);font-weight:300;margin-bottom:16px">
-            Retour possible sous 14 jours — frais de renvoi à ta charge.
-            <span class="footer-link" onclick="navigate('retours')" style="display:inline;color:var(--black);text-decoration:underline;cursor:pointer">Comment ça marche</span>
-          </div>
           <button id="co-btn" class="btn btn-dark" style="width:100%;justify-content:center" onclick="confirmOrder()">Confirmer la commande &rarr;</button>
         </div>
       </div>
@@ -2081,21 +2063,8 @@ function doLogout() {
 
 function legalPage(type) {
   const pages = {
-    cgv: { title: "Conditions Générales de Vente", items: [["Article 1 — Préambule", "UNEEK est une marketplace de mode indépendante qui met en relation des créateurs et des acheteurs. UNEEK agit en qualité d'intermédiaire : les produits sont vendus par les créateurs, qui en assurent la fabrication et l'expédition. UNEEK encaisse le paiement pour leur compte et demeure l'interlocuteur unique du client pour toute commande passée sur uneek.store.\n\nQuel que soit le créateur, les mêmes conditions s'appliquent à toute commande : le droit de rétractation de quatorze (14) jours décrit à l'article 5 est identique pour toutes les marques référencées, et un créateur ne peut y substituer ses propres conditions. Toute demande de retour, de remboursement ou de réclamation est adressée à contact@uneek.store, qui la traite et procède au remboursement."], ["Article 2 — Produits et prix", "Les produits sont des vêtements et accessoires de marques indépendantes sélectionnées. Les prix sont en euros TTC, fixés librement par chaque créateur."], ["Article 3 — Commande et paiement", "La validation du paiement constitue l'acceptation de la commande. Le paiement est sécurisé. UNEEK ne stocke aucune donnée bancaire."], ["Article 4 — Livraison", "Expédition par le créateur sous 3 jours ouvrés. Délais : 3–7 jours BE/FR, 5–10 jours reste de l'Europe."], ["Article 5 — Droit de rétractation", "14 jours à compter de la réception, sans avoir à se justifier. Produit non porté, non lavé, étiquettes intactes. Frais de renvoi à charge du client, sauf produit défectueux ou non conforme.\n\nLa demande est adressée à contact@uneek.store. Le remboursement intervient au plus tard 14 jours après cette demande et porte sur le prix des pièces renvoyées ainsi que sur les frais de livraison aller. Le détail figure sur la page « Retours et remboursements »."], ["Article 6 — Garantie légale", "Garantie légale de conformité de 2 ans conformément au Code civil belge."], ["Article 7 — Droit applicable", "Droit belge applicable. Règlement en ligne : ec.europa.eu/consumers/odr"]] },
+    cgv: { title: "Conditions Générales de Vente", items: [["Article 1 — Préambule", "UNEEK est une marketplace de mode indépendante mettant en relation créateurs et acheteurs. UNEEK agit en qualité d'intermédiaire. Les produits sont vendus directement par les créateurs."], ["Article 2 — Produits et prix", "Les produits sont des vêtements et accessoires de marques indépendantes sélectionnées. Les prix sont en euros TTC, fixés librement par chaque créateur."], ["Article 3 — Commande et paiement", "La validation du paiement constitue l'acceptation de la commande. Le paiement est sécurisé. UNEEK ne stocke aucune donnée bancaire."], ["Article 4 — Livraison", "Expédition par le créateur sous 3 jours ouvrés. Délais : 3–7 jours BE/FR, 5–10 jours reste de l'Europe."], ["Article 5 — Droit de rétractation", "14 jours à compter de la réception. Produit non porté, étiquettes intactes. Frais de retour à charge du client sauf produit défectueux."], ["Article 6 — Garantie légale", "Garantie légale de conformité de 2 ans conformément au Code civil belge."], ["Article 7 — Droit applicable", "Droit belge applicable. Règlement en ligne : ec.europa.eu/consumers/odr"]] },
     privacy: { title: "Politique de confidentialité", items: [["Données collectées", "Nom, prénom, email, adresse de livraison et historique de commandes."], ["Utilisation", "Traitement des commandes, service client, amélioration de la plateforme."], ["Partage", "Données de livraison transmises au créateur uniquement. UNEEK ne vend aucune donnée."], ["Vos droits (RGPD)", "Droit d'accès, rectification, suppression et portabilité. Contact : support@uneek.store"], ["Sécurité", "Paiements sécurisés. UNEEK ne stocke aucune donnée bancaire."], ["Mesure d'audience", "Nous comptons les passages sur les fiches produits, les mises en favori et les mises au panier, pour renseigner les créateurs sur leurs pièces. Ces compteurs sont anonymes et agrégés : aucune adresse IP, aucun identifiant de visiteur et aucun compte client n'y est associé. Il est donc impossible de relier ces chiffres à une personne, et rien n'est partagé avec un service tiers."]] },
-    retours: { title: "Retours et remboursements", items: [
-      ["Tu as 14 jours pour changer d'avis",
-       "Tu peux nous renvoyer une pièce dans les 14 jours suivant sa réception, sans avoir à te justifier. Elle doit être dans l'état où tu l'as reçue : non portée, non lavée, étiquettes encore attachées."],
-      ["Comment faire",
-       "Écris-nous à contact@uneek.store avec ton numéro de commande. On te répond avec l'adresse à laquelle renvoyer la pièce — chaque marque prépare ses propres colis, l'adresse dépend donc de la marque."],
-      ["Qui paie quoi",
-       "Les frais de renvoi sont à ta charge. En revanche, on te rembourse ce que tu as payé pour recevoir ta commande, frais de livraison compris.\n\nSi tu ne renvoies qu'une partie de ta commande, seules les pièces renvoyées sont remboursées."],
-      ["Quand tu es remboursé",
-       "Au plus tard 14 jours après nous avoir prévenus. On peut attendre d'avoir reçu la pièce, ou la preuve que tu l'as bien renvoyée."],
-      ["Une pièce abîmée ou qui ne correspond pas",
-       "Ce n'est pas un retour, c'est un problème de notre côté. Écris-nous : le renvoi est à notre charge, et tu es remboursé intégralement."],
-      ["Ce qui ne peut pas être renvoyé",
-       "Une pièce portée, lavée ou sans ses étiquettes. Les sous-vêtements et maillots de bain descellés, pour des raisons d'hygiène."]] },
     legal: { title: "Mentions légales", items: [["Éditeur", "UNEEK — Marketplace de mode indépendante\nBCE : [à compléter] — TVA : BE [à compléter]\nEmail : contact@uneek.store"], ["Hébergement", "Vercel Inc., 340 S Lemon Ave #4133, Walnut CA 91789, USA"], ["Propriété intellectuelle", "Tout le contenu du site est protégé. Reproduction interdite sans autorisation."]] }
   };
   const pg = pages[type];
@@ -2133,7 +2102,6 @@ function renderPage() {
     case 'login': app.innerHTML = loginPage(); break;
     case 'register': app.innerHTML = registerPage(); break;
     case 'profile': app.innerHTML = profilePage(); if (currentUser) loadProfileOrders(); break;
-    case 'retours': app.innerHTML = legalPage('retours'); break;
     case 'cgv': app.innerHTML = legalPage('cgv'); break;
     case 'privacy': app.innerHTML = legalPage('privacy'); break;
     case 'legal': app.innerHTML = legalPage('legal'); break;
