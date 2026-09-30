@@ -269,7 +269,8 @@ export async function confirmationCommande(order, items) {
     + bloqueInfo(t("bloc_livraison", lg), [
         esc(order.customer_name),
         esc(order.shipping_address),
-        surnom ? t("c_colis_marque", lg, { surnom: surnom }) : null,
+        // "Ton colis sera marque {surnom}, ecrit a la main" retire le 30/09 a
+        // la demande d'Axel, comme dans l'avis d'expedition.
       ])
     + '<div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;'
     + 'color:#888;margin:22px 0 6px">' + t("c_la_suite", lg) + '</div>'
