@@ -715,7 +715,32 @@
     "Et mes ventes ?": { en: "What about my sales?", nl: "En mijn verkopen?", de: "Und meine Verk\u00e4ufe?", es: "\u00bfY mis ventas?" },
     "Rien ne change : ta boutique, tes commandes et tes versements restent identiques, en Gratuit comme en Pro.": { en: "Nothing changes: your shop, your orders and your payouts stay the same, on Free and on Pro.", nl: "Er verandert niets: je shop, je bestellingen en je uitbetalingen blijven hetzelfde, in Gratis en in Pro.", de: "Es \u00e4ndert sich nichts: dein Shop, deine Bestellungen und deine Auszahlungen bleiben gleich, in Kostenlos wie in Pro.", es: "No cambia nada: tu tienda, tus pedidos y tus pagos siguen igual, en Gratis y en Pro." },
     "Mes chiffres sont gard\u00e9s ?": { en: "Are my numbers kept?", nl: "Blijven mijn cijfers bewaard?", de: "Bleiben meine Zahlen erhalten?", es: "\u00bfSe guardan mis cifras?" },
-    "Oui. Si tu repasses en Gratuit, ils sont conserv\u00e9s et reviennent d\u00e8s que tu reprends le Pro.": { en: "Yes. If you go back to Free, they are kept and come back as soon as you return to Pro.", nl: "Ja. Als je teruggaat naar Gratis, blijven ze bewaard en komen ze terug zodra je weer Pro neemt.", de: "Ja. Wenn du zu Kostenlos zur\u00fcckgehst, bleiben sie erhalten und sind wieder da, sobald du Pro wieder nimmst.", es: "S\u00ed. Si vuelves a Gratis, se conservan y vuelven en cuanto retomas Pro." }
+    "Oui. Si tu repasses en Gratuit, ils sont conserv\u00e9s et reviennent d\u00e8s que tu reprends le Pro.": { en: "Yes. If you go back to Free, they are kept and come back as soon as you return to Pro.", nl: "Ja. Als je teruggaat naar Gratis, blijven ze bewaard en komen ze terug zodra je weer Pro neemt.", de: "Ja. Wenn du zu Kostenlos zur\u00fcckgehst, bleiben sie erhalten und sind wieder da, sobald du Pro wieder nimmst.", es: "S\u00ed. Si vuelves a Gratis, se conservan y vuelven en cuanto retomas Pro." },
+    "Noir": { en: "Black", nl: "Zwart", de: "Schwarz", es: "Negro" },
+    "Blanc": { en: "White", nl: "Wit", de: "Wei\u00df", es: "Blanco" },
+    "\u00c9cru": { en: "Off-white", nl: "Ecru", de: "Naturwei\u00df", es: "Crudo" },
+    "Beige": { en: "Beige", nl: "Beige", de: "Beige", es: "Beige" },
+    "Gris": { en: "Grey", nl: "Grijs", de: "Grau", es: "Gris" },
+    "Gris chin\u00e9": { en: "Heather grey", nl: "Grijs gem\u00ealeerd", de: "Grau meliert", es: "Gris jaspeado" },
+    "Marron": { en: "Brown", nl: "Bruin", de: "Braun", es: "Marr\u00f3n" },
+    "Rouge": { en: "Red", nl: "Rood", de: "Rot", es: "Rojo" },
+    "Bordeaux": { en: "Burgundy", nl: "Bordeauxrood", de: "Bordeaux", es: "Burdeos" },
+    "Rose": { en: "Pink", nl: "Roze", de: "Rosa", es: "Rosa" },
+    "Orange": { en: "Orange", nl: "Oranje", de: "Orange", es: "Naranja" },
+    "Jaune": { en: "Yellow", nl: "Geel", de: "Gelb", es: "Amarillo" },
+    "Vert": { en: "Green", nl: "Groen", de: "Gr\u00fcn", es: "Verde" },
+    "Kaki": { en: "Khaki", nl: "Kaki", de: "Khaki", es: "Caqui" },
+    "Bleu clair": { en: "Light blue", nl: "Lichtblauw", de: "Hellblau", es: "Azul claro" },
+    "Bleu": { en: "Blue", nl: "Blauw", de: "Blau", es: "Azul" },
+    "Bleu marine": { en: "Navy", nl: "Marineblauw", de: "Marineblau", es: "Azul marino" },
+    "Violet": { en: "Purple", nl: "Paars", de: "Lila", es: "Morado" },
+    "Argent\u00e9": { en: "Silver", nl: "Zilver", de: "Silber", es: "Plateado" },
+    "Dor\u00e9": { en: "Gold", nl: "Goud", de: "Gold", es: "Dorado" },
+    "Multicolore": { en: "Multicolour", nl: "Meerkleurig", de: "Mehrfarbig", es: "Multicolor" },
+    "Choisis les couleurs disponibles": { en: "Choose the available colours", nl: "Kies de beschikbare kleuren", de: "W\u00e4hle die verf\u00fcgbaren Farben", es: "Elige los colores disponibles" },
+    "Aucune couleur choisie": { en: "No colour chosen", nl: "Geen kleur gekozen", de: "Keine Farbe gew\u00e4hlt", es: "Ning\u00fan color elegido" },
+    "Photo montr\u00e9e pour": { en: "Photo shown for", nl: "Foto getoond voor", de: "Foto angezeigt f\u00fcr", es: "Foto mostrada para" },
+    "Toutes les couleurs": { en: "All colours", nl: "Alle kleuren", de: "Alle Farben", es: "Todos los colores" }
   };
 
   /* ---------- 2. phrases avec un chiffre ou un nom au milieu ---------- */

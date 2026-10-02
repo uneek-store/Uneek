@@ -555,7 +555,7 @@ function renderCart() {
   } else {
     const total = cart.reduce((s, i) => s + (i.price || 0), 0);
     body.innerHTML = cart.map(item => {
-      return `<div class="cart-item"><div class="cart-item-img"><img src="${item.image_url || PLACEHOLDER_IMG}" alt="${item.name}"></div><div class="cart-item-info"><div><div class="cart-item-brand">${item._brand_name || ''}</div><div class="cart-item-name">${item.name}</div><div class="cart-item-meta">Taille: ${item.selectedSize}${item.selectedColor ? ' &middot; ' + item.selectedColor : ''}</div></div><div class="cart-item-bottom"><span class="cart-item-price">${item.price} &euro;</span><button class="cart-item-remove" onclick="removeFromCart('${item.cartId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Retirer</button></div></div></div>`;
+      return `<div class="cart-item"><div class="cart-item-img"><img src="${item.image_url || PLACEHOLDER_IMG}" alt="${item.name}"></div><div class="cart-item-info"><div><div class="cart-item-brand">${item._brand_name || ''}</div><div class="cart-item-name">${item.name}</div><div class="cart-item-meta">Taille: ${item.selectedSize}${item.selectedColor ? ' &middot; ' + libelleCouleur(item.selectedColor) : ''}</div></div><div class="cart-item-bottom"><span class="cart-item-price">${item.price} &euro;</span><button class="cart-item-remove" onclick="removeFromCart('${item.cartId}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Retirer</button></div></div></div>`;
     }).join('');
     document.getElementById('cart-total-amount').textContent = total + ' €';
     footer.style.display = 'block';
@@ -690,6 +690,97 @@ function stockParCouleur(ss) {
   if (!vals.length) return false;
   return vals[0] !== null && typeof vals[0] === 'object' && !Array.isArray(vals[0]);
 }
+
+// ===== COULEURS UNEEK — copie de api/lib/couleurs.js =====
+// Le garde-fou compare ce bloc, au caractere pres, dans index.html,
+// creator-v2.html, admin.html et api/lib/couleurs.js. Ne le modifier qu'ici,
+// puis le recopier partout.
+var COULEURS_UNEEK = [
+  { code: 'noir',        fr: 'Noir',          hex: '#121212' },
+  { code: 'blanc',       fr: 'Blanc',         hex: '#FFFFFF' },
+  { code: 'ecru',        fr: 'Écru',          hex: '#F1EADA' },
+  { code: 'beige',       fr: 'Beige',         hex: '#D8C6A8' },
+  { code: 'gris',        fr: 'Gris',          hex: '#9B9B9B' },
+  { code: 'gris-chine',  fr: 'Gris chiné',    hex: '#BDBDBD' },
+  { code: 'marron',      fr: 'Marron',        hex: '#6B4A2F' },
+  { code: 'rouge',       fr: 'Rouge',         hex: '#C8102E' },
+  { code: 'bordeaux',    fr: 'Bordeaux',      hex: '#6E1A2B' },
+  { code: 'rose',        fr: 'Rose',          hex: '#E8A0BF' },
+  { code: 'orange',      fr: 'Orange',        hex: '#E8632A' },
+  { code: 'jaune',       fr: 'Jaune',         hex: '#F2C300' },
+  { code: 'vert',        fr: 'Vert',          hex: '#2E7D4F' },
+  { code: 'kaki',        fr: 'Kaki',          hex: '#6E7245' },
+  { code: 'bleu-clair',  fr: 'Bleu clair',    hex: '#8FBCE6' },
+  { code: 'bleu',        fr: 'Bleu',          hex: '#1F5FA9' },
+  { code: 'marine',      fr: 'Bleu marine',   hex: '#1B2A4A' },
+  { code: 'violet',      fr: 'Violet',        hex: '#6A4C93' },
+  { code: 'argente',     fr: 'Argenté',       hex: '#C2C2C2' },
+  { code: 'dore',        fr: 'Doré',          hex: '#C9A227' },
+  { code: 'multicolore', fr: 'Multicolore',   hex: null }
+];
+
+// Ce que les createurs ont deja tape a la main, avant que la liste existe.
+// Sans cette table, un produit enregistre en "black" perdrait sa pastille et
+// son nom traduit le jour ou on passe a la liste fixe.
+var ALIAS_COULEURS = {
+  black: 'noir', white: 'blanc', grey: 'gris', gray: 'gris', navy: 'marine',
+  red: 'rouge', pink: 'rose', green: 'vert', blue: 'bleu', yellow: 'jaune',
+  brown: 'marron', purple: 'violet', silver: 'argente', gold: 'dore',
+  beige: 'beige', khaki: 'kaki', burgundy: 'bordeaux', cream: 'ecru',
+  zwart: 'noir', wit: 'blanc', grijs: 'gris', rood: 'rouge', groen: 'vert',
+  blauw: 'bleu', schwarz: 'noir', weiss: 'blanc', grau: 'gris', rot: 'rouge',
+  negro: 'noir', blanco: 'blanc', rojo: 'rouge', verde: 'vert', azul: 'bleu',
+  'bleu-marine': 'marine', 'gris-chine': 'gris-chine', creme: 'ecru'
+};
+
+// 'Blanc', 'BLANC', 'blanc ', 'white' donnent tous 'blanc'. Une valeur
+// inconnue est renvoyee telle quelle : un vieux produit garde son texte
+// plutot que de disparaitre.
+function codeCouleur(v) {
+  if (v == null) return null;
+  var s = String(v).trim();
+  if (!s) return null;
+  var k = s.toLowerCase()
+    .replace(/[àâä]/g, 'a').replace(/[éèêë]/g, 'e')
+    .replace(/[îï]/g, 'i').replace(/[ôö]/g, 'o')
+    .replace(/[ùûü]/g, 'u').replace(/ç/g, 'c')
+    .replace(/[\s_]+/g, '-');
+  for (var i = 0; i < COULEURS_UNEEK.length; i++) {
+    if (COULEURS_UNEEK[i].code === k) return k;
+  }
+  if (Object.prototype.hasOwnProperty.call(ALIAS_COULEURS, k)) return ALIAS_COULEURS[k];
+  return s;
+}
+
+// Le libelle est TOUJOURS en francais : c'est i18n.js qui le traduit a
+// l'affichage, comme tout le reste du site. Rien a maintenir en double.
+function libelleCouleur(v) {
+  var c = codeCouleur(v);
+  for (var i = 0; i < COULEURS_UNEEK.length; i++) {
+    if (COULEURS_UNEEK[i].code === c) return COULEURS_UNEEK[i].fr;
+  }
+  return c == null ? '' : String(c);
+}
+
+function hexCouleur(v) {
+  var c = codeCouleur(v);
+  for (var i = 0; i < COULEURS_UNEEK.length; i++) {
+    if (COULEURS_UNEEK[i].code === c) return COULEURS_UNEEK[i].hex;
+  }
+  return null;
+}
+
+// La pastille. Le blanc et l'ecru ont besoin d'un contour pour exister sur
+// fond blanc ; le multicolore n'a pas de couleur, il a un degrade.
+function pastilleCouleur(v, taille) {
+  var t = taille || 16;
+  var h = hexCouleur(v);
+  var fond = h ? ('background:' + h)
+    : 'background:conic-gradient(#C8102E,#F2C300,#2E7D4F,#1F5FA9,#6A4C93,#C8102E)';
+  return '<span aria-hidden="true" style="display:inline-block;width:' + t + 'px;height:' + t
+    + 'px;border-radius:50%;' + fond + ';border:1px solid rgba(0,0,0,0.18);flex:none"></span>';
+}
+// ===== fin du bloc COULEURS UNEEK =====
 
 // Liste a plat : [{ couleur|null, taille, qte }]
 // Ordre d'affichage des tailles.
@@ -1251,9 +1342,9 @@ function productPage() {
           <div style="font-size:20px;color:var(--gray-600);margin-bottom:32px;font-weight:300">${p.price} &euro;</div>
 
           ${colors.length ? `
-          <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px">Couleur &mdash; <span id="color-label" style="color:var(--black)">${colors[0]}</span></div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px">Couleur &mdash; <span id="color-label" style="color:var(--black)">${libelleCouleur(colors[0])}</span></div>
           <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap" id="color-btns">
-            ${colors.map((c, i) => `<button class="pd-size ${i === 0 ? 'selected' : ''}" style="width:auto;padding:0 16px" onclick="selectColor(this,'${String(c).replace(/'/g, "\\'")}','${p.id}')">${c}</button>`).join('')}
+            ${colors.map((c, i) => `<button class="pd-size ${i === 0 ? 'selected' : ''}" style="width:auto;padding:0 14px;display:inline-flex;align-items:center;gap:8px" onclick="selectColor(this,'${String(c).replace(/'/g, "\\'")}','${p.id}')">${pastilleCouleur(c, 14)}${libelleCouleur(c)}</button>`).join('')}
           </div>` : ''}
 
           ${hasStock ? `
@@ -1304,7 +1395,7 @@ function selectColor(btn, couleur, productId) {
   document.querySelectorAll('#color-btns .pd-size').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   const lab = document.getElementById('color-label');
-  if (lab) lab.textContent = couleur;
+  if (lab) lab.textContent = libelleCouleur(couleur);
 
   const p = PRODUCTS.find(x => x.id === productId);
   const zone = document.getElementById('size-btns');
@@ -1554,7 +1645,7 @@ function checkoutPage() {
           ${cart.map(item => {
             return `<div style="display:flex;gap:12px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--gray-200)">
               <div style="width:56px;height:72px;overflow:hidden;background:var(--gray-200);border-radius:8px"><img src="${item.image_url || PLACEHOLDER_IMG}" style="width:100%;height:100%;object-fit:cover"></div>
-              <div style="flex:1"><div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400)">${item._brand_name || ''}</div><div style="font-family:var(--font-display);font-size:13px;font-weight:600">${item.name}</div><div style="font-size:12px;color:var(--gray-500)">Taille : ${item.selectedSize}${item.selectedColor ? ' &middot; ' + item.selectedColor : ''}</div></div>
+              <div style="flex:1"><div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400)">${item._brand_name || ''}</div><div style="font-family:var(--font-display);font-size:13px;font-weight:600">${item.name}</div><div style="font-size:12px;color:var(--gray-500)">Taille : ${item.selectedSize}${item.selectedColor ? ' &middot; ' + libelleCouleur(item.selectedColor) : ''}</div></div>
               <div style="font-size:14px;font-weight:500">${item.price} &euro;</div>
             </div>`;
           }).join('')}
