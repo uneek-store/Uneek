@@ -100,9 +100,63 @@ async function ecrireVisite(operation, valeurs, session) {
   return error;
 }
 
+// --- LA BOUTIQUE D'UNE MARQUE (ajouté le 2 octobre 2026) --------------------
+// Quand la personne regarde la page d'une marque ou une de ses fiches
+// produit, la boutique envoie aussi `marque` (l'identifiant de la marque) et
+// `pages_marque` (combien de pages de cette boutique elle a vues). On tient
+// une ligne par visite ET par marque dans brand_visits : c'est ce que lit le
+// panneau créateur. Même règle que le reste : ni IP, ni compte.
+const MARQUE_VALIDE = /^[A-Za-z0-9-]{1,64}$/;
+
+async function noterMarque(req, corps, session) {
+  if (corps.type === "depart") {
+    const { error } = await supabaseAdmin.from("brand_visits")
+      .update({ updated_at: new Date(Date.now() - 10 * 60 * 1000).toISOString() })
+      .eq("session", session);
+    if (error) console.warn("[events] boutique (depart) ignorée :", error.message);
+    return;
+  }
+  const marque = typeof corps.marque === "string" ? corps.marque.trim() : "";
+  if (!MARQUE_VALIDE.test(marque)) return;
+  const maintenant = new Date().toISOString();
+
+  if (corps.type === "ping") {
+    const { error } = await supabaseAdmin.from("brand_visits")
+      .update({ updated_at: maintenant }).eq("session", session).eq("brand_id", marque);
+    if (error) console.warn("[events] boutique (ping) ignorée :", error.message);
+    return;
+  }
+
+  const n = parseInt(corps.pages_marque, 10);
+  const pages = Math.min(Math.max(isFinite(n) ? n : 1, 1), PAGES_MAX);
+  // La visite de cette boutique existe déjà ? On la met à jour ; sinon on la crée.
+  const maj = await supabaseAdmin.from("brand_visits")
+    .update({ pages, updated_at: maintenant })
+    .eq("session", session).eq("brand_id", marque).select("id");
+  if (maj.error) { console.warn("[events] boutique ignorée :", maj.error.message); return; }
+  if (maj.data && maj.data.length) return;
+
+  const pays = entete(req, "x-vercel-ip-country", 8);
+  const ville = entete(req, "x-vercel-ip-city", 80);
+  const { error } = await supabaseAdmin.from("brand_visits").insert({
+    session,
+    brand_id: marque,
+    pages,
+    country: pays && /^[A-Za-z]{2}$/.test(pays) ? pays.toUpperCase() : null,
+    city: ville,
+    lat: ville ? coordonnee(req.headers && req.headers["x-vercel-ip-latitude"], 90) : null,
+    lon: ville ? coordonnee(req.headers && req.headers["x-vercel-ip-longitude"], 180) : null,
+    source: sourceDe(corps.source),
+  });
+  if (error) console.warn("[events] boutique ignorée :", error.message);
+}
+
 async function noterVisite(req, corps) {
   const session = typeof corps.session === "string" ? corps.session.trim() : "";
   if (!SESSION_VALIDE.test(session)) return;
+
+  // La boutique de la marque regardée : à part, et sans jamais gêner le reste.
+  try { await noterMarque(req, corps, session); } catch (e) { /* rien */ }
 
   if (corps.type === "depart") {
     // Onglet ferme ou mis en arriere-plan : la personne quitte le « direct »

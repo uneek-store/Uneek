@@ -2302,6 +2302,8 @@ init();
         : (Date.now().toString(36) + '-' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2));
       etat = { s: hasard, n: 0 };
     }
+    // Pages vues boutique par boutique (2 octobre) : { identifiant de marque : nombre }
+    if (!etat.m || typeof etat.m !== 'object') etat.m = {};
     var derniere = null;
 
     function sauver() {
@@ -2339,6 +2341,16 @@ init();
       return null;
     }
 
+    // La marque dont on regarde la boutique : sa page, ou une de ses fiches
+    // produit. C'est ce qui alimente « Visites de ta boutique » du panneau createur.
+    function marque() {
+      try {
+        if (currentPage === 'product') { var p = trouverProduit(pageData); return p && p.brand_id ? String(p.brand_id) : null; }
+        if (currentPage === 'brand') { var b = getBrandBySlug(pageData); return b && b.id ? String(b.id) : null; }
+      } catch (err) {}
+      return null;
+    }
+
     function pageVue() {
       try {
         if (typeof dataLoaded !== 'undefined' && !dataLoaded) return; // ecran « Chargement... »
@@ -2346,11 +2358,13 @@ init();
         if (ici === derniere) return;   // meme page redessinee : pas une page de plus
         derniere = ici;
         etat.n += 1;
+        var m = marque();
+        if (m) etat.m[m] = (etat.m[m] || 0) + 1;
         sauver();
         if (etat.n === 1) {
-          envoyer({ type: 'visite', session: etat.s, entree: (typeof currentPage === 'string' ? currentPage : null), detail: detail(), source: source() });
+          envoyer({ type: 'visite', session: etat.s, entree: (typeof currentPage === 'string' ? currentPage : null), detail: detail(), source: source(), marque: m, pages_marque: m ? etat.m[m] : null });
         } else if (etat.n <= 500) {
-          envoyer({ type: 'page', session: etat.s, pages: etat.n, page: (typeof currentPage === 'string' ? currentPage : null), detail: detail() });
+          envoyer({ type: 'page', session: etat.s, pages: etat.n, page: (typeof currentPage === 'string' ? currentPage : null), detail: detail(), marque: m, pages_marque: m ? etat.m[m] : null });
         }
       } catch (err) {}
     }
@@ -2367,7 +2381,7 @@ init();
     // personne reste « en direct » dans l'admin meme si elle lit longtemps
     // la meme fiche. Onglet en arriere-plan : rien ne part.
     setInterval(function () {
-      try { if (etat.n >= 1 && !document.hidden) envoyer({ type: 'ping', session: etat.s }); } catch (err) {}
+      try { if (etat.n >= 1 && !document.hidden) envoyer({ type: 'ping', session: etat.s, marque: marque() }); } catch (err) {}
     }, 30000);
 
     // La personne ferme l'onglet, verrouille son telephone ou change
@@ -2385,7 +2399,7 @@ init();
     document.addEventListener('visibilitychange', function () {
       try {
         if (document.hidden) depart();
-        else if (etat.n >= 1) envoyer({ type: 'ping', session: etat.s });
+        else if (etat.n >= 1) envoyer({ type: 'ping', session: etat.s, marque: marque() });
       } catch (err) {}
     });
     window.addEventListener('pagehide', depart);

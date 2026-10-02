@@ -47,6 +47,9 @@ export const TABLES = [
   // admin (outils/sql/2026-09-30-visites.sql). Aucune donnee personnelle
   // dedans, mais c'est tout l'historique de frequentation du site.
   "site_visits",
+  // Ajoutee le 2 octobre : les visites de la boutique de chaque marque
+  // (outils/sql/2026-10-02-visites-marques.sql), lues par le panneau createur.
+  "brand_visits",
 ];
 
 // Volontairement absente de la liste : "admin_notifications". La sauvegarde du

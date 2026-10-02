@@ -1114,7 +1114,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-09-30-numero-de-suivi';
+  const APP_VERSION = '2026-10-02-frequentation';
 
   async function checkAppVersion() {
     try {
@@ -1410,6 +1410,9 @@
         return;
       }
       authToken = data.token;
+      // Ce navigateur est celui d'un createur : ses passages sur la boutique
+      // ne doivent pas gonfler les visites (les siennes comme celles du site).
+      try { localStorage.setItem('uneek_ne_pas_compter', '1'); } catch (e) { /* rien */ }
       creatorName = data.user.name || data.user.contact_name || 'Créateur';
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('app').style.display = 'block';
@@ -3269,6 +3272,10 @@
     var moyen = l >= 520 && l < 780;
     var W = etroit ? 400 : (moyen ? 520 : 1000);
     var H = etroit ? 250 : (moyen ? 150 : 230);
+    // Dans la vue d'ensemble rangee le 2 octobre, la courbe remplit son cadre
+    // (il a la hauteur des commandes recentes, a cote).
+    var plein = hote.closest ? hote.closest('.fq-plein') : null;
+    if (plein && l > 0 && !dimZoom(hote)) { var hd = plein.clientHeight - 78; if (hd > 140) H = Math.round(hd * W / l); }
     var PL = etroit ? 42 : 46, PR = 12, PT = 16, PB = 28;
     var dz = dimZoom(hote);
     if (dz) { W = dz.W; H = dz.H; PL = 56; PR = 20; PT = 24; PB = 38; etroit = false; moyen = false; }
@@ -4089,6 +4096,514 @@
     // Un navigateur sans URLSearchParams retombe simplement sur l'ecran
     // de connexion : l'ancien comportement, pas une page cassee.
     console.warn('[inscription] lien direct ignore :', err && err.message);
+  }
+})();
+</script>
+<script>
+/* ===========================================================
+   AJOUT (2 octobre 2026) : frequentation de la boutique, formules
+   Gratuit / Pro / Ambassadeur, et page « Passer en Pro ».
+
+   CE QUE FAIT CE BLOC
+   1. Il range autrement la vue d'ensemble, SANS rien supprimer : les blocs
+      existants sont deplaces, leurs identifiants ne changent pas, et le
+      code plus haut continue de les remplir comme avant.
+   2. Il ajoute : personnes en direct sur la boutique, visites de la
+      boutique, taux de conversion, carte des visiteurs, pieces les plus
+      regardees. Les chiffres viennent de /api/creator/visites.
+   3. Il verrouille, pour la formule Gratuit, les blocs reserves a Pro et
+      Ambassadeur : le cadre et le titre restent, le contenu est remplace
+      par une invitation a passer en Pro.
+   4. Il affiche la page « Passer en Pro » (4,99 EUR / mois TTC). Le paiement
+      Stripe n'est PAS encore branche : le bouton le dit, il ne change rien.
+
+   LA FORMULE VIENT DU SERVEUR (acces_complet), jamais du navigateur. La
+   carte des visiteurs n'est meme pas envoyee a une marque en Gratuit.
+   Les autres blocs verrouilles sont calcules a partir de donnees que le
+   createur recoit deja (ses commandes) : le verrou y est un affichage.
+
+   TEXTES : chaque phrase est fixe et les nombres sont dans des balises a
+   part, pour que i18n.js les traduise sans formule a ecrire.
+
+   REGLE : ce bloc ne doit jamais casser le panneau. Tout est dans des
+   try/catch ; si quelque chose manque, on laisse la vue d'ensemble telle
+   qu'elle etait.
+   =========================================================== */
+(function () {
+  try {
+    var $ = function (id) { return document.getElementById(id); };
+    var ov = $('sec-overview');
+    if (!ov) return;
+    var head = ov.querySelector('.ov-head');
+    var stats = ov.querySelector('.stats');
+    var cmd = ov.querySelector('.ov-cmd');
+    var pile = ov.querySelector('.ov-pile');
+    if (!head || !stats || !cmd || !pile) return;
+    var cartes = pile.querySelectorAll(':scope > .card');   // 0 rapporte le plus, 1 part le plus, 2 revenu jour par jour
+    var colCmd = cmd.querySelector('.ov-col:not(.ov-pile)');
+    var stock = $('ovStock') ? $('ovStock').closest('.card') : null;
+    var cs = stats.querySelectorAll('.stat-card');           // ventes, chiffre d'affaires, revenu, a expedier
+    if (cartes.length < 3 || !colCmd || cs.length < 4) return;
+
+    var PRIX = '4,99 €';
+    var D = null;            // derniere reponse de /api/creator/visites
+    var ACCES = true;        // tant qu'on ne sait pas, on ne verrouille rien
+    var JOURS_FQ = 30;
+    var VUE = null, ZOOM = 'be', PIECES = null;
+
+    // ---------------------------------------------------------------- style
+    var css = document.createElement('style');
+    css.textContent = [
+      '.fq-live{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--gray-600);background:var(--white);border:1px solid var(--gray-200);border-radius:50px;padding:6px 12px;margin-top:8px}',
+      '.fq-live i{width:9px;height:9px;border-radius:50%;background:var(--gray-300)}',
+      '.fq-live.on i{background:#22C55E;animation:fqBat 1.6s ease-out infinite}',
+      '@keyframes fqBat{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55)}100%{box-shadow:0 0 0 8px rgba(34,197,94,0)}}',
+      '.fq-live b{font-family:var(--font-display);font-size:15px;color:var(--black)}',
+      '.fq-expedier{display:none;align-items:center;justify-content:space-between;gap:12px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:13.5px}',
+      '.fq-expedier b{font-family:var(--font-display);font-size:18px;margin-right:4px}',
+      '.fq-expedier a{color:var(--black);font-weight:500;cursor:pointer;text-decoration:underline;white-space:nowrap}',
+      '.fq-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;align-items:stretch}',
+      '.fq-2>.card,.fq-2>div>.card{margin-bottom:0;height:100%}',
+      '.fq-2>div{min-width:0}',
+      '@media(max-width:1000px){.fq-2{grid-template-columns:1fr}}',
+      '.fq-titre{font-family:var(--font-display);font-size:16px;font-weight:600;margin:22px 0 10px}',
+      '.fq-plein{display:flex;flex-direction:column}.fq-plein>.card-body{flex:1;display:flex;flex-direction:column;justify-content:center}',
+      '.fq-zone{position:relative}',
+      '.fq-carte{display:block;width:100%;height:280px;background:#F7F9FC;touch-action:pan-y;cursor:pointer;user-select:none;-webkit-user-select:none}',
+      '.fq-zone.actif .fq-carte{touch-action:none;cursor:grab}',
+      '.fq-zone.actif{box-shadow:inset 0 0 0 2px #7C3AED}',
+      '.fq-carte path{vector-effect:non-scaling-stroke}',
+      '.fq-btns{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;background:var(--white);border:1px solid var(--gray-200);border-radius:8px;overflow:hidden}',
+      '.fq-btns button{width:30px;height:30px;border:none;background:none;font-size:17px;line-height:1;cursor:pointer;color:var(--gray-800);font-family:var(--font-body)}',
+      '.fq-btns button+button{border-top:1px solid var(--gray-200)}',
+      '.fq-pulse{animation:fqPulse 1.8s ease-out infinite;transform-box:fill-box;transform-origin:center}',
+      '@keyframes fqPulse{0%{opacity:.8;transform:scale(1)}100%{opacity:0;transform:scale(3)}}',
+      '.fq-pays{padding:10px 18px 14px;font-size:12.5px;display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}',
+      '.fq-pays div{display:flex;justify-content:space-between;gap:8px}',
+      '.fq-pays span{color:var(--gray-500);white-space:nowrap}',
+      '.fq-vide{text-align:center;color:var(--gray-400);font-size:13px;padding:22px}',
+      '.fq-tab{width:100%;border-collapse:collapse;font-size:13px}',
+      '.fq-tab th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-500);padding:8px 16px;border-bottom:1px solid var(--gray-200);font-weight:500}',
+      '.fq-tab td{padding:10px 16px;border-top:1px solid var(--gray-100)}',
+      '.fq-tab .n{text-align:right;font-variant-numeric:tabular-nums}',
+      '.fq-barre{height:4px;background:var(--gray-100);border-radius:2px;margin-top:5px;overflow:hidden}.fq-barre b{display:block;height:100%;background:#7C3AED}',
+      '.fq-choix{display:inline-flex;border:1px solid var(--gray-200);border-radius:8px;padding:2px;background:var(--white)}',
+      '.fq-choix button{border:none;background:none;padding:4px 10px;font-size:12px;border-radius:6px;cursor:pointer;color:var(--gray-500);font-family:var(--font-body)}',
+      '.fq-choix button.on{background:var(--black);color:var(--white)}',
+      '.fq-verrou>*:not(.card-header):not(.fq-cadenas){display:none!important}',
+      '.fq-verrou .card-header .seg,.fq-verrou .card-header .btn-zoom,.fq-verrou .card-header .fq-choix{display:none!important}',
+      '.fq-cadenas{display:none;min-height:230px;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:26px 24px;background:repeating-linear-gradient(135deg,#FAFAFA 0 14px,#F5F5F5 14px 28px)}',
+      '.fq-verrou>.fq-cadenas{display:flex}',
+      '.fq-cadenas svg{width:26px;height:26px;color:var(--gray-400)}',
+      '.fq-cadenas b{font-family:var(--font-display);font-size:15px;font-weight:600}',
+      '.fq-cadenas span{font-size:13px;color:var(--gray-500);max-width:320px;line-height:1.45}',
+      '.fq-cadenas button{margin-top:8px;background:var(--black);color:var(--white);border:none;border-radius:50px;padding:9px 20px;font:500 13px var(--font-body);cursor:pointer}',
+      '.fq-pro{display:none;margin-left:8px;font:600 10px var(--font-body);letter-spacing:.6px;text-transform:uppercase;background:#F3EEFF;color:#6D28D9;border:1px solid #DDD6FE;border-radius:50px;padding:2px 8px;vertical-align:middle}',
+      '.fq-verrou .fq-pro,.fq-pro.tjrs{display:inline-block}',
+      '.fq-formule{display:none;margin-left:8px;font:600 10px var(--font-body);letter-spacing:.6px;text-transform:uppercase;border-radius:50px;padding:2px 8px;background:rgba(255,255,255,.14);color:var(--white)}',
+      '.fq-page{position:fixed;top:0;left:0;right:0;bottom:0;z-index:240;background:var(--gray-50,#FAFAFA);overflow-y:auto;display:none}',
+      '.fq-page.on{display:block}',
+      '.fq-page-in{max-width:880px;margin:0 auto;padding:28px 20px 60px}',
+      '.fq-retour{background:none;border:none;font:13px var(--font-body);color:var(--gray-500);cursor:pointer;padding:6px 0;margin-bottom:18px}',
+      '.fq-retour:hover{color:var(--black)}',
+      '.fq-h1{font-family:var(--font-display);font-size:30px;font-weight:700;line-height:1.15;margin-bottom:8px}',
+      '.fq-sous{font-size:15px;color:var(--gray-600);max-width:560px;line-height:1.5;margin-bottom:26px}',
+      '.fq-offres{display:grid;grid-template-columns:1fr 1.15fr;gap:16px;align-items:stretch}',
+      '@media(max-width:760px){.fq-offres{grid-template-columns:1fr}.fq-h1{font-size:24px}}',
+      '.fq-offre{background:var(--white);border:1px solid var(--gray-200);border-radius:16px;padding:24px;display:flex;flex-direction:column}',
+      '.fq-offre.pro{border:2px solid var(--black);box-shadow:0 12px 40px rgba(0,0,0,.08)}',
+      '.fq-offre h3{font-family:var(--font-display);font-size:18px;font-weight:600}',
+      '.fq-prix{font-family:var(--font-display);font-size:40px;font-weight:700;margin:10px 0 2px}',
+      '.fq-prix small{font:400 14px var(--font-body);color:var(--gray-500);margin-left:6px}',
+      '.fq-engage{font-size:12.5px;color:var(--gray-500);margin-bottom:16px}',
+      '.fq-liste{list-style:none;margin:0 0 20px;padding:0;font-size:13.5px;line-height:1.45;flex:1}',
+      '.fq-liste li{display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--gray-100)}',
+      '.fq-liste li:first-child{border-top:none}',
+      '.fq-liste li i{flex-shrink:0;width:18px;height:18px;border-radius:50%;background:#F3EEFF;color:#6D28D9;font:700 11px/18px var(--font-body);text-align:center;font-style:normal;margin-top:1px}',
+      '.fq-liste.base li i{background:var(--gray-100);color:var(--gray-600)}',
+      '.fq-liste li.t{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-500);padding-bottom:2px}',
+      '.fq-payer{background:var(--black);color:var(--white);border:none;border-radius:50px;padding:14px 22px;font:500 15px var(--font-body);cursor:pointer;width:100%}',
+      '.fq-actuel{border:1px solid var(--gray-200);border-radius:50px;padding:13px 22px;font:500 14px var(--font-body);color:var(--gray-500);text-align:center}',
+      '.fq-petit{font-size:12px;color:var(--gray-500);margin-top:12px;line-height:1.5;text-align:center}',
+      '.fq-bientot{display:none;margin-top:12px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:10px 14px;font-size:13px;line-height:1.5;text-align:center}',
+      '.fq-faq{margin-top:26px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;font-size:13px;line-height:1.5;color:var(--gray-600)}',
+      '@media(max-width:760px){.fq-faq{grid-template-columns:1fr}}',
+      '.fq-faq b{display:block;color:var(--black);font-weight:600;margin-bottom:3px}'
+    ].join('\n');
+    document.head.appendChild(css);
+
+    function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; }
+    function ech(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+    function texte(id, t) { var e = $(id); if (e && e.textContent !== String(t)) e.textContent = t; }
+    function nb(n) { return (Number(n) || 0).toLocaleString('fr-BE'); }
+    function nomPays(code) {
+      if (!code || code === '??') return 'Inconnu';
+      try { return new Intl.DisplayNames([window.UNEEK_LANG || 'fr'], { type: 'region' }).of(code) || code; } catch (e) { return code; }
+    }
+
+    // ------------------------------------------------- 1. on range la page
+    var live = el('div', 'fq-live', '<i></i><b id="fqLive">0</b> <span>sur ta boutique en ce moment</span>');
+    live.id = 'fqLiveBloc';
+    head.firstElementChild.appendChild(live);
+
+    var cVis = el('div', 'stat-card', '<div class="stat-label">Visites de ta boutique</div><div class="stat-value" id="fqVisites">&mdash;</div>'
+      + '<div class="stat-foot"><span id="fqAuj">0</span> <span>aujourd\'hui</span> &middot; <span id="fqExplore">0 %</span> <span>ont vu plusieurs pièces</span></div>');
+    var cConv = el('div', 'stat-card', '<div class="stat-label">Taux de conversion</div><div class="stat-value" id="fqConv">&mdash;</div>'
+      + '<div class="stat-foot"><span id="fqConvN">0</span> <span>ventes pour 100 visites</span></div>');
+    stats.insertBefore(cVis, cs[0]);
+    stats.appendChild(cConv);
+    // « Chiffre d'affaires » et « A expedier » restent dans la page (le code
+    // plus haut continue de les remplir) : le premier se lit sous les
+    // ventes, le second devient un bandeau qui n'apparait que s'il y a des
+    // colis a envoyer.
+    cs[0].appendChild(el('div', 'stat-foot', '<span id="fqCa"></span> <span>de chiffre d\'affaires</span>'));
+    cs[1].style.display = 'none';
+    cs[3].style.display = 'none';
+    var exp = el('div', 'fq-expedier', '<div><b id="fqExp">0</b><span>à expédier</span></div><a id="fqExpLien">Voir les commandes →</a>');
+    stats.parentNode.insertBefore(exp, stats.nextSibling);
+    $('fqExpLien').onclick = function () { try { showSection('orders', document.querySelector('.sidebar a[onclick*="orders"]')); } catch (e) {} };
+
+    var ligne1 = el('div', 'fq-2');
+    ligne1.appendChild(colCmd);
+    var colRev = el('div'); colRev.appendChild(cartes[2]); ligne1.appendChild(colRev);
+    cartes[2].classList.add('fq-plein');
+
+    var titre1 = el('div', 'fq-titre', 'Ton public');
+    var ligne2 = el('div', 'fq-2');
+    ligne2.innerHTML =
+      '<div class="card"><div class="card-header card-head-2"><div><span>D\'où viennent tes visiteurs</span><div class="card-sub">par ville et par pays</div></div>'
+      + '<span class="fq-choix" id="fqZoom"><button type="button" data-z="be" class="on">Belgique</button><button type="button" data-z="eu">Europe</button><button type="button" data-z="monde">Monde</button></span></div>'
+      + '<div class="fq-zone" id="fqZone"><svg class="fq-carte" id="fqCarte"></svg><div class="fq-btns"><button type="button" id="fqPlus">+</button><button type="button" id="fqMoins">&minus;</button></div></div>'
+      + '<div class="fq-pays" id="fqPays"></div></div>'
+      + '<div class="card"><div class="card-header card-head-2"><div><span>Tes pièces les plus regardées</span><div class="card-sub">vues, ajouts au panier et ventes sur la période</div></div></div>'
+      + '<div style="overflow-x:auto"><table class="fq-tab"><thead><tr><th>Pièce</th><th class="n">Vues</th><th class="n">Paniers</th><th class="n">Ventes</th></tr></thead><tbody id="fqPieces"></tbody></table></div></div>';
+
+    var titre2 = el('div', 'fq-titre', 'Tes ventes');
+    var ligne3 = el('div', 'fq-2');
+    var c0 = el('div'); c0.appendChild(cartes[0]);
+    var c1 = el('div'); c1.appendChild(cartes[1]);
+    ligne3.appendChild(c0); ligne3.appendChild(c1);
+
+    [ligne1, titre1, ligne2, titre2, ligne3].forEach(function (b) { cmd.parentNode.insertBefore(b, cmd); });
+    cmd.style.display = 'none';
+    if (stock) ov.appendChild(stock);
+
+    // Les chiffres qui dependent des cartes d'origine (ventes, a expedier, CA)
+    function majExtras() {
+      try {
+        var n = parseInt(($('stat-toship').textContent || '0').replace(/\D/g, ''), 10) || 0;
+        texte('fqExp', n);
+        exp.style.display = n ? 'flex' : 'none';
+        texte('fqCa', $('stat-ca').textContent);
+        var ventes = parseInt(($('stat-sales').textContent || '0').replace(/\D/g, ''), 10) || 0;
+        var vis = D && D.visites ? D.visites : 0;
+        if (!vis) { texte('fqConv', '—'); texte('fqConvN', '0'); return; }
+        var conv = Math.round(ventes / vis * 1000) / 10;
+        texte('fqConv', String(conv).replace('.', ',') + ' %');
+        texte('fqConvN', '≈ ' + Math.round(conv));
+      } catch (e) { /* rien */ }
+    }
+    try { new MutationObserver(majExtras).observe(stats, { subtree: true, childList: true, characterData: true }); } catch (e) {}
+
+    // ------------------------------------------------- 2. les verrous Pro
+    var CADENAS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>';
+    function carteDe(id) { var e = $(id); return e ? e.closest('.card') : null; }
+    var RESERVES = [
+      [ligne2.children[0], 'Découvre d\'où viennent tes visiteurs : villes, pays, carte.'],
+      [ligne2.children[1], 'Découvre quelles pièces attirent le plus de regards, et lesquelles finissent au panier.'],
+      [cartes[0], 'Découvre lesquelles de tes pièces te rapportent le plus.'],
+      [cartes[1], 'Découvre les tailles et les couleurs qui partent le mieux.'],
+      [carteDe('stEntonnoir'), 'Découvre combien de visiteurs regardent, mettent au panier, puis achètent.'],
+      [carteDe('stLectures'), 'Découvre ce qui freine tes ventes, pièce par pièce.'],
+      [carteDe('stChoix'), 'Découvre les tailles et les couleurs que tes clients choisissent.']
+    ];
+    RESERVES.forEach(function (r) {
+      var carte = r[0]; if (!carte) return;
+      var tete = carte.querySelector('.card-header');
+      if (tete) {
+        // l'etiquette « Pro » se pose juste apres le titre, quel que soit le balisage de l'en-tete
+        var titre = tete.querySelector('div');
+        while (titre && !(titre.firstChild && ((titre.firstChild.nodeType === 3 && titre.firstChild.textContent.trim()) || (titre.firstChild.tagName === 'SPAN')))
+               && titre.firstElementChild && titre.firstElementChild.tagName === 'DIV') titre = titre.firstElementChild;
+        if (titre && titre.firstChild) titre.insertBefore(el('span', 'fq-pro', 'Pro'), titre.firstChild.nextSibling);
+      }
+      var c = el('div', 'fq-cadenas', CADENAS + '<b>Réservé à la formule Pro</b><span>' + r[1] + '</span><button type="button">Passer en Pro</button>');
+      c.querySelector('button').onclick = ouvrirPro;
+      carte.appendChild(c);
+    });
+
+    var puce = el('div', 'fq-formule'); puce.id = 'fqFormule';
+    var marque = $('sidebarBrand');
+    var etiquette = document.querySelector('.sidebar .sidebar-tag');
+    if (etiquette) etiquette.appendChild(puce);
+    else if (marque && marque.parentNode) marque.parentNode.insertBefore(puce, marque.nextSibling);
+
+    function appliquerFormule() {
+      var f = (D && D.formule) || '';
+      var verrou = !ACCES;
+      RESERVES.forEach(function (r) { if (r[0]) r[0].classList.toggle('fq-verrou', verrou); });
+      puce.textContent = f === 'pro' ? 'Pro' : (f === 'ambassadeur' ? 'Ambassadeur' : (f === 'gratuit' ? 'Gratuit' : ''));
+      puce.style.display = puce.textContent ? 'inline-block' : 'none';
+      // Un bloc cache ne peut pas etre mesure : en le deverrouillant, on
+      // redessine les graphiques a la bonne taille.
+      if (!verrou) { try { window.dispatchEvent(new Event('resize')); } catch (e) {} dessinerCarte(); }
+    }
+
+    // ------------------------------------------------- 3. la page d'achat
+    var page = el('div', 'fq-page'); page.id = 'fqPagePro';
+    page.innerHTML = '<div class="fq-page-in"><button class="fq-retour" type="button" id="fqRetour">← Retour à mon tableau de bord</button>'
+      + '<div class="fq-h1">Comprends ton public. Vends mieux.</div>'
+      + '<div class="fq-sous">UNEEK Pro t\'ouvre toutes les statistiques de ta boutique : qui vient, d\'où, ce qu\'ils regardent, et ce qui les fait acheter.</div>'
+      + '<div class="fq-offres">'
+      + '<div class="fq-offre"><h3>Gratuit</h3><div class="fq-prix"><span>0 €</span><small>par mois</small></div><div class="fq-engage">Ta formule actuelle</div>'
+      + '<ul class="fq-liste base">'
+      + '<li><i>✓</i><span>Ta boutique, tes produits, tes commandes</span></li>'
+      + '<li><i>✓</i><span>Ventes, revenu et taux de conversion</span></li>'
+      + '<li><i>✓</i><span>Visites de ta boutique et visiteurs en direct</span></li>'
+      + '<li><i>✓</i><span>Revenu net jour par jour</span></li>'
+      + '<li><i>✓</i><span>Alerte de stock et tableau pièce par pièce</span></li>'
+      + '</ul><div class="fq-actuel">Ta formule actuelle</div></div>'
+      + '<div class="fq-offre pro"><h3><span>UNEEK Pro</span> <span class="fq-pro tjrs">Pro</span></h3><div class="fq-prix"><span>' + PRIX + '</span><small>par mois, TVA comprise</small></div><div class="fq-engage">Sans engagement. Tu arrêtes quand tu veux.</div>'
+      + '<ul class="fq-liste">'
+      + '<li class="t"><span>Tout le Gratuit, plus :</span></li>'
+      + '<li><i>✓</i><span>D\'où viennent tes visiteurs : la carte, par ville et par pays</span></li>'
+      + '<li><i>✓</i><span>Tes pièces les plus regardées : vues, paniers, ventes</span></li>'
+      + '<li><i>✓</i><span>Ce qui te rapporte le plus, pièce par pièce</span></li>'
+      + '<li><i>✓</i><span>Ce qui part le plus : tailles et couleurs</span></li>'
+      + '<li><i>✓</i><span>Du regard à l\'achat : où tes visiteurs décrochent</span></li>'
+      + '<li><i>✓</i><span>Ce qui bloque : une lecture claire de tes chiffres</span></li>'
+      + '<li><i>✓</i><span>Ce que les gens choisissent</span></li>'
+      + '</ul><button class="fq-payer" type="button" id="fqPayer">Passer en Pro</button>'
+      + '<div class="fq-bientot" id="fqBientot">Le paiement en ligne arrive très bientôt. Rien n\'a été prélevé.</div>'
+      + '<div class="fq-petit">Paiement sécurisé par Stripe. Prélevé chaque mois, résiliable à tout moment.</div></div>'
+      + '</div>'
+      + '<div class="fq-faq"><div><b>Je peux arrêter quand ?</b><span>Quand tu veux. Tu gardes le Pro jusqu\'à la fin du mois déjà payé.</span></div>'
+      + '<div><b>Et mes ventes ?</b><span>Rien ne change : ta boutique, tes commandes et tes versements restent identiques, en Gratuit comme en Pro.</span></div>'
+      + '<div><b>Mes chiffres sont gardés ?</b><span>Oui. Si tu repasses en Gratuit, ils sont conservés et reviennent dès que tu reprends le Pro.</span></div></div></div>';
+    document.body.appendChild(page);
+    $('fqRetour').onclick = function () { page.classList.remove('on'); };
+    // Stripe n'est pas encore branche pour l'abonnement (decision d'Axel,
+    // 2 octobre) : le bouton l'annonce, il ne change AUCUNE formule.
+    $('fqPayer').onclick = function () { $('fqBientot').style.display = 'block'; };
+    function ouvrirPro() { $('fqBientot').style.display = 'none'; page.classList.add('on'); page.scrollTop = 0; }
+
+    // ------------------------------------------------- 4. les donnees
+    function affVisites() {
+      if (!D) return;
+      texte('fqVisites', nb(D.visites));
+      texte('fqAuj', nb(D.aujourdhui));
+      texte('fqExplore', (D.visites ? Math.round((D.explore || 0) / D.visites * 100) : 0) + ' %');
+      affDirect(D.en_ce_moment);
+      majExtras();
+      var pays = D.pays || [];
+      var total = pays.reduce(function (a, p) { return a + p.visites; }, 0) || 1;
+      var zp = $('fqPays');
+      if (zp) zp.innerHTML = pays.length ? pays.slice(0, 6).map(function (p) {
+        return '<div>' + ech(nomPays(p.code)) + '<span>' + nb(p.visites) + ' · ' + Math.round(p.visites / total * 100) + ' %</span></div>';
+      }).join('') : '<div class="fq-vide" style="grid-column:1/-1">Pas encore de visite sur la période</div>';
+    }
+    function affDirect(n) {
+      n = Number(n) || 0;
+      texte('fqLive', nb(n));
+      var b = $('fqLiveBloc'); if (b) b.classList.toggle('on', n > 0);
+    }
+    function affPieces() {
+      var z = $('fqPieces'); if (!z) return;
+      var liste = ((PIECES && PIECES.pieces) || []).slice().sort(function (a, b) { return b.vues - a.vues; }).slice(0, 5);
+      var max = liste.length && liste[0].vues ? liste[0].vues : 1;
+      z.innerHTML = liste.length ? liste.map(function (p) {
+        return '<tr><td><span style="font-weight:500">' + ech(p.nom) + '</span><div class="fq-barre"><b style="width:' + Math.round(p.vues / max * 100) + '%"></b></div></td>'
+          + '<td class="n">' + nb(p.vues) + '</td><td class="n">' + nb(p.paniers) + '</td><td class="n">' + nb(p.ventes) + '</td></tr>';
+      }).join('') : '<tr><td colspan="4" class="fq-vide">Aucune pièce regardée sur la période</td></tr>';
+    }
+
+    var enCours = false;
+    async function charger() {
+      if (enCours || typeof authToken === 'undefined' || !authToken || !currentBrand) return;
+      enCours = true;
+      try {
+        var id = encodeURIComponent(currentBrand.id);
+        var res = await fetch(API_BASE + '/creator/visites?brand_id=' + id + '&jours=' + JOURS_FQ, { headers: { 'Authorization': 'Bearer ' + authToken } });
+        if (!res.ok) return;
+        D = await res.json();
+        ACCES = D.acces_complet !== false;
+        affVisites();
+        appliquerFormule();
+        if (ACCES) {
+          dessinerCarte();
+          var r2 = await fetch(API_BASE + '/creator/stats?brand_id=' + id + '&jours=' + JOURS_FQ, { headers: { 'Authorization': 'Bearer ' + authToken } });
+          if (r2.ok) { PIECES = await r2.json(); affPieces(); }
+        }
+      } catch (e) { /* la frequentation n'est pas critique */ }
+      finally { enCours = false; }
+    }
+    async function direct() {
+      try {
+        if (typeof authToken === 'undefined' || !authToken || !currentBrand || document.hidden) return;
+        if (!ov.classList.contains('active')) return;
+        var res = await fetch(API_BASE + '/creator/visites?brand_id=' + encodeURIComponent(currentBrand.id) + '&direct=1', { headers: { 'Authorization': 'Bearer ' + authToken } });
+        if (!res.ok) return;
+        var d = await res.json();
+        affDirect(d.en_ce_moment);
+        if (typeof d.aujourdhui === 'number') texte('fqAuj', nb(d.aujourdhui));
+        if (D) { D.direct = d.direct || []; dessinerPoints(); }
+      } catch (e) { /* rien */ }
+    }
+    setInterval(direct, 5000);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) direct(); });
+
+    // Le panneau recharge deja ses commandes (connexion, rafraichissement
+    // automatique, expedition) : on recharge la frequentation au meme moment.
+    if (typeof loadOrders === 'function') {
+      var _lo = loadOrders;
+      loadOrders = async function () {
+        var r = await _lo.apply(this, arguments);
+        charger();
+        return r;
+      };
+    }
+    document.addEventListener('click', function (ev) {
+      var b = ev.target && ev.target.closest ? ev.target.closest('#ovPeriode button') : null;
+      if (b) { JOURS_FQ = parseInt(b.dataset.j, 10) || 30; charger(); }
+    });
+
+    // ------------------------------------------------- 5. la carte
+    var CADRES = { be: [2.4, 49.45, 6.45, 51.55], eu: [-12, 34, 35, 62], monde: [-170, -58, 190, 84] };
+    var promesse = null;
+    function chargerCarte() {
+      if (window.UNEEK_CARTE) return Promise.resolve(window.UNEEK_CARTE);
+      if (!promesse) promesse = new Promise(function (ok, ko) {
+        var sc = document.createElement('script');
+        sc.src = '/carte-monde.js';
+        sc.onload = function () { window.UNEEK_CARTE ? ok(window.UNEEK_CARTE) : ko(new Error('carte vide')); };
+        sc.onerror = function () { promesse = null; ko(new Error('carte introuvable')); };
+        document.head.appendChild(sc);
+      });
+      return promesse;
+    }
+    function X(lon) { var C = window.UNEEK_CARTE; return (lon + 180) * C.k * C.echelle; }
+    function Y(lat) { return (85 - lat) * window.UNEEK_CARTE.echelle; }
+    function format() { var s = $('fqCarte'); return s && s.clientWidth && s.clientHeight ? s.clientWidth / s.clientHeight : 2; }
+    function vueDe(c) {
+      var x = X(c[0]), y = Y(c[3]), w = X(c[2]) - x, h = Y(c[1]) - y, r = format();
+      if (w / h < r) { var nw = h * r; x -= (nw - w) / 2; w = nw; } else { var nh = w / r; y -= (nh - h) / 2; h = nh; }
+      return { x: x, y: y, w: w, h: h };
+    }
+    function appliquerVue() {
+      var s = $('fqCarte'), C = window.UNEEK_CARTE;
+      if (!s || !VUE || !C) return;
+      VUE.x = Math.min(Math.max(VUE.x, -VUE.w / 2), C.largeur - VUE.w / 2);
+      VUE.y = Math.min(Math.max(VUE.y, -VUE.h / 2), C.hauteur - VUE.h / 2);
+      s.setAttribute('viewBox', [VUE.x, VUE.y, VUE.w, VUE.h].map(function (n) { return n.toFixed(2); }).join(' '));
+      dessinerPoints();
+    }
+    function zoomer(f, fx, fy) {
+      var C = window.UNEEK_CARTE; if (!VUE || !C) return;
+      var nw = Math.min(Math.max(VUE.w / f, X(0.35) - X(0)), C.largeur * 1.15), k = nw / VUE.w;
+      var px = VUE.x + fx * VUE.w, py = VUE.y + fy * VUE.h;
+      VUE = { x: px - fx * nw, y: py - fy * VUE.h * k, w: nw, h: VUE.h * k };
+      [].forEach.call(document.querySelectorAll('#fqZoom button'), function (b) { b.classList.remove('on'); });
+      appliquerVue();
+    }
+    async function dessinerCarte() {
+      var s = $('fqCarte');
+      if (!s || !D || !ACCES || !s.clientWidth) return;
+      var C; try { C = await chargerCarte(); } catch (e) { return; }
+      var parPays = {}; (D.pays || []).forEach(function (p) { parPays[p.code] = p.visites; });
+      var maxP = Math.max.apply(null, Object.keys(parPays).map(function (c) { return parPays[c]; }).concat([1]));
+      var teinte = function (n) {
+        if (!n) return '#E9EBEF';
+        var t = Math.sqrt(n / maxP), m = function (a, b) { return Math.round(a + (b - a) * t); };
+        return 'rgb(' + m(221, 91) + ',' + m(214, 33) + ',' + m(254, 182) + ')';
+      };
+      s.innerHTML = '<g>' + C.pays.map(function (p) {
+        var n = parPays[p[0]] || 0;
+        return '<path d="' + p[1] + '" fill="' + teinte(n) + '" stroke="#fff" stroke-width="0.8"><title>' + ech(nomPays(p[0])) + ' : ' + nb(n) + '</title></path>';
+      }).join('') + '</g><g id="fqVilles"></g><g id="fqDirect"></g>';
+      if (!VUE) VUE = vueDe(CADRES[ZOOM]);
+      appliquerVue();
+    }
+    function dessinerPoints() {
+      var s = $('fqCarte'), gV = $('fqVilles'), gD = $('fqDirect');
+      if (!s || !gV || !gD || !VUE || !window.UNEEK_CARTE || !D) return;
+      var u = VUE.w / (s.clientWidth || 600);
+      var e = Math.min(1, Math.max(0.3, 0.25 + 0.2 * Math.log2(Math.max(window.UNEEK_CARTE.largeur / VUE.w, 1))));
+      var villes = D.villes || [];
+      var maxV = Math.max.apply(null, villes.map(function (v) { return v.visites; }).concat([1]));
+      gV.innerHTML = villes.slice().reverse().map(function (v) {
+        return '<circle cx="' + X(v.lon).toFixed(1) + '" cy="' + Y(v.lat).toFixed(1) + '" r="' + ((2 + 5 * Math.sqrt(v.visites / maxV)) * e * u).toFixed(2) + '" fill="#0A0A0A" fill-opacity="0.75" stroke="#fff" stroke-width="' + (1.2 * u).toFixed(2) + '"><title>' + ech(v.ville || '') + ' : ' + nb(v.visites) + '</title></circle>';
+      }).join('');
+      gD.innerHTML = (D.direct || []).filter(function (v) { return v.lat != null && v.lon != null; }).map(function (v) {
+        var cx = X(Number(v.lon)).toFixed(1), cy = Y(Number(v.lat)).toFixed(1);
+        return '<circle class="fq-pulse" cx="' + cx + '" cy="' + cy + '" r="' + (6 * e * u).toFixed(2) + '" fill="#22C55E"></circle>'
+          + '<circle cx="' + cx + '" cy="' + cy + '" r="' + (5 * e * u).toFixed(2) + '" fill="#22C55E" stroke="#fff" stroke-width="' + (1.5 * u).toFixed(2) + '"></circle>';
+      }).join('');
+    }
+    // Memes gestes que la carte de l'admin : la page defile tant qu'on n'a
+    // pas clique sur la carte ; a la souris, glisser la deplace tout de suite.
+    (function () {
+      var s = $('fqCarte'), zone = $('fqZone'); if (!s || !zone) return;
+      var doigts = new Map(), depart = null, deplace = false, active = false;
+      function activer(o) { active = o; zone.classList.toggle('actif', o); }
+      function frac(x, y) { var r = s.getBoundingClientRect(); return [(x - r.left) / r.width, (y - r.top) / r.height]; }
+      zone.addEventListener('mouseleave', function () { activer(false); });
+      document.addEventListener('pointerdown', function (ev) { if (active && !zone.contains(ev.target)) activer(false); });
+      $('fqZoom').addEventListener('click', function (ev) {
+        var b = ev.target.closest('button[data-z]'); if (!b || !window.UNEEK_CARTE) return;
+        ZOOM = b.dataset.z;
+        [].forEach.call(this.querySelectorAll('button'), function (x) { x.classList.toggle('on', x === b); });
+        VUE = vueDe(CADRES[ZOOM]); appliquerVue();
+      });
+      $('fqPlus').addEventListener('click', function () { zoomer(1.6, 0.5, 0.5); });
+      $('fqMoins').addEventListener('click', function () { zoomer(1 / 1.6, 0.5, 0.5); });
+      s.addEventListener('pointerdown', function (ev) {
+        try { s.setPointerCapture(ev.pointerId); } catch (e) {}
+        doigts.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+        if (doigts.size === 1) { depart = { x: ev.clientX, y: ev.clientY }; deplace = false; }
+      });
+      s.addEventListener('pointermove', function (ev) {
+        if (!doigts.has(ev.pointerId) || !VUE) return;
+        var avant = doigts.get(ev.pointerId), r = s.getBoundingClientRect();
+        if (!active) {
+          var bouge = Math.abs(ev.clientX - depart.x) + Math.abs(ev.clientY - depart.y) > 4;
+          if (bouge) deplace = true;
+          if (!(ev.pointerType === 'mouse' && bouge)) return;
+          activer(true);
+        }
+        if (doigts.size === 1) {
+          if (Math.abs(ev.clientX - depart.x) + Math.abs(ev.clientY - depart.y) > 4) deplace = true;
+          VUE.x -= (ev.clientX - avant.x) * VUE.w / r.width;
+          VUE.y -= (ev.clientY - avant.y) * VUE.h / r.height;
+          appliquerVue();
+        } else if (doigts.size === 2) {
+          var autre = null; doigts.forEach(function (p, id) { if (id !== ev.pointerId) autre = p; });
+          var d0 = Math.hypot(avant.x - autre.x, avant.y - autre.y), d1 = Math.hypot(ev.clientX - autre.x, ev.clientY - autre.y);
+          var f = frac((ev.clientX + autre.x) / 2, (ev.clientY + autre.y) / 2);
+          if (d0 > 0) zoomer(d1 / d0, f[0], f[1]);
+          deplace = true;
+        }
+        doigts.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      });
+      function lacher(ev) { if (doigts.has(ev.pointerId) && doigts.size === 1 && !deplace && !active) activer(true); doigts.delete(ev.pointerId); }
+      s.addEventListener('pointerup', lacher);
+      s.addEventListener('pointercancel', function (ev) { doigts.delete(ev.pointerId); });
+      s.addEventListener('wheel', function (ev) {
+        if (!active || !VUE) return;
+        ev.preventDefault();
+        var f = frac(ev.clientX, ev.clientY);
+        if (ev.ctrlKey) zoomer(Math.exp(-ev.deltaY * 0.01), f[0], f[1]);
+        else if (ev.deltaMode === 0 && (ev.deltaX !== 0 || Math.abs(ev.deltaY) < 40 || !Number.isInteger(ev.deltaY))) {
+          var r = s.getBoundingClientRect();
+          VUE.x += ev.deltaX * VUE.w / r.width; VUE.y += ev.deltaY * VUE.h / r.height; appliquerVue();
+        } else zoomer(ev.deltaY < 0 ? 1.25 : 0.8, f[0], f[1]);
+      }, { passive: false });
+      window.addEventListener('resize', function () {
+        if (!VUE) return;
+        var cy = VUE.y + VUE.h / 2; VUE.h = VUE.w / format(); VUE.y = cy - VUE.h / 2; appliquerVue();
+      });
+    })();
+  } catch (err) {
+    if (window.console) console.warn('[frequentation createur] ignoree :', err && err.message);
   }
 })();
 </script>
