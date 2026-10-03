@@ -1195,7 +1195,10 @@
         document.getElementById('staleBanner').style.display = 'block';
         return false;
       }
-    } catch (e) { /* hors ligne : on ne bloque rien */ }
+    } catch (e) {
+      console.warn('[uneek] creator-v2.html / checkAppVersion : appel reseau en echec', e);
+      /* hors ligne : on ne bloque rien */
+    }
     return true;
   }
 
@@ -2524,7 +2527,10 @@
         if (!res.ok) continue;
         const data = await res.json();
         if (data && data.url) selectedImages[i] = data.url;
-      } catch (e) { /* on garde la photo telle quelle */ }
+      } catch (e) {
+        console.warn('[uneek] creator-v2.html / televerserPhotos : appel reseau en echec', e);
+        /* on garde la photo telle quelle */
+      }
     }
   }
 
@@ -4863,7 +4869,10 @@
           var r2 = await fetch(API_BASE + '/creator/stats?brand_id=' + id + '&jours=' + JOURS_FQ, { headers: { 'Authorization': 'Bearer ' + authToken } });
           if (r2.ok) { PIECES = await r2.json(); affPieces(); }
         }
-      } catch (e) { /* la frequentation n'est pas critique */ }
+      } catch (e) {
+        console.warn('[uneek] creator-v2.html / frequentation / charger : appel reseau en echec', e);
+        /* la frequentation n'est pas critique */
+      }
       finally { enCours = false; }
     }
     async function direct() {

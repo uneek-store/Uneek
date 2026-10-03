@@ -732,7 +732,10 @@
         document.getElementById('staleBanner').style.display = 'block';
         return false;
       }
-    } catch (e) { /* hors ligne : on ne bloque rien */ }
+    } catch (e) {
+      console.warn('[uneek] admin.html / checkAppVersion : appel reseau en echec', e);
+      /* hors ligne : on ne bloque rien */
+    }
     return true;
   }
 
@@ -2626,7 +2629,10 @@
       });
       var d = await res.json();
       noter(Array.isArray(d) ? d : (d && d.brands));
-    } catch (e) { /* tant pis, on reessaiera au prochain chargement */ }
+    } catch (e) {
+      console.warn('[uneek] admin.html / rattraper : appel reseau en echec', e);
+      /* tant pis, on reessaiera au prochain chargement */
+    }
   }
 
   // On enveloppe la fonction du v1 : elle fait son travail, puis on retouche

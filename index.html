@@ -1391,7 +1391,10 @@ async function chargerPhotosProduit() {
       const app = document.getElementById('app');
       if (app) app.innerHTML = productPage();
     }
-  } catch (e) { /* la fiche garde sa photo principale, rien n'est casse */ }
+  } catch (e) {
+    console.warn('[uneek] index.html / chargerPhotosProduit : appel reseau en echec', e);
+    /* la fiche garde sa photo principale, rien n'est casse */
+  }
 }
 
 // TOUTES les photos du produit. La colonne de gauche les montre toutes,
@@ -2022,6 +2025,7 @@ async function enregistrerCommandePayee(orderData, paymentIntentId, prenom) {
     });
     data = await res.json();
   } catch (err) {
+    console.warn('[uneek] index.html / enregistrerCommandePayee : appel reseau en echec', err);
     data = { success: false, error: 'Erreur réseau' };
   }
 
@@ -2277,7 +2281,10 @@ async function loadProfileOrders() {
         if (countEl) countEl.textContent = '0';
       }
     }
-  } catch { /* silent */ }
+  } catch {
+    console.warn('[uneek] index.html / loadProfileOrders : appel reseau en echec');
+    /* silent */
+  }
 }
 
 async function updateProfile() {
@@ -2643,7 +2650,10 @@ init();
     // Si les produits sont deja charges quand ce bloc s'execute, la
     // premiere page est deja affichee : on la compte tout de suite.
     pageVue();
-  } catch (err) { /* rien : la boutique passe avant */ }
+  } catch (err) {
+    console.warn('[uneek] index.html / compteur de visites : appel reseau en echec', err);
+    /* rien : la boutique passe avant */
+  }
 })();
 </script>
 <script src="/cookie-banner.js"></script>
