@@ -8,11 +8,38 @@ import { creerJeton, lireJeton, jetonDeLaRequete, controlerAcces,
 import { codeReinitialisation } from "./lib/email.js";
 import { limiter } from "./lib/limite.js";
 import { normaliser } from "./lib/email-langues.js";
+import { fabriquer, verifier, estAncienneEmpreinte } from "./lib/motdepasse.js";
 import crypto from "crypto";
 
-// Hash simple du mot de passe (en production, utiliser bcrypt)
-function hashPassword(password) {
-  return crypto.createHash("sha256").update(password).digest("hex");
+// Le mot de passe etait range en SHA-256 sans sel — rapide a casser, et
+// identique pour deux personnes qui choisissent le meme. Il est maintenant
+// range en scrypt, avec un sel par compte. Le detail et le pourquoi sont dans
+// api/lib/motdepasse.js.
+//
+// Consequence directe ici : on ne peut plus filtrer sur l'empreinte dans la
+// requete SQL, puisque chaque empreinte a son propre sel tire au sort. On lit
+// la ligne par son e-mail ou son identifiant, PUIS on compare en memoire.
+// Chaque endroit concerne porte la remarque. Le garde-fou refuse d'ailleurs
+// tout retour d'un filtre sur la colonne de l'empreinte.
+
+// Les anciennes empreintes SHA-256 restent acceptees a la connexion, et sont
+// remplacees par une empreinte scrypt juste apres. Personne n'a de mot de
+// passe a reinitialiser. Un echec ici ne doit JAMAIS empecher la connexion :
+// la personne a donne le bon mot de passe, elle entre.
+async function rafraichirEmpreinte(table, id, motDePasse, empreinte) {
+  if (!estAncienneEmpreinte(empreinte)) return;
+  try {
+    const neuve = await fabriquer(motDePasse);
+    const { error } = await supabaseAdmin
+      .from(table)
+      .update({ password_hash: neuve })
+      .eq("id", id);
+    if (error) throw new Error(error.message);
+    console.log("[mot de passe] empreinte passee en scrypt : " + table + " " + id);
+  } catch (e) {
+    console.warn("[mot de passe] empreinte non modernisee (" + table + " " + id + ") :",
+      e && e.message);
+  }
 }
 
 // Générer un token de session simple
@@ -78,16 +105,32 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Email et mot de passe requis" });
       }
 
-      const { data: account, error } = await supabaseAdmin
+      // On lit le compte par son e-mail, puis on compare le mot de passe ici :
+      // l'empreinte scrypt a un sel par compte, elle ne peut pas se comparer
+      // dans la requete. Le message de refus reste le meme dans les deux cas,
+      // pour ne pas dire quelles adresses ont un compte.
+      const { data: ligneCompte, error } = await supabaseAdmin
         .from("creator_accounts")
-        .select("id, email, full_name, is_admin, brand_id, lang")
+        .select("id, email, full_name, is_admin, brand_id, lang, password_hash")
         .eq("email", email.toLowerCase())
-        .eq("password_hash", hashPassword(password))
-        .single();
+        .maybeSingle();
 
-      if (error || !account) {
+      if (error) {
+        console.error("[auth] lecture du compte a la connexion :", error);
+        return res.status(500).json({ error: "Erreur serveur" });
+      }
+
+      const empreinteCompte = ligneCompte ? ligneCompte.password_hash : null;
+      if (!(await verifier(password, empreinteCompte))) {
         return res.status(401).json({ error: "Email ou mot de passe incorrect" });
       }
+
+      // Copie sans l'empreinte : elle ne doit repartir ni dans la reponse ni
+      // dans le jeton. On copie au lieu d'effacer, pour ne pas toucher a la
+      // ligne que la base vient de rendre.
+      const account = { ...ligneCompte };
+      delete account.password_hash;
+      await rafraichirEmpreinte("creator_accounts", account.id, password, empreinteCompte);
 
       // Si c'est un créateur, récupérer les infos de sa marque
       let brand = null;
@@ -186,7 +229,7 @@ export default async function handler(req, res) {
         .from("creator_accounts")
         .insert({
           email: email.toLowerCase(),
-          password_hash: hashPassword(password),
+          password_hash: await fabriquer(password),
           full_name: name,
           is_admin: false,
         })
@@ -225,16 +268,19 @@ export default async function handler(req, res) {
         });
       }
 
-      // Le mot de passe est verifie par la base, sur CE compte precis.
-      const { data: accounts } = await supabaseAdmin
+      // Le mot de passe est verifie ici, sur CE compte precis. La comparaison
+      // ne peut plus se faire dans la requete : l'empreinte scrypt a son sel.
+      const { data: comptes } = await supabaseAdmin
         .from("creator_accounts")
-        .select("id, email")
-        .eq("id", lecture.session.id)
-        .eq("password_hash", hashPassword(password));
+        .select("id, email, password_hash")
+        .eq("id", lecture.session.id);
 
-      if (!accounts || accounts.length === 0) {
+      const comptePourEmail = (comptes && comptes[0]) || null;
+      const empreintePourEmail = comptePourEmail ? comptePourEmail.password_hash : null;
+      if (!(await verifier(password, empreintePourEmail))) {
         return res.status(401).json({ error: "Mot de passe incorrect" });
       }
+      const accounts = [comptePourEmail];
 
       // Vérifier que le nouvel email n'est pas déjà pris
       const { data: emailCheck } = await supabaseAdmin
@@ -286,20 +332,21 @@ export default async function handler(req, res) {
         });
       }
 
-      const { data: accounts } = await supabaseAdmin
+      // Meme raison qu'au-dessus : on lit la ligne, puis on compare.
+      const { data: comptesMdp } = await supabaseAdmin
         .from("creator_accounts")
-        .select("id")
-        .eq("id", lectureMdp.session.id)
-        .eq("password_hash", hashPassword(old_password));
+        .select("id, password_hash")
+        .eq("id", lectureMdp.session.id);
 
-      if (!accounts || accounts.length === 0) {
+      const comptePourMdp = (comptesMdp && comptesMdp[0]) || null;
+      if (!(await verifier(old_password, comptePourMdp ? comptePourMdp.password_hash : null))) {
         return res.status(401).json({ error: "Mot de passe actuel incorrect" });
       }
 
-      const account = accounts[0];
+      const account = comptePourMdp;
       const { error: updateErr } = await supabaseAdmin
         .from("creator_accounts")
-        .update({ password_hash: hashPassword(new_password) })
+        .update({ password_hash: await fabriquer(new_password) })
         .eq("id", account.id);
 
       if (updateErr) {
@@ -385,7 +432,7 @@ export default async function handler(req, res) {
 
       const { data: majCompte, error: errMaj } = await supabaseAdmin
         .from("creator_accounts")
-        .update({ password_hash: hashPassword(new_password) })
+        .update({ password_hash: await fabriquer(new_password) })
         .eq("id", lu.compteId)
         .select("id, email")
         .maybeSingle();
@@ -466,7 +513,7 @@ export default async function handler(req, res) {
         .from("creator_accounts")
         .insert({
           email: email.toLowerCase(),
-          password_hash: hashPassword(password),
+          password_hash: await fabriquer(password),
           full_name: app.contact_name,
           is_admin: false,
           brand_id: brand.id,
@@ -523,7 +570,7 @@ export default async function handler(req, res) {
         .from("customers")
         .insert({
           email: email.toLowerCase(),
-          password_hash: hashPassword(password),
+          password_hash: await fabriquer(password),
           first_name,
           last_name,
           nickname: nickname || null,
@@ -559,16 +606,27 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: "Email et mot de passe requis" });
       }
 
-      const { data: customer, error } = await supabaseAdmin
+      // Comme pour les createurs : on lit par l'e-mail, puis on compare.
+      const { data: ligneClient, error } = await supabaseAdmin
         .from("customers")
-        .select("id, email, first_name, last_name, nickname")
+        .select("id, email, first_name, last_name, nickname, password_hash")
         .eq("email", email.toLowerCase())
-        .eq("password_hash", hashPassword(password))
-        .single();
+        .maybeSingle();
 
-      if (error || !customer) {
+      if (error) {
+        console.error("[auth] lecture du client a la connexion :", error);
+        return res.status(500).json({ error: "Erreur serveur" });
+      }
+
+      const empreinteClient = ligneClient ? ligneClient.password_hash : null;
+      if (!(await verifier(password, empreinteClient))) {
         return res.status(401).json({ error: "Email ou mot de passe incorrect" });
       }
+
+      // Meme precaution que pour les createurs : une copie sans l'empreinte.
+      const customer = { ...ligneClient };
+      delete customer.password_hash;
+      await rafraichirEmpreinte("customers", customer.id, password, empreinteClient);
 
       const token = creerJetonClient(customer.id) || generateCustomerToken(customer.id);
 
