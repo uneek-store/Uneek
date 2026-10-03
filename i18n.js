@@ -740,7 +740,15 @@
     "Choisis les couleurs disponibles": { en: "Choose the available colours", nl: "Kies de beschikbare kleuren", de: "W\u00e4hle die verf\u00fcgbaren Farben", es: "Elige los colores disponibles" },
     "Aucune couleur choisie": { en: "No colour chosen", nl: "Geen kleur gekozen", de: "Keine Farbe gew\u00e4hlt", es: "Ning\u00fan color elegido" },
     "Photo montr\u00e9e pour": { en: "Photo shown for", nl: "Foto getoond voor", de: "Foto angezeigt f\u00fcr", es: "Foto mostrada para" },
-    "Toutes les couleurs": { en: "All colours", nl: "Alle kleuren", de: "Alle Farben", es: "Todos los colores" }
+    "Toutes les couleurs": { en: "All colours", nl: "Alle kleuren", de: "Alle Farben", es: "Todos los colores" },
+    "Chaque couleur a besoin d'au moins une photo.": { en: "Every colour needs at least one photo.", nl: "Elke kleur heeft minstens \u00e9\u00e9n foto nodig.", de: "Jede Farbe braucht mindestens ein Foto.", es: "Cada color necesita al menos una foto." },
+    "Il faut au moins 3 photos : devant, dos, et port\u00e9e sur mannequin.": { en: "At least 3 photos are required: front, back, and worn on a model.", nl: "Er zijn minstens 3 foto's nodig: voorkant, achterkant en gedragen op een model.", de: "Mindestens 3 Fotos sind erforderlich: Vorderseite, R\u00fcckseite und am Model getragen.", es: "Hacen falta al menos 3 fotos: delante, detr\u00e1s y puesta en un modelo." },
+    "Photo principale": { en: "Main photo", nl: "Hoofdfoto", de: "Hauptfoto", es: "Foto principal" },
+    "Trois photos minimum : devant, dos, et port\u00e9e sur mannequin.": { en: "Three photos minimum: front, back, and worn on a model.", nl: "Minimaal drie foto's: voorkant, achterkant en gedragen op een model.", de: "Mindestens drei Fotos: Vorderseite, R\u00fcckseite und am Model getragen.", es: "Tres fotos m\u00ednimo: delante, detr\u00e1s y puesta en un modelo." },
+    "Si le produit existe en plusieurs couleurs, il faut au moins une photo par couleur.": { en: "If the item comes in several colours, at least one photo per colour is required.", nl: "Bestaat het stuk in meerdere kleuren, dan is er minstens \u00e9\u00e9n foto per kleur nodig.", de: "Gibt es das Teil in mehreren Farben, braucht es mindestens ein Foto pro Farbe.", es: "Si la prenda existe en varios colores, hace falta al menos una foto por color." },
+    "Clique sur une couleur sous chaque photo pour la ranger.": { en: "Tap a colour under each photo to file it.", nl: "Klik op een kleur onder elke foto om die toe te wijzen.", de: "Klicke unter jedem Foto auf eine Farbe, um es zuzuordnen.", es: "Haz clic en un color debajo de cada foto para asignarla." },
+    "La premi\u00e8re photo est celle affich\u00e9e sur la boutique.": { en: "The first photo is the one shown in the shop.", nl: "De eerste foto is die in de shop wordt getoond.", de: "Das erste Foto ist das, was im Shop gezeigt wird.", es: "La primera foto es la que se muestra en la tienda." },
+    "Laisse vide si le produit n'existe qu'en une seule couleur.": { en: "Leave empty if the item comes in one colour only.", nl: "Laat leeg als het stuk maar in \u00e9\u00e9n kleur bestaat.", de: "Leer lassen, wenn es das Teil nur in einer Farbe gibt.", es: "D\u00e9jalo vac\u00edo si la prenda existe en un solo color." }
   };
 
   /* ---------- 2. phrases avec un chiffre ou un nom au milieu ---------- */

@@ -1024,9 +1024,43 @@
 
     <style>
       .couleurs-grille { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px }
-      .img-thumb select.photo-couleur { display:block; width:100%; margin-top:4px;
-        font-size:11px; padding:3px 4px; border:1px solid var(--border,#DDD);
-        border-radius:6px; background:#FFF; max-width:92px }
+      /* Le bilan : une pastille par couleur, cochee ou non. */
+      .photo-bilan { margin-top:10px; padding:10px 12px; border-radius:10px;
+        background:var(--gray-50,#F7F7F7); border:1px solid var(--gray-200,#EEE) }
+      .photo-bilan.incomplet { background:#FFF7ED; border-color:#FED7AA }
+      .photo-bilan-titre { font-size:12px; font-weight:600; margin-bottom:8px }
+      .photo-bilan-liste { display:flex; flex-wrap:wrap; gap:6px }
+      .photo-etat { display:inline-flex; align-items:center; gap:6px; padding:4px 10px;
+        border-radius:999px; font-size:12px; border:1px solid var(--gray-200,#EEE);
+        background:#FFF }
+      .photo-etat.ok { border-color:#86EFAC; background:#F0FDF4 }
+      .photo-etat.manque { border-color:#FDBA74; background:#FFF7ED; font-weight:600 }
+      .photo-etat .signe { font-weight:700 }
+      .photo-etat.ok .signe { color:#16A34A }
+      .photo-etat.manque .signe { color:#EA580C }
+
+      /* Une ligne par photo : la vignette, puis les couleurs a cliquer. */
+      .photo-liste { display:flex; flex-direction:column; gap:8px; margin-top:10px }
+      .photo-ligne { display:flex; align-items:center; gap:12px; padding:8px;
+        border:1px solid var(--gray-200,#EEE); border-radius:10px; background:#FFF }
+      .photo-ligne.sans-couleur { border-color:#FDBA74; background:#FFFBF5 }
+      .photo-ligne img { width:48px; height:62px; object-fit:cover; border-radius:6px;
+        flex:none; background:var(--gray-100,#F3F3F3) }
+      .photo-ligne .infos { flex:1; min-width:0 }
+      .photo-ligne .titre { font-size:11px; color:var(--gray-500,#888);
+        text-transform:uppercase; letter-spacing:0.5px; margin-bottom:5px }
+      .photo-ligne .titre .principale { color:var(--black,#111); font-weight:700 }
+      .photo-pastilles { display:flex; flex-wrap:wrap; gap:5px }
+      .photo-pill { display:inline-flex; align-items:center; gap:5px; padding:4px 10px;
+        border:1px solid var(--border,#DDD); border-radius:999px; background:#FFF;
+        font-size:12px; cursor:pointer; color:inherit; line-height:1.2 }
+      .photo-pill:hover { border-color:#999 }
+      .photo-pill.choisie { border-color:#111; background:#111; color:#FFF; font-weight:600 }
+      .photo-ligne .retirer { flex:none; width:26px; height:26px; border-radius:50%;
+        border:1px solid var(--gray-200,#EEE); background:#FFF; cursor:pointer;
+        font-size:14px; line-height:1; color:var(--gray-500,#888) }
+      .photo-ligne .retirer:hover { background:#FEF2F2; border-color:var(--red,#DC2626);
+        color:var(--red,#DC2626) }
       .couleur-chip { display:inline-flex; align-items:center; gap:7px; padding:6px 12px;
         border:1px solid var(--border,#DDD); border-radius:999px; background:#FFF;
         font-size:13px; cursor:pointer; line-height:1.2; color:inherit }
@@ -1038,11 +1072,13 @@
     <!-- IMAGE -->
     <div class="img-section" id="imgSection">
       <label>Photos du produit</label>
+      <p class="modal-note" style="margin-top:8px"><strong>Trois photos minimum : devant, dos, et portée sur mannequin.</strong></p>
+      <p class="modal-note" style="margin-top:4px">Si le produit existe en plusieurs couleurs, il faut au moins une photo par couleur.</p>
+      <p class="modal-note" style="margin-top:4px">Clique sur une couleur sous chaque photo pour la ranger.</p>
+      <p class="modal-note" style="margin-top:4px">La première photo est celle affichée sur la boutique.</p>
       <input type="file" id="f-file" accept="image/*" multiple onchange="onFilesChosen(this)" style="padding:6px" />
       <div class="img-count" id="imgCount">0 / 5</div>
       <div class="img-thumbs" id="imgPreviews"></div>
-      <p class="modal-note" style="margin-top:8px"><strong>Trois photos minimum : devant, dos, et portée sur mannequin.</strong> Si le produit existe en plusieurs couleurs, il faut au moins une photo par couleur — range chaque photo avec le menu sous la vignette.</p>
-      <p class="modal-note" style="margin-top:8px">La première photo est celle affichée sur la boutique. Clique sur ✕ pour en retirer une.</p>
       <p class="modal-note" style="margin-top:8px">ou ajoute une photo par lien :</p>
       <div style="display:flex;gap:6px">
         <input id="f-img" placeholder="https://..." style="flex:1" />
@@ -1132,7 +1168,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-10-03-photos-exigees';
+  const APP_VERSION = '2026-10-03-photos-pastilles';
 
   async function checkAppVersion() {
     try {
@@ -2002,44 +2038,90 @@
   // Une case vide veut dire "toutes les couleurs".
   let selectedImageColors = [];
 
+  // Les couleurs qui n'ont encore aucune photo a elles.
+  function couleursSansPhoto() {
+    return COULEURS_CHOISIES.filter(function (v) {
+      const c = codeCouleur(v);
+      return !selectedImages.some(function (u, i) {
+        return selectedImageColors[i] && codeCouleur(selectedImageColors[i]) === c;
+      });
+    });
+  }
+
+  // Le bilan, en haut : une pastille par couleur, cochee ou non. C'est ce
+  // qui manquait — rien ne disait quelles couleurs attendaient une photo.
+  function bilanCouleursHTML() {
+    if (!COULEURS_CHOISIES.length) return '';
+    const sans = couleursSansPhoto().map(codeCouleur);
+    const lignes = COULEURS_CHOISIES.map(function (v) {
+      const manque = sans.indexOf(codeCouleur(v)) !== -1;
+      return '<span class="photo-etat ' + (manque ? 'manque' : 'ok') + '">'
+        + pastilleCouleur(v, 12) + '<span>' + esc(libelleCouleur(v)) + '</span>'
+        + '<span class="signe">' + (manque ? '!' : '\u2713') + '</span></span>';
+    }).join('');
+    return '<div class="photo-bilan' + (sans.length ? ' incomplet' : '') + '">'
+      + '<div class="photo-bilan-titre">Chaque couleur a besoin d\'au moins une photo.</div>'
+      + '<div class="photo-bilan-liste">' + lignes + '</div></div>';
+  }
+
+  // Une ligne par photo : la vignette, puis les couleurs a cliquer. Un menu
+  // ferme ne montre pas ce qu'il contient ; des pastilles, si.
+  function ligneCouleursHTML(i) {
+    if (!COULEURS_CHOISIES.length) return '';
+    const actuelle = selectedImageColors[i] || '';
+    const choix = [''].concat(COULEURS_CHOISIES);
+    return '<div class="photo-pastilles">' + choix.map(function (v) {
+      const pris = v === ''
+        ? !actuelle
+        : (!!actuelle && codeCouleur(v) === codeCouleur(actuelle));
+      const dedans = v === ''
+        ? '<span>Toutes les couleurs</span>'
+        : pastilleCouleur(v, 12) + '<span>' + esc(libelleCouleur(v)) + '</span>';
+      return '<button type="button" class="photo-pill' + (pris ? ' choisie' : '')
+        + '" data-i="' + i + '" data-v="' + esc(String(v)) + '">' + dedans + '</button>';
+    }).join('') + '</div>';
+  }
+
   function renderImagePreviews() {
     const wrap = document.getElementById('imgPreviews');
-    wrap.innerHTML = selectedImages.map((src, i) =>
-      '<div class="img-thumb">' +
-        '<img src="' + esc(String(src)) + '" alt="Photo ' + (i + 1) + '">' +
-        '<button type="button" class="x" title="Retirer" onclick="removeImage(' + i + ')">&times;</button>' +
-        (i === 0 ? '<span class="main">Principale</span>' : '') +
-        menuCouleurPhoto(i) +
-      '</div>').join('');
+    // Sans couleur, rien a ranger : on garde la bande de vignettes d'avant.
+    if (!COULEURS_CHOISIES.length) {
+      wrap.className = 'img-thumbs';
+      wrap.innerHTML = selectedImages.map((src, i) =>
+        '<div class="img-thumb">' +
+          '<img src="' + esc(String(src)) + '" alt="Photo ' + (i + 1) + '">' +
+          '<button type="button" class="x" title="Retirer" onclick="removeImage(' + i + ')">&times;</button>' +
+          (i === 0 ? '<span class="main">Principale</span>' : '') +
+        '</div>').join('');
+    } else {
+      wrap.className = 'photo-liste';
+      wrap.innerHTML = bilanCouleursHTML() + selectedImages.map(function (src, i) {
+        const orpheline = !selectedImageColors[i];
+        return '<div class="photo-ligne">'
+          + '<img src="' + esc(String(src)) + '" alt="Photo ' + (i + 1) + '">'
+          + '<div class="infos"><div class="titre">'
+          + (i === 0 ? '<span class="principale">Photo principale</span>' : 'Photo ' + (i + 1))
+          + '</div>' + ligneCouleursHTML(i) + '</div>'
+          + '<button type="button" class="retirer" title="Retirer" onclick="removeImage(' + i + ')">&times;</button>'
+          + '</div>';
+      }).join('');
+    }
     brancherMenusCouleurPhoto();
     const cnt = document.getElementById('imgCount');
     cnt.textContent = selectedImages.length + ' / ' + MAX_IMAGES + ' photo' + (selectedImages.length > 1 ? 's' : '');
     cnt.className = 'img-count' + (selectedImages.length >= MAX_IMAGES ? ' full' : '');
   }
 
-  // Le menu n'apparait que si le produit a des couleurs : sans couleurs,
-  // il n'y a rien a ranger.
-  function menuCouleurPhoto(i) {
-    if (!COULEURS_CHOISIES.length) return '';
-    const actuelle = selectedImageColors[i] || '';
-    const options = ['<option value="">Toutes les couleurs</option>'].concat(
-      COULEURS_CHOISIES.map(function (v) {
-        const choisi = codeCouleur(v) === codeCouleur(actuelle) ? ' selected' : '';
-        // L'attribut value est OBLIGATOIRE : sans lui, la valeur d'une option
-        // est son texte — et i18n.js traduit les textes.
-        return '<option value="' + esc(String(v)) + '"' + choisi + '>'
-          + esc(libelleCouleur(v)) + '</option>';
-      })).join('');
-    return '<select class="photo-couleur" data-i="' + i + '" title="Photo montr\u00e9e pour">'
-      + options + '</select>';
-  }
-
   function brancherMenusCouleurPhoto() {
     const wrap = document.getElementById('imgPreviews');
     if (!wrap) return;
-    Array.prototype.forEach.call(wrap.querySelectorAll('select.photo-couleur'), function (sel) {
-      sel.onchange = function () {
-        selectedImageColors[parseInt(sel.getAttribute('data-i'), 10)] = sel.value || null;
+    Array.prototype.forEach.call(wrap.querySelectorAll('button.photo-pill'), function (b) {
+      b.onclick = function () {
+        selectedImageColors[parseInt(b.getAttribute('data-i'), 10)] =
+          b.getAttribute('data-v') || null;
+        // On redessine : le bilan du haut doit suivre immediatement, sinon
+        // le createur ne voit pas qu'il vient de combler un trou.
+        renderImagePreviews();
       };
     });
   }
@@ -2576,8 +2658,8 @@
         return;
       }
       const manqueEdit = photosManquantes();
-      if (manqueEdit.length > 0) {
-        errEdit.textContent = manqueEdit.join(' \u2014 ');
+      if (manqueEdit) {
+        errEdit.innerHTML = manqueEdit;
         errEdit.style.display = 'block';
         return;
       }
@@ -2596,8 +2678,8 @@
         return;
       }
       const manqueNeuf = photosManquantes();
-      if (manqueNeuf.length > 0) {
-        err.textContent = manqueNeuf.join(' \u2014 ');
+      if (manqueNeuf) {
+        err.innerHTML = manqueNeuf;
         err.style.display = 'block';
         return;
       }
@@ -2851,26 +2933,26 @@
   }
 
   // Regle UNEEK : au moins 3 pieces des qu'une combinaison est proposee.
-  // Ce qui manque aux photos, en clair. Tableau vide = tout va bien.
+  // Ce qui manque aux photos. Chaine vide = tout va bien.
+  //
+  // Le resultat est du HTML, et chaque phrase vit dans son propre element :
+  // i18n.js cherche ses cles sur le texte complet d'un noeud, donc une
+  // phrase melangee a un nombre ou a une liste ne serait jamais traduite.
   function photosManquantes() {
-    const manque = [];
+    const morceaux = [];
     if (selectedImages.length < 3) {
-      manque.push('il faut au moins 3 photos : devant, dos, et port\u00e9e sur mannequin ('
-        + selectedImages.length + ' pour l\'instant)');
+      morceaux.push('<div>Il faut au moins 3 photos : devant, dos, et port\u00e9e sur mannequin.</div>');
     }
     // Une couleur annoncee sans photo a elle, c'est un client qui choisit
     // "vert" et regarde un pull blanc.
-    const sans = COULEURS_CHOISIES.filter(function (v) {
-      const c = codeCouleur(v);
-      return !selectedImages.some(function (u, i) {
-        return selectedImageColors[i] && codeCouleur(selectedImageColors[i]) === c;
-      });
-    });
+    const sans = couleursSansPhoto();
     if (sans.length) {
-      manque.push('chaque couleur a besoin d\'au moins une photo \u2014 il en manque pour : '
-        + sans.map(libelleCouleur).join(', '));
+      morceaux.push('<div>Chaque couleur a besoin d\'au moins une photo.</div>'
+        + '<div>' + sans.map(function (v) {
+            return '<span>' + esc(libelleCouleur(v)) + '</span>';
+          }).join(' \u00b7 ') + '</div>');
     }
-    return manque;
+    return morceaux.join('');
   }
 
   function tropPeuDeStock() {
