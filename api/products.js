@@ -108,9 +108,14 @@ export default async function handler(req, res) {
     // image_count dit a la fiche combien de photos existent reellement.
     const products = visibles.map(p => {
       const photos = Array.isArray(p.image_urls) ? p.image_urls : [];
+      const couleurs = Array.isArray(p.image_colors) ? p.image_colors : null;
       return {
         ...sansChampsPrives(p),
         image_urls: photos.length ? [photos[0]] : [],
+        // image_colors reste PARALLELE a image_urls, meme tronquee : deux
+        // listes de longueurs differentes, et les photos se retrouveraient
+        // decalees d'une couleur sur la fiche produit.
+        image_colors: couleurs ? (photos.length ? [couleurs[0] || null] : []) : null,
         image_count: photos.length,
         image_url: photos.length ? photos[0] : ''
       };

@@ -1293,12 +1293,15 @@ async function chargerPhotosProduit() {
     if (!p || !p.image_count || p.image_count < 2) return;
     if (Array.isArray(p.image_urls) && p.image_urls.length >= p.image_count) return;
 
-    const r = await fetch(API_BASE + '/products?id=' + encodeURIComponent(p.id));
+    const r = await fetch(API + '/api/products?id=' + encodeURIComponent(p.id));
     if (!r.ok) return;
     const complet = await r.json();
     if (!complet || !Array.isArray(complet.image_urls) || complet.image_urls.length < 2) return;
 
     p.image_urls = complet.image_urls;   // garde en memoire : une seule fois par produit
+    // Les couleurs des photos viennent AVEC les photos, sinon la galerie se
+    // retrouve avec cinq photos et une seule couleur, et le tri ne marche plus.
+    p.image_colors = Array.isArray(complet.image_colors) ? complet.image_colors : null;
     // On ne redessine que si le visiteur n'a encore rien choisi, pour ne pas
     // effacer une taille ou une couleur deja selectionnee.
     if (currentPage === 'product' && !selectedSize && trouverProduit(pageData) === p) {
@@ -1306,6 +1309,45 @@ async function chargerPhotosProduit() {
       if (app) app.innerHTML = productPage();
     }
   } catch (e) { /* la fiche garde sa photo principale, rien n'est casse */ }
+}
+
+// Les photos a montrer pour une couleur donnee.
+//
+// image_colors est parallele a image_urls : la photo n d'image_urls appartient
+// a la couleur n d'image_colors. Une case vide veut dire "toutes les
+// couleurs" — une photo de detail, une etiquette, une mise en situation.
+//
+// Et le repli, qui compte autant que la regle : si cette couleur n'a aucune
+// photo a elle, on montre TOUTES les photos. Un produit dont le createur n'a
+// pas encore range ses photos se comporte exactement comme avant.
+function photosDeCouleur(p, couleur) {
+  const toutes = Array.isArray(p.image_urls) && p.image_urls.length
+    ? p.image_urls : (p.image_url ? [p.image_url] : []);
+  const coul = Array.isArray(p.image_colors) ? p.image_colors : null;
+  if (!coul || couleur == null) return toutes;
+  const c = codeCouleur(couleur);
+  const aElle = toutes.filter((u, i) => coul[i] && codeCouleur(coul[i]) === c);
+  if (!aElle.length) return toutes;
+  return toutes.filter((u, i) => !coul[i] || codeCouleur(coul[i]) === c);
+}
+
+// La galerie, redessinee a chaque changement de couleur.
+function galerieHTML(p, couleur) {
+  const photos = photosDeCouleur(p, couleur);
+  const principale = photos[0] || p.image_url || PLACEHOLDER_IMG;
+  return `
+          <div class="pd-imgwrap" style="position:relative;aspect-ratio:3/4;overflow:hidden;background:var(--gray-100);border-radius:var(--radius-lg)"
+               ontouchstart="pdTouchStart(event)" ontouchend="pdTouchEnd(event)">
+            <img id="pd-main-img" data-i="0" src="${principale}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease-out">
+            ${photos.length > 1 ? `
+            <button class="pd-arrow prev" aria-label="Photo précédente" onclick="stepProductImage(-1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+            <button class="pd-arrow next" aria-label="Photo suivante" onclick="stepProductImage(1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
+            <span class="pd-counter" id="pd-counter">1 / ${photos.length}</span>` : ''}
+          </div>
+          ${photos.length > 1 ? `
+          <div id="pd-thumbs" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+            ${photos.map((u, i) => `<img src="${u}" alt="${p.name} ${i + 1}" onclick="switchProductImage(this,'${i}')" data-i="${i}" style="width:64px;height:84px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid ${i === 0 ? 'var(--black)' : 'transparent'};opacity:${i === 0 ? '1' : '0.6'};transition:all .15s">`).join('')}
+          </div>` : ''}`;
 }
 
 function productPage() {
@@ -1323,18 +1365,7 @@ function productPage() {
     <section class="section" style="padding-top:96px">
       <div class="pd-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start">
         <div class="pd-sticky" style="position:sticky;top:96px">
-          <div class="pd-imgwrap" style="position:relative;aspect-ratio:3/4;overflow:hidden;background:var(--gray-100);border-radius:var(--radius-lg)"
-               ontouchstart="pdTouchStart(event)" ontouchend="pdTouchEnd(event)">
-            <img id="pd-main-img" data-i="0" src="${(p.image_urls && p.image_urls[0]) || p.image_url || PLACEHOLDER_IMG}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease-out">
-            ${(p.image_urls && p.image_urls.length > 1) ? `
-            <button class="pd-arrow prev" aria-label="Photo précédente" onclick="stepProductImage(-1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
-            <button class="pd-arrow next" aria-label="Photo suivante" onclick="stepProductImage(1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
-            <span class="pd-counter" id="pd-counter">1 / ${p.image_urls.length}</span>` : ''}
-          </div>
-          ${(p.image_urls && p.image_urls.length > 1) ? `
-          <div id="pd-thumbs" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-            ${p.image_urls.map((u, i) => `<img src="${u}" alt="${p.name} ${i + 1}" onclick="switchProductImage(this,'${i}')" data-i="${i}" style="width:64px;height:84px;object-fit:cover;border-radius:8px;cursor:pointer;border:2px solid ${i === 0 ? 'var(--black)' : 'transparent'};opacity:${i === 0 ? '1' : '0.6'};transition:all .15s">`).join('')}
-          </div>` : ''}
+          <div id="pd-galerie">${galerieHTML(p, selectedColor)}</div>
         </div>
         <div style="padding-top:32px">
           <div style="font-size:12px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px;cursor:pointer" onclick="navigate('brand','${b?.slug}')">${b?.name || ''} &rarr;</div>
@@ -1398,6 +1429,12 @@ function selectColor(btn, couleur, productId) {
   if (lab) lab.textContent = libelleCouleur(couleur);
 
   const p = PRODUCTS.find(x => x.id === productId);
+
+  // La photo suit la couleur. C'etait tout le probleme : on cliquait "vert"
+  // et on continuait de regarder le pull blanc.
+  const galerie = document.getElementById('pd-galerie');
+  if (galerie && p) galerie.innerHTML = galerieHTML(p, couleur);
+
   const zone = document.getElementById('size-btns');
   if (p && zone) {
     const dispo = getAvailableSizes(p, couleur);

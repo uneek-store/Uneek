@@ -138,7 +138,7 @@ export default async function handler(req, res) {
 
     // --- POST: NEW PRODUCT OR MODIFICATION ---
     if (req.method === "POST") {
-      const { product_id, edit_type, name, price, category, description, sizes_stock, image_url, image_urls, variants, commission_percent, details } = req.body;
+      const { product_id, edit_type, name, price, category, description, sizes_stock, image_url, image_urls, image_colors, variants, commission_percent, details } = req.body;
 
       // EDIT MODE: update product directly (stock, name, price, etc.)
       // --- MODIFICATION : soumise a la validation de l'admin ---
@@ -157,6 +157,12 @@ export default async function handler(req, res) {
           // Un tableau vide est un choix explicite : le createur a tout retire.
           changes.image_urls = image_urls;
           changes.image_url = image_urls[0] || '';
+          // La couleur de chaque photo voyage AVEC les photos, et de la meme
+          // longueur : deux listes de tailles differentes, et les photos se
+          // retrouveraient decalees d'une couleur.
+          if (Array.isArray(image_colors)) {
+            changes.image_colors = image_urls.map((u, i) => image_colors[i] || null);
+          }
         } else if (image_url) {
           changes.image_url = image_url;
         }
@@ -351,6 +357,9 @@ export default async function handler(req, res) {
         if (Array.isArray(image_urls) && image_urls.length > 0) {
           product_data.image_urls = image_urls;
           product_data.image_url = image_urls[0];
+          if (Array.isArray(image_colors)) {
+            product_data.image_colors = image_urls.map((u, i) => image_colors[i] || null);
+          }
         }
         // Ces deux champs etaient saisis par le createur puis jetes.
         if (Array.isArray(variants)) product_data.variants = variants;

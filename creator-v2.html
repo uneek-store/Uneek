@@ -1024,6 +1024,9 @@
 
     <style>
       .couleurs-grille { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px }
+      .img-thumb select.photo-couleur { display:block; width:100%; margin-top:4px;
+        font-size:11px; padding:3px 4px; border:1px solid var(--border,#DDD);
+        border-radius:6px; background:#FFF; max-width:92px }
       .couleur-chip { display:inline-flex; align-items:center; gap:7px; padding:6px 12px;
         border:1px solid var(--border,#DDD); border-radius:999px; background:#FFF;
         font-size:13px; cursor:pointer; line-height:1.2; color:inherit }
@@ -1128,7 +1131,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-10-02-couleurs';
+  const APP_VERSION = '2026-10-02-photos-par-couleur';
 
   async function checkAppVersion() {
     try {
@@ -1762,7 +1765,10 @@
         const encoded = encodeURIComponent(JSON.stringify({
           id: p.id, name: p.name, price: p.price, category: p.category, description: p.description,
           details: p.details || {},
-          commission_percent: p.commission_percent, variants: p.colors || p.variants || [], sizes_stock: p.sizes_stock, image_urls: p.image_urls || []
+          commission_percent: p.commission_percent, variants: p.colors || p.variants || [], sizes_stock: p.sizes_stock, image_urls: p.image_urls || [],
+          // Sans cette ligne, le bouton Modifier n'emporte pas le rangement
+          // des photos : le createur rouvre sa fiche et tout est a refaire.
+          image_colors: p.image_colors || []
         }));
         // Le statut etait code en dur sur "Publie" : un produit en attente
         // de validation s'affichait comme publie chez le createur.
@@ -1991,6 +1997,9 @@
   // --- PHOTOS DU PRODUIT ---
   const MAX_IMAGES = 5;
   let selectedImages = [];
+  // La couleur de chaque photo, dans le MEME ordre que selectedImages.
+  // Une case vide veut dire "toutes les couleurs".
+  let selectedImageColors = [];
 
   function renderImagePreviews() {
     const wrap = document.getElementById('imgPreviews');
@@ -1999,14 +2008,44 @@
         '<img src="' + esc(String(src)) + '" alt="Photo ' + (i + 1) + '">' +
         '<button type="button" class="x" title="Retirer" onclick="removeImage(' + i + ')">&times;</button>' +
         (i === 0 ? '<span class="main">Principale</span>' : '') +
+        menuCouleurPhoto(i) +
       '</div>').join('');
+    brancherMenusCouleurPhoto();
     const cnt = document.getElementById('imgCount');
     cnt.textContent = selectedImages.length + ' / ' + MAX_IMAGES + ' photo' + (selectedImages.length > 1 ? 's' : '');
     cnt.className = 'img-count' + (selectedImages.length >= MAX_IMAGES ? ' full' : '');
   }
 
+  // Le menu n'apparait que si le produit a des couleurs : sans couleurs,
+  // il n'y a rien a ranger.
+  function menuCouleurPhoto(i) {
+    if (!COULEURS_CHOISIES.length) return '';
+    const actuelle = selectedImageColors[i] || '';
+    const options = ['<option value="">Toutes les couleurs</option>'].concat(
+      COULEURS_CHOISIES.map(function (v) {
+        const choisi = codeCouleur(v) === codeCouleur(actuelle) ? ' selected' : '';
+        // L'attribut value est OBLIGATOIRE : sans lui, la valeur d'une option
+        // est son texte — et i18n.js traduit les textes.
+        return '<option value="' + esc(String(v)) + '"' + choisi + '>'
+          + esc(libelleCouleur(v)) + '</option>';
+      })).join('');
+    return '<select class="photo-couleur" data-i="' + i + '" title="Photo montr\u00e9e pour">'
+      + options + '</select>';
+  }
+
+  function brancherMenusCouleurPhoto() {
+    const wrap = document.getElementById('imgPreviews');
+    if (!wrap) return;
+    Array.prototype.forEach.call(wrap.querySelectorAll('select.photo-couleur'), function (sel) {
+      sel.onchange = function () {
+        selectedImageColors[parseInt(sel.getAttribute('data-i'), 10)] = sel.value || null;
+      };
+    });
+  }
+
   function removeImage(i) {
     selectedImages.splice(i, 1);
+    selectedImageColors.splice(i, 1);
     renderImagePreviews();
   }
 
@@ -2043,6 +2082,7 @@
       if (selectedImages.length >= MAX_IMAGES) { refuses++; continue; }
       try {
         selectedImages.push(await resizeAndReadFile(f, 800));
+        selectedImageColors.push(null);
       } catch (e) {
         echecs.push(motifEchecPhoto(f));
       }
@@ -2071,6 +2111,7 @@
       return;
     }
     selectedImages.push(v);
+    selectedImageColors.push(null);
     field.value = '';
     renderImagePreviews();
   }
@@ -2087,6 +2128,7 @@
     document.getElementById('f-img').value = '';
     document.getElementById('f-file').value = '';
     selectedImages = [];
+    selectedImageColors = [];
     renderImagePreviews();
     originalProduct = null;
     const errEl = document.getElementById('stockError');
@@ -2120,6 +2162,8 @@
     document.getElementById('f-file').value = '';
     // On repart des photos actuelles : le createur peut en retirer et en ajouter.
     selectedImages = Array.isArray(p.image_urls) ? p.image_urls.slice(0, MAX_IMAGES) : [];
+    selectedImageColors = Array.isArray(p.image_colors)
+      ? p.image_colors.slice(0, MAX_IMAGES) : [];
     renderImagePreviews();
     // Etat de depart : on ne soumettra que ce qui aura reellement change.
     originalProduct = {
@@ -2131,6 +2175,7 @@
       commission: String(p.commission_percent === undefined || p.commission_percent === null ? '' : p.commission_percent),
       variants: (p.variants || []).join(', '),
       images: selectedImages.slice(),
+      imageColors: selectedImageColors.slice(),
     };
     document.getElementById('imgSection').classList.add('show');
     // Le stock etait masque en modification : il est desormais modifiable et
@@ -2325,7 +2370,12 @@
   function imagesOntChange() {
     const av = (originalProduct && originalProduct.images) || [];
     if (selectedImages.length !== av.length) return true;
-    return selectedImages.some((src, i) => src !== av[i]);
+    if (selectedImages.some((src, i) => src !== av[i])) return true;
+    // Ranger une photo sous une couleur SANS changer la photo elle-meme est
+    // un vrai changement. Sans cette comparaison, le createur rangeait ses
+    // photos et rien ne partait.
+    const avc = (originalProduct && originalProduct.imageColors) || [];
+    return selectedImages.some((u, i) => (selectedImageColors[i] || null) !== (avc[i] || null));
   }
 
   // Les photos partent d'abord dans le stockage, et ce sont leurs adresses
@@ -2351,6 +2401,13 @@
     }
   }
 
+  // Toujours de la meme longueur que image_urls : une case vide veut dire
+  // "toutes les couleurs". Un tableau plus court que l'autre, et les photos
+  // se retrouveraient decalees d'une couleur.
+  function couleursDesPhotos() {
+    return selectedImages.map(function (u, i) { return selectedImageColors[i] || null; });
+  }
+
   function attachImages(body, enModification) {
     if (enModification) {
       // Les photos n'etaient renvoyees qu'en cas de changement reel : sinon
@@ -2358,11 +2415,13 @@
       if (!imagesOntChange()) return;
       body.image_urls = selectedImages;
       body.image_url = selectedImages[0] || '';
+      body.image_colors = couleursDesPhotos();
       return;
     }
     if (selectedImages.length > 0) {
       body.image_urls = selectedImages;
       body.image_url = selectedImages[0];
+      body.image_colors = couleursDesPhotos();
     }
   }
 

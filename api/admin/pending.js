@@ -167,6 +167,11 @@ export default async function handler(req, res) {
         // image_urls est une colonne tableau : on y met toutes les photos.
         if (Array.isArray(c.image_urls)) {
           productData.image_urls = c.image_urls;
+          // Sans cette ligne, le createur range ses photos par couleur, la
+          // demande part, l'admin valide — et le rangement est perdu.
+          if (Array.isArray(c.image_colors)) {
+            productData.image_colors = c.image_urls.map((u, i) => c.image_colors[i] || null);
+          }
         } else if (c.image_url) {
           productData.image_urls = [c.image_url];
         }
