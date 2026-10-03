@@ -412,7 +412,9 @@ export default async function handler(req, res) {
 
         const qty = item.quantity || 1;
         const lineTotal = product.price * qty;
-        const commissionPercent = product.commission_percent || 12;
+        // Taux de base : 15 % (decision d'Axel, 3 octobre 2026). Il ne sert que
+        // si le produit n'a pas de taux negocie enregistre.
+        const commissionPercent = product.commission_percent || 15;
         const commissionAmount = Math.round(lineTotal * commissionPercent) / 100;
         const creatorPayout = lineTotal - commissionAmount;
 

@@ -721,7 +721,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-10-03-finances-livraison';
+  const APP_VERSION = '2026-10-03-commission-15';
 
   async function checkAppVersion() {
     try {
@@ -2135,7 +2135,7 @@
         const action = published
           ? '<button class="btn-delete-brand" onclick="askTogglePublish(\'' + p.id + '\', \'' + safeName + '\', false)">Dépublier</button>'
           : '<button class="btn-approve" onclick="askTogglePublish(\'' + p.id + '\', \'' + safeName + '\', true)">Publier</button>';
-        html += '<tr' + (published ? '' : ' style="opacity:0.75"') + '><td class="bold">' + p.name + '</td><td class="sec">' + (p.brand_name || p.brands?.name || '') + '</td><td>€' + p.price + '</td><td>' + (p.commission_percent || 12) + '%</td><td>' + stock + '</td><td>' + badge + '</td><td>' + action + '</td></tr>';
+        html += '<tr' + (published ? '' : ' style="opacity:0.75"') + '><td class="bold">' + p.name + '</td><td class="sec">' + (p.brand_name || p.brands?.name || '') + '</td><td>€' + p.price + '</td><td>' + (p.commission_percent || 15) + '%</td><td>' + stock + '</td><td>' + badge + '</td><td>' + action + '</td></tr>';
       });
       document.getElementById('products-table').innerHTML = html || '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400)">Aucun produit</td></tr>';
       const warn = document.getElementById('unpublishedWarn');

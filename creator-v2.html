@@ -1027,7 +1027,7 @@
     <input id="f-fabrique" placeholder="Portugal" maxlength="200" />
 
     <label>Commission UNEEK (%)</label>
-    <input id="f-commission" type="number" placeholder="12" min="0" max="100" />
+    <input id="f-commission" type="number" placeholder="15" min="0" max="100" />
     <p class="modal-note" style="margin-top:2px">Pourcentage prélevé par UNEEK sur chaque vente.</p>
 
     <label>Couleurs</label>
@@ -1184,7 +1184,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-10-03-versement-21-jours';
+  const APP_VERSION = '2026-10-03-commission-15';
 
   async function checkAppVersion() {
     try {
