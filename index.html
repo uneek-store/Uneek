@@ -227,6 +227,16 @@ a{text-decoration:none;}
 </head>
 <body>
 
+<!-- Le degrade du coeur des favoris, pose une fois pour toutes.
+     Il etait cree au premier favori, APRES que le coeur ait deja recu
+     fill="url(#heartGrad)" : entre les deux, la reference ne pointait sur
+     rien et le navigateur ne peignait pas le coeur. -->
+<svg id="heartGradDef" aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden">
+  <defs><linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#7B61FF"/><stop offset="50%" stop-color="#A855F7"/><stop offset="100%" stop-color="#FF61B6"/>
+  </linearGradient></defs>
+</svg>
+
 <!-- NAV -->
 <nav class="nav" id="nav">
   <div class="nav-links">
@@ -600,16 +610,15 @@ function renderFav() {
 }
 
 function updateFavIcon() {
+  // Le degrade est pose dans la page des le depart : plus rien a creer ici,
+  // et plus d'instant ou le coeur pointe vers une definition absente.
   const icon = document.getElementById('fav-icon');
+  if (!icon) return;
   if (favorites.length > 0) {
     icon.style.fill = 'url(#heartGrad)'; icon.style.stroke = 'none';
-    if (!document.getElementById('heartGradDef')) {
-      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      svg.id = 'heartGradDef'; svg.style.width = '0'; svg.style.height = '0'; svg.style.position = 'absolute';
-      svg.innerHTML = '<defs><linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7B61FF"/><stop offset="50%" stop-color="#A855F7"/><stop offset="100%" stop-color="#FF61B6"/></linearGradient></defs>';
-      document.body.appendChild(svg);
-    }
-  } else { icon.style.fill = 'none'; icon.style.stroke = 'currentColor'; }
+  } else {
+    icon.style.fill = 'none'; icon.style.stroke = 'currentColor';
+  }
 }
 
 function toggleFav(id) {
@@ -1328,44 +1337,54 @@ async function chargerPhotosProduit() {
   } catch (e) { /* la fiche garde sa photo principale, rien n'est casse */ }
 }
 
-// Les photos a montrer pour une couleur donnee.
+// TOUTES les photos du produit. La colonne de gauche les montre toutes,
+// quelle que soit la couleur choisie : un client veut voir la piece sous
+// tous ses angles et dans toutes ses couleurs.
+function toutesLesPhotos(p) {
+  return Array.isArray(p.image_urls) && p.image_urls.length
+    ? p.image_urls : (p.image_url ? [p.image_url] : []);
+}
+
+// Ou se trouve la premiere photo d'une couleur, dans cette liste complete.
 //
 // image_colors est parallele a image_urls : la photo n d'image_urls appartient
 // a la couleur n d'image_colors. Une case vide veut dire "toutes les
-// couleurs" — une photo de detail, une etiquette, une mise en situation.
+// couleurs" — une photo de detail, une etiquette, une mise en situation ;
+// elle ne compte donc pas comme la photo d'une couleur en particulier.
 //
-// Et le repli, qui compte autant que la regle : si cette couleur n'a aucune
-// photo a elle, on montre TOUTES les photos. Un produit dont le createur n'a
-// pas encore range ses photos se comporte exactement comme avant.
-function photosDeCouleur(p, couleur) {
-  const toutes = Array.isArray(p.image_urls) && p.image_urls.length
-    ? p.image_urls : (p.image_url ? [p.image_url] : []);
+// Le repli compte autant que la regle : une couleur sans photo a elle renvoie
+// 0, donc la premiere photo du produit. Un produit dont le createur n'a pas
+// encore range ses photos se comporte exactement comme avant.
+function premierIndexDeCouleur(p, couleur) {
+  const toutes = toutesLesPhotos(p);
   const coul = Array.isArray(p.image_colors) ? p.image_colors : null;
-  if (!coul || couleur == null) return toutes;
+  if (!coul || couleur == null) return 0;
   const c = codeCouleur(couleur);
-  const aElle = toutes.filter((u, i) => coul[i] && codeCouleur(coul[i]) === c);
-  if (!aElle.length) return toutes;
-  return toutes.filter((u, i) => !coul[i] || codeCouleur(coul[i]) === c);
+  for (let i = 0; i < toutes.length; i++) {
+    if (coul[i] && codeCouleur(coul[i]) === c) return i;
+  }
+  return 0;
 }
 
 // La galerie, redessinee a chaque changement de couleur.
 function galerieHTML(p, couleur) {
-  const photos = photosDeCouleur(p, couleur);
-  const principale = photos[0] || p.image_url || PLACEHOLDER_IMG;
+  const photos = toutesLesPhotos(p);
+  const depart = premierIndexDeCouleur(p, couleur);
+  const principale = photos[depart] || p.image_url || PLACEHOLDER_IMG;
   const plusieurs = photos.length > 1;
   return `
         <div class="pd-galerie" style="${plusieurs ? '' : 'grid-template-columns:1fr'}">
           ${plusieurs ? `
           <div id="pd-thumbs" class="pd-thumbs-col">
-            ${photos.map((u, i) => `<img src="${u}" alt="${p.name} ${i + 1}" onclick="switchProductImage(this,'${i}')" data-i="${i}" class="${i === 0 ? 'actif' : ''}">`).join('')}
+            ${photos.map((u, i) => `<img src="${u}" alt="${p.name} ${i + 1}" onclick="switchProductImage(this,'${i}')" data-i="${i}" class="${i === depart ? 'actif' : ''}">`).join('')}
           </div>` : ''}
           <div class="pd-imgwrap" style="position:relative;aspect-ratio:3/4;overflow:hidden;background:var(--gray-100);border-radius:var(--radius-lg)"
                ontouchstart="pdTouchStart(event)" ontouchend="pdTouchEnd(event)">
-            <img id="pd-main-img" data-i="0" src="${principale}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease-out">
+            <img id="pd-main-img" data-i="${depart}" src="${principale}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.3s ease-out">
             ${plusieurs ? `
             <button class="pd-arrow prev" aria-label="Photo précédente" onclick="stepProductImage(-1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
             <button class="pd-arrow next" aria-label="Photo suivante" onclick="stepProductImage(1)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></button>
-            <span class="pd-counter" id="pd-counter">1 / ${photos.length}</span>` : ''}
+            <span class="pd-counter" id="pd-counter">${depart + 1} / ${photos.length}</span>` : ''}
           </div>
         </div>`;
 }
@@ -1439,10 +1458,19 @@ function selectColor(btn, couleur, productId) {
 
   const p = PRODUCTS.find(x => x.id === productId);
 
-  // La photo suit la couleur. C'etait tout le probleme : on cliquait "vert"
-  // et on continuait de regarder le pull blanc.
-  const galerie = document.getElementById('pd-galerie');
-  if (galerie && p) galerie.innerHTML = galerieHTML(p, couleur);
+  // La grande photo suit la couleur. C'etait tout le probleme : on cliquait
+  // "vert" et on continuait de regarder le pull blanc.
+  //
+  // La COLONNE, elle, ne bouge pas : elle montre toutes les photos du
+  // produit, toutes couleurs melangees. On deplace donc la grande photo au
+  // lieu de redessiner la galerie — c'est plus rapide, et la colonne ne
+  // sautille pas sous les yeux du client.
+  if (p && document.getElementById('pd-thumbs')) {
+    applyProductImage(premierIndexDeCouleur(p, couleur));
+  } else if (p) {
+    const galerie = document.getElementById('pd-galerie');
+    if (galerie) galerie.innerHTML = galerieHTML(p, couleur);
+  }
 
   const zone = document.getElementById('size-btns');
   if (p && zone) {
