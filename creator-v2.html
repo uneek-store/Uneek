@@ -1041,6 +1041,7 @@
       <input type="file" id="f-file" accept="image/*" multiple onchange="onFilesChosen(this)" style="padding:6px" />
       <div class="img-count" id="imgCount">0 / 5</div>
       <div class="img-thumbs" id="imgPreviews"></div>
+      <p class="modal-note" style="margin-top:8px"><strong>Trois photos minimum : devant, dos, et portée sur mannequin.</strong> Si le produit existe en plusieurs couleurs, il faut au moins une photo par couleur — range chaque photo avec le menu sous la vignette.</p>
       <p class="modal-note" style="margin-top:8px">La première photo est celle affichée sur la boutique. Clique sur ✕ pour en retirer une.</p>
       <p class="modal-note" style="margin-top:8px">ou ajoute une photo par lien :</p>
       <div style="display:flex;gap:6px">
@@ -1131,7 +1132,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-10-02-photos-par-couleur';
+  const APP_VERSION = '2026-10-03-photos-exigees';
 
   async function checkAppVersion() {
     try {
@@ -2574,6 +2575,12 @@
         errEdit.style.display = 'block';
         return;
       }
+      const manqueEdit = photosManquantes();
+      if (manqueEdit.length > 0) {
+        errEdit.textContent = manqueEdit.join(' \u2014 ');
+        errEdit.style.display = 'block';
+        return;
+      }
       errEdit.style.display = 'none';
       const editSizes = lireStockSaisi();
       if (Object.keys(editSizes).length > 0) body.sizes_stock = editSizes;
@@ -2585,6 +2592,12 @@
       const err = document.getElementById('stockError');
       if (fautives.length > 0) {
         err.textContent = 'Minimum 3 pièces par taille — à corriger : ' + fautives.join(', ');
+        err.style.display = 'block';
+        return;
+      }
+      const manqueNeuf = photosManquantes();
+      if (manqueNeuf.length > 0) {
+        err.textContent = manqueNeuf.join(' \u2014 ');
         err.style.display = 'block';
         return;
       }
@@ -2660,6 +2673,11 @@
         : 'Choisis les couleurs disponibles';
     }
     updateSizeGrid();
+    // Les menus sous les photos listent les couleurs du produit : ils doivent
+    // suivre. Sans ca, une couleur qu'on vient d'ajouter n'y figure pas, et
+    // la photo correspondante ne peut pas etre rangee.
+    if (typeof renderImagePreviews === 'function'
+        && document.getElementById('imgPreviews')) renderImagePreviews();
   }
 
   // Les couleurs de la liste, plus celles que ce produit porte deja sans y
@@ -2833,6 +2851,28 @@
   }
 
   // Regle UNEEK : au moins 3 pieces des qu'une combinaison est proposee.
+  // Ce qui manque aux photos, en clair. Tableau vide = tout va bien.
+  function photosManquantes() {
+    const manque = [];
+    if (selectedImages.length < 3) {
+      manque.push('il faut au moins 3 photos : devant, dos, et port\u00e9e sur mannequin ('
+        + selectedImages.length + ' pour l\'instant)');
+    }
+    // Une couleur annoncee sans photo a elle, c'est un client qui choisit
+    // "vert" et regarde un pull blanc.
+    const sans = COULEURS_CHOISIES.filter(function (v) {
+      const c = codeCouleur(v);
+      return !selectedImages.some(function (u, i) {
+        return selectedImageColors[i] && codeCouleur(selectedImageColors[i]) === c;
+      });
+    });
+    if (sans.length) {
+      manque.push('chaque couleur a besoin d\'au moins une photo \u2014 il en manque pour : '
+        + sans.map(libelleCouleur).join(', '));
+    }
+    return manque;
+  }
+
   function tropPeuDeStock() {
     const fautives = [];
     document.querySelectorAll('#sizeGrid .stock-cell input').forEach(inp => {
