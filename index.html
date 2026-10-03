@@ -394,6 +394,60 @@ let stripePaymentElement = null;
 let stripeExpressElements = null;
 let stripeExpressElement = null;
 
+// ==========================================
+// FRAIS DE PORT (30 septembre 2026)
+// Livraison 4,90 EUR une fois + 1,50 EUR de frais de service par marque.
+// Le navigateur ne connait pas le pays d'expedition des marques : il
+// demande le montant a /api/livraison, qui utilise la meme regle que la
+// commande (api/lib/livraison.js). Le serveur recalcule tout a la commande.
+// ==========================================
+const NOMS_PAYS = { BE: 'Belgique', FR: 'France', NL: 'Pays-Bas', LU: 'Luxembourg', DE: 'Allemagne', ES: 'Espagne' };
+let FRAIS_LIVRAISON = null;   // { pays, cle, livraison, service, total_frais } en centimes
+let DEVIS_EN_COURS = 0;
+
+function clePanier() {
+  return cart.map(i => i.id).filter(Boolean).sort().join(',');
+}
+
+function euros(cents) {
+  return (cents / 100).toFixed(2).replace('.', ',') + ' \u20ac';
+}
+
+async function majFraisLivraison() {
+  const select = document.getElementById('co-pays');
+  if (!select || !cart.length) return;
+  const pays = select.value || 'BE';
+  const cle = clePanier();
+  const numero = ++DEVIS_EN_COURS;
+  const liv = document.getElementById('co-livraison');
+  const serv = document.getElementById('co-service');
+  const tot = document.getElementById('co-total');
+  if (liv) liv.textContent = '\u2026';
+  if (serv) serv.textContent = '\u2026';
+  try {
+    const res = await fetch(API + '/api/livraison?pays=' + encodeURIComponent(pays)
+      + '&produits=' + encodeURIComponent(cle));
+    const data = await res.json().catch(() => ({}));
+    if (numero !== DEVIS_EN_COURS) return;   // un devis plus recent est parti
+    if (!res.ok || typeof data.total_frais !== 'number') throw new Error(data.error || 'devis');
+    FRAIS_LIVRAISON = { pays: pays, cle: cle, livraison: data.livraison, service: data.service, total_frais: data.total_frais };
+    const articles = Math.round(cart.reduce((s, i) => s + (parseFloat(i.price) || 0), 0) * 100);
+    const totalCents = articles + data.total_frais;
+    if (liv) liv.textContent = euros(data.livraison);
+    if (serv) serv.textContent = euros(data.service);
+    if (tot) tot.textContent = euros(totalCents);
+    // Les formulaires Stripe doivent annoncer le meme montant que le paiement.
+    try { if (stripeElements) stripeElements.update({ amount: totalCents }); } catch (e) {}
+    try { if (stripeExpressElements) stripeExpressElements.update({ amount: totalCents }); } catch (e) {}
+  } catch (err) {
+    if (numero !== DEVIS_EN_COURS) return;
+    FRAIS_LIVRAISON = null;
+    if (liv) liv.textContent = '—';
+    if (serv) serv.textContent = '—';
+    showToast('Impossible de calculer la livraison. Vérifie ta connexion.');
+  }
+}
+
 // Monte le formulaire de paiement dans #payment-element. Appele a chaque
 // affichage du checkout : le HTML est regenere, donc l'ancien element est
 // perdu et il faut en remonter un. Le montant est celui du panier ; il
@@ -408,7 +462,10 @@ function initStripe() {
   try {
     if (!stripeClient) stripeClient = Stripe(STRIPE_PUBLIC_KEY);
     const total = cart.reduce((s, i) => s + (parseFloat(i.price) || 0), 0);
-    const amountInCents = Math.round(total * 100);
+    // Les frais de port arrivent juste apres (majFraisLivraison) et mettent
+    // ce montant a jour ; on part des derniers connus pour ce panier.
+    const fraisConnus = (FRAIS_LIVRAISON && FRAIS_LIVRAISON.cle === clePanier()) ? FRAIS_LIVRAISON.total_frais : 0;
+    const amountInCents = Math.round(total * 100) + fraisConnus;
     stripeElements = stripeClient.elements({
       mode: 'payment',
       amount: amountInCents,
@@ -1552,7 +1609,8 @@ function manifestoPage() {
   const faqs = [
     ["C'est quoi UNEEK exactement ?", "UNEEK est une marketplace qui regroupe des marques de mode indépendantes soigneusement sélectionnées. On donne une vitrine aux créateurs qui méritent d'être vus."],
     ["Comment sont sélectionnées les marques ?", "Chaque marque est évaluée sur la qualité de ses créations, son originalité et son histoire. On refuse volontairement le mass market."],
-    ["Quels sont les délais de livraison ?", "Entre 3 et 7 jours ouvrés en Belgique et en France. Chaque commande est préparée directement par la marque."],
+    ["Quels sont les délais de livraison ?", "Chaque marque expédie sous 3 jours ouvrés, avec un numéro de suivi. Compte ensuite 3 à 7 jours ouvrés en Belgique et en France, 5 à 10 jours ailleurs en Europe."],
+    ["Combien coûte la livraison ?", "4,90 € par commande, une seule fois, même si tu achètes chez plusieurs marques. S'y ajoutent 1,50 € de frais de service par marque, pour préparer et suivre chaque colis. Chaque marque envoie son propre colis, avec son suivi. On livre en Belgique, en France, aux Pays-Bas, au Luxembourg, en Allemagne et en Espagne."],
     ["Je peux renvoyer une pièce ?", "Oui, tu as 14 jours après réception pour changer d'avis, sans justification. La pièce doit être non portée, avec ses étiquettes. Écris-nous à contact@uneek.store avec ton numéro de commande, on t'indique où la renvoyer. Les frais de renvoi sont à ta charge ; on te rembourse le reste, frais de livraison compris."],
     ["Comment devenir partenaire UNEEK ?", "Si tu es un créateur indépendant, tu peux postuler via notre formulaire 'Devenir Partenaire' accessible depuis le menu."],
   ];
@@ -1688,8 +1746,8 @@ function checkoutPage() {
             <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Ville</label><input id="co-ville" type="text" placeholder="Bruxelles" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
             <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Code postal</label><input id="co-code" type="text" placeholder="1000" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
             <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Pays</label>
-              <select id="co-pays" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm);background:var(--white)">
-                <option value="Belgique">Belgique</option><option value="France">France</option><option value="Pays-Bas">Pays-Bas</option><option value="Luxembourg">Luxembourg</option>
+              <select id="co-pays" onchange="majFraisLivraison()" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm);background:var(--white)">
+                <option value="BE">Belgique</option><option value="FR">France</option><option value="NL">Pays-Bas</option><option value="LU">Luxembourg</option><option value="DE">Allemagne</option><option value="ES">Espagne</option>
               </select>
             </div>
           </div>
@@ -1724,8 +1782,10 @@ function checkoutPage() {
             </div>`;
           }).join('')}
           <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:12px;color:var(--gray-600);font-weight:300"><span>Sous-total</span><span>${total} &euro;</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:12px;color:var(--gray-600);font-weight:300"><span>Livraison</span><span>Gratuite</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:600;padding-top:20px;border-top:1px solid var(--gray-300);margin-top:20px;margin-bottom:28px"><span>Total</span><span>${total} &euro;</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:12px;color:var(--gray-600);font-weight:300"><span>Livraison &middot; une seule fois</span><span id="co-livraison">&hellip;</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px;color:var(--gray-600);font-weight:300"><span>Frais de service</span><span id="co-service">&hellip;</span></div>
+          <div style="font-size:12px;line-height:1.5;color:var(--gray-500);font-weight:300;margin-bottom:12px">1,50 € par marque, pour préparer et suivre chaque colis : vérification du suivi, service client, et remboursement si un colis n'arrive pas.</div>
+          <div style="display:flex;justify-content:space-between;font-size:18px;font-weight:600;padding-top:20px;border-top:1px solid var(--gray-300);margin-top:20px;margin-bottom:28px"><span>Total</span><span id="co-total">${total} &euro;</span></div>
           <!-- Meme mention, au moment ou le client engage son argent. -->
           <div style="font-size:12px;line-height:1.6;color:var(--gray-500);font-weight:300;margin-bottom:16px">
             Retour possible sous 14 jours — frais de renvoi à ta charge.
@@ -1750,7 +1810,10 @@ function validerCommande() {
   const a = document.getElementById('co-addr')?.value;
   const v = document.getElementById('co-ville')?.value;
   const c = document.getElementById('co-code')?.value;
-  const pays = document.getElementById('co-pays')?.value || 'Belgique';
+  // Le pays voyage en CODE (BE, FR...) : le texte de l'option est traduit
+  // par i18n.js, la valeur non. L'adresse garde le nom francais, comme avant.
+  const codePays = document.getElementById('co-pays')?.value || 'BE';
+  const pays = NOMS_PAYS[codePays] || codePays;
   const nickname = document.getElementById('co-nickname')?.value;
   if (!p || !n || !e || !a || !v || !c) { showToast('Remplis tous les champs'); return null; }
   if (!nickname || !nickname.trim()) {
@@ -1758,16 +1821,24 @@ function validerCommande() {
     document.getElementById('co-nickname')?.focus();
     return null;
   }
+  // Frais de port : le devis du serveur pour CE pays et CE panier. Sans lui,
+  // on ne paie pas : le montant ne correspondrait pas a la commande.
+  if (!FRAIS_LIVRAISON || FRAIS_LIVRAISON.pays !== codePays || FRAIS_LIVRAISON.cle !== clePanier()) {
+    showToast('Calcul des frais de livraison en cours — réessaie dans un instant');
+    majFraisLivraison();
+    return null;
+  }
   const total = cart.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
   return {
     prenom: p,
-    amountInCents: Math.round(total * 100),
+    amountInCents: Math.round(total * 100) + FRAIS_LIVRAISON.total_frais,
     orderData: {
       customer: {
         email: e,
         name: `${p} ${n}`,
         nickname: nickname.trim(),
         address: `${a}, ${c} ${v}, ${pays}`,
+        country: codePays,
         lang: window.UNEEK_LANG || 'fr'
       },
       items: cart.map(item => ({
@@ -2249,7 +2320,7 @@ function doLogout() {
 
 function legalPage(type) {
   const pages = {
-    cgv: { title: "Conditions Générales de Vente", items: [["Article 1 — Préambule", "UNEEK est une marketplace de mode indépendante qui met en relation des créateurs et des acheteurs. UNEEK agit en qualité d'intermédiaire : les produits sont vendus par les créateurs, qui en assurent la fabrication et l'expédition. UNEEK encaisse le paiement pour leur compte et demeure l'interlocuteur unique du client pour toute commande passée sur uneek.store.\n\nQuel que soit le créateur, les mêmes conditions s'appliquent à toute commande : le droit de rétractation de quatorze (14) jours décrit à l'article 5 est identique pour toutes les marques référencées, et un créateur ne peut y substituer ses propres conditions. Toute demande de retour, de remboursement ou de réclamation est adressée à contact@uneek.store, qui la traite et procède au remboursement."], ["Article 2 — Produits et prix", "Les produits sont des vêtements et accessoires de marques indépendantes sélectionnées. Les prix sont en euros TTC, fixés librement par chaque créateur."], ["Article 3 — Commande et paiement", "La validation du paiement constitue l'acceptation de la commande. Le paiement est sécurisé. UNEEK ne stocke aucune donnée bancaire."], ["Article 4 — Livraison", "Expédition par le créateur sous 3 jours ouvrés. Délais : 3–7 jours BE/FR, 5–10 jours reste de l'Europe."], ["Article 5 — Droit de rétractation", "14 jours à compter de la réception, sans avoir à se justifier. Produit non porté, non lavé, étiquettes intactes. Frais de renvoi à charge du client, sauf produit défectueux ou non conforme.\n\nLa demande est adressée à contact@uneek.store. Le remboursement intervient au plus tard 14 jours après cette demande et porte sur le prix des pièces renvoyées ainsi que sur les frais de livraison aller. Le détail figure sur la page « Retours et remboursements »."], ["Article 6 — Garantie légale", "Garantie légale de conformité de 2 ans conformément au Code civil belge."], ["Article 7 — Droit applicable", "Droit belge applicable. Règlement en ligne : ec.europa.eu/consumers/odr"]] },
+    cgv: { title: "Conditions Générales de Vente", items: [["Article 1 — Préambule", "UNEEK est une marketplace de mode indépendante qui met en relation des créateurs et des acheteurs. UNEEK agit en qualité d'intermédiaire : les produits sont vendus par les créateurs, qui en assurent la fabrication et l'expédition. UNEEK encaisse le paiement pour leur compte et demeure l'interlocuteur unique du client pour toute commande passée sur uneek.store.\n\nQuel que soit le créateur, les mêmes conditions s'appliquent à toute commande : le droit de rétractation de quatorze (14) jours décrit à l'article 5 est identique pour toutes les marques référencées, et un créateur ne peut y substituer ses propres conditions. Toute demande de retour, de remboursement ou de réclamation est adressée à contact@uneek.store, qui la traite et procède au remboursement."], ["Article 2 — Produits et prix", "Les produits sont des vêtements et accessoires de marques indépendantes sélectionnées. Les prix sont en euros TTC, fixés librement par chaque créateur."], ["Article 3 — Commande et paiement", "La validation du paiement constitue l'acceptation de la commande. Le paiement est sécurisé. UNEEK ne stocke aucune donnée bancaire."], ["Article 4 — Livraison", "Pays livrés : Belgique, France, Pays-Bas, Luxembourg, Allemagne et Espagne. Chaque créateur expédie les pièces de sa marque sous 3 jours ouvrés, dans un colis suivi ; une commande comprenant plusieurs marques est livrée en plusieurs colis. Délais indicatifs : 3–7 jours ouvrés en Belgique et en France, 5–10 jours vers les autres pays.\n\nFrais de livraison : 4,90 € par commande, facturés une seule fois quel que soit le nombre de marques, auxquels s'ajoutent des frais de service de 1,50 € par marque présente dans la commande. Le montant total est affiché avant la validation du paiement."], ["Article 5 — Droit de rétractation", "14 jours à compter de la réception, sans avoir à se justifier. Produit non porté, non lavé, étiquettes intactes. Frais de renvoi à charge du client, sauf produit défectueux ou non conforme.\n\nLa demande est adressée à contact@uneek.store. Le remboursement intervient au plus tard 14 jours après cette demande et porte sur le prix des pièces renvoyées ainsi que sur les frais de livraison aller. Le détail figure sur la page « Retours et remboursements »."], ["Article 6 — Garantie légale", "Garantie légale de conformité de 2 ans conformément au Code civil belge."], ["Article 7 — Droit applicable", "Droit belge applicable. Règlement en ligne : ec.europa.eu/consumers/odr"]] },
     privacy: { title: "Politique de confidentialité", items: [["Données collectées", "Nom, prénom, email, adresse de livraison et historique de commandes."], ["Utilisation", "Traitement des commandes, service client, amélioration de la plateforme."], ["Partage", "Données de livraison transmises au créateur uniquement. UNEEK ne vend aucune donnée."], ["Vos droits (RGPD)", "Droit d'accès, rectification, suppression et portabilité. Contact : contact@uneek.store"], ["Sécurité", "Paiements sécurisés. UNEEK ne stocke aucune donnée bancaire."], ["Mesure d'audience", "Nous comptons les passages sur les fiches produits, les mises en favori et les mises au panier, pour renseigner les créateurs sur leurs pièces. Ces compteurs sont anonymes et agrégés : aucune adresse IP, aucun identifiant de visiteur et aucun compte client n'y est associé. Il est donc impossible de relier ces chiffres à une personne, et rien n'est partagé avec un service tiers."]] },
     retours: { title: "Retours et remboursements", items: [
       ["Tu as 14 jours pour changer d'avis",
@@ -2299,7 +2370,7 @@ function renderPage() {
     case 'brand': app.innerHTML = brandPage(); break;
     case 'manifesto': app.innerHTML = manifestoPage(); break;
     case 'partner': app.innerHTML = partnerPage(); break;
-    case 'checkout': app.innerHTML = checkoutPage(); initStripe(); break;
+    case 'checkout': app.innerHTML = checkoutPage(); initStripe(); majFraisLivraison(); break;
     case 'login': app.innerHTML = loginPage(); break;
     case 'register': app.innerHTML = registerPage(); break;
     case 'profile': app.innerHTML = profilePage(); if (currentUser) loadProfileOrders(); break;

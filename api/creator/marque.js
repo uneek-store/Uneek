@@ -28,6 +28,7 @@
 import { supabaseAdmin } from "../lib/supabase.js";
 import { controlerAcces } from "../lib/session.js";
 import { limiter } from "../lib/limite.js";
+import { paysValide, PAYS_LIVRES } from "../lib/livraison.js";
 import { alerteAdmin, esc } from "../lib/email.js";
 
 // Une banniere pese lourd : elle est stockee en texte dans la base. Le
@@ -40,7 +41,9 @@ const SITE = process.env.SITE_URL || "https://www.uneek.store";
 // Les champs qui existent depuis toujours. banner_position est traitee a
 // part : elle a ete ajoutee plus tard, et le code doit fonctionner meme si la
 // commande SQL n'a pas encore ete passee.
-const CHAMPS = "id, name, slug, tagline, city, year, image_url";
+// ship_country (30 septembre 2026) : pays d'ou la marque expedie ses colis.
+// Il decide du forfait colis (meme pays que le client ou non).
+const CHAMPS = "id, name, slug, tagline, city, year, image_url, ship_country";
 
 // null = on ne sait pas encore, true/false = constate en interrogeant la base.
 // Cette memoire ne vit que le temps d'une instance Vercel : si la colonne est
@@ -160,7 +163,19 @@ export default async function handler(req, res) {
         }
       }
 
-      if (!banniereChangee && !cadrageChange) {
+      // Pays d'expedition : choisi par le createur, dans la liste des pays
+      // livres. Il fixe le forfait colis verse avec chaque commande.
+      let paysChange = false;
+      if (Object.prototype.hasOwnProperty.call(corps, "ship_country")) {
+        const code = paysValide(corps.ship_country);
+        if (!code) return res.status(400).json({ error: "Pays d'expédition non desservi" });
+        if (code !== (avant.ship_country || null)) {
+          maj.ship_country = code;
+          paysChange = true;
+        }
+      }
+
+      if (!banniereChangee && !cadrageChange && !paysChange) {
         return res.status(200).json({
           success: true, inchange: true, ...avant, cadrage_disponible: cadrage,
         });
@@ -185,6 +200,7 @@ export default async function handler(req, res) {
         const quoi = [];
         if (banniereChangee) quoi.push(maj.image_url ? "nouvelle bannière" : "bannière retirée");
         if (cadrageChange) quoi.push("cadrage de la bannière ajusté");
+        if (paysChange) quoi.push("pays d'expédition : " + (PAYS_LIVRES[maj.ship_country] || maj.ship_country));
 
         const lignes = [
           "<strong>" + esc(apres.name) + "</strong>",

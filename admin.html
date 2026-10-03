@@ -488,7 +488,7 @@
       <div class="card">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Marque</th><th>Ville</th><th>Email</th><th>Produits</th><th>Statut</th><th></th><th>Formule</th></tr></thead>
+            <thead><tr><th>Marque</th><th>Ville &middot; envoi depuis</th><th>Email</th><th>Produits</th><th>Statut</th><th></th><th>Formule</th></tr></thead>
             <tbody id="brands-table"></tbody>
           </table>
         </div>
@@ -720,7 +720,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-10-03-traductions';
+  const APP_VERSION = '2026-10-03-frais-de-port';
 
   async function checkAppVersion() {
     try {
@@ -1890,7 +1890,12 @@
           // complet juste en dessous qui le faisait deja.
           overviewHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div>' + impaye + '</td><td class="sec">' + esc(order.customer_name) + '</td><td class="sec">' + esc(prodLabel) + '</td><td class="sec">' + esc(item.brand_name || '') + '</td><td>' + (item.quantity || 1) + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
 
-          ordersHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div>' + impaye + '</td><td class="sec">' + esc(order.customer_name) + (order.customer_email ? '<div style="font-size:11px;color:var(--gray-400);margin-top:2px">' + esc(order.customer_email) + '</div>' : '') + '</td><td class="sec" style="font-size:12px;max-width:220px">' + esc(order.shipping_address || '') + '</td><td>' + surnomHtml(order) + '</td><td class="sec">' + esc(prodLabel) + '</td><td>' + (item.quantity || 1) + '</td><td>' + suiviHtml(item) + '</td><td class="sec">' + esc(item.brand_name || '') + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>€' + itemCommission.toFixed(0) + '</td><td>' + statusBadge + '</td></tr>';
+          // Frais de port payes par le client, rappeles sous le numero.
+          const fraisPort = (parseFloat(order.shipping_fee) || 0) + (parseFloat(order.service_fee) || 0);
+          const lignePort = fraisPort > 0
+            ? '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">port €' + fraisPort.toFixed(2) + (order.shipping_country ? ' · ' + esc(order.shipping_country) : '') + '</div>'
+            : '';
+          ordersHtml += '<tr' + faded + '><td class="bold">' + shortOrder(order.order_number) + '<div style="font-size:11px;font-weight:400;color:var(--gray-400);margin-top:2px;white-space:nowrap">' + dateCommande(order.created_at) + '</div>' + lignePort + impaye + '</td><td class="sec">' + esc(order.customer_name) + (order.customer_email ? '<div style="font-size:11px;color:var(--gray-400);margin-top:2px">' + esc(order.customer_email) + '</div>' : '') + '</td><td class="sec" style="font-size:12px;max-width:220px">' + esc(order.shipping_address || '') + '</td><td>' + surnomHtml(order) + '</td><td class="sec">' + esc(prodLabel) + '</td><td>' + (item.quantity || 1) + '</td><td>' + suiviHtml(item) + '</td><td class="sec">' + esc(item.brand_name || '') + '</td><td>€' + itemTotal.toFixed(0) + '</td><td>€' + itemCommission.toFixed(0) + (parseFloat(item.shipping_payout) > 0 ? '<div style="font-size:11px;color:var(--gray-400);margin-top:2px;white-space:nowrap">forfait colis €' + parseFloat(item.shipping_payout).toFixed(2) + '</div>' : '') + '</td><td>' + statusBadge + '</td></tr>';
 
           totalCommission += itemCommission;
         });
@@ -2172,7 +2177,7 @@
       let html = '';
       brands.forEach(b => {
         const safeName = String(b.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-        html += '<tr><td class="bold">' + esc(b.name) + '</td><td class="sec">' + esc(b.city || '') + '</td><td class="sec">' + esc(b.email || '') + '</td><td>' + (b.product_count || 0) + '</td><td><span class="badge badge-green">Active</span></td>' +
+        html += '<tr><td class="bold">' + esc(b.name) + '</td><td class="sec">' + esc(b.city || '') + ' <span style="font-size:11px;color:var(--gray-400)">&middot; ' + esc(b.ship_country || 'BE') + (b.ship_country ? '' : ' (par défaut)') + '</span></td><td class="sec">' + esc(b.email || '') + '</td><td>' + (b.product_count || 0) + '</td><td><span class="badge badge-green">Active</span></td>' +
           '<td><button class="btn-delete-brand" onclick="askDeleteBrand(\'' + b.id + '\', \'' + safeName + '\')">Supprimer</button></td>' +
           '<td>' + menuFormule(b) + '</td></tr>';
       });

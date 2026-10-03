@@ -263,7 +263,17 @@ export async function confirmationCommande(order, items) {
     + 'color:#888;margin:20px 0 4px">' + t("c_choisi", lg) + '</div>'
     + tableauArticles(items, true, lg)
     + '<table style="width:100%;border-collapse:collapse">'
-    + '<tr><td style="font-size:15px;font-weight:600;padding-top:4px">' + t("total", lg) + '</td>'
+    // Frais de port (30 septembre 2026) : detailles avant le total, pour que
+    // le client retrouve exactement ce qu'il a paye.
+    + (parseFloat(order.shipping_fee) > 0
+      ? '<tr><td style="font-size:14px;color:#555;padding:2px 0">' + t("c_frais_livraison", lg) + '</td>'
+        + '<td style="font-size:14px;color:#555;padding:2px 0;text-align:right">' + prix(order.shipping_fee) + '</td></tr>'
+      : '')
+    + (parseFloat(order.service_fee) > 0
+      ? '<tr><td style="font-size:14px;color:#555;padding:2px 0">' + t("c_frais_service", lg) + '</td>'
+        + '<td style="font-size:14px;color:#555;padding:2px 0;text-align:right">' + prix(order.service_fee) + '</td></tr>'
+      : '')
+    + '<tr><td style="font-size:15px;font-weight:600;padding-top:4px">' + t("total", lg) + '</td>' 
     + '<td style="font-size:15px;font-weight:600;padding-top:4px;text-align:right">'
     + prix(order.total_amount) + '</td></tr></table>'
     + bloqueInfo(t("bloc_livraison", lg), [

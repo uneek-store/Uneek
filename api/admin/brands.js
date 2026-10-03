@@ -31,7 +31,8 @@ export default async function handler(req, res) {
       // La formule (30 septembre) : si la colonne n'existe pas encore (SQL
       // pas lancé), on relit SANS elle — l'onglet Marques ne doit jamais
       // tomber à cause d'elle.
-      const COLONNES = "id, name, slug, tagline, city, year, image_url, logo_url, email, is_active, products(count), creator_accounts(full_name, email)";
+      // ship_country : pays d'expedition de la marque (frais de port, 3 octobre 2026).
+      const COLONNES = "id, name, slug, tagline, city, year, image_url, logo_url, email, is_active, ship_country, products(count), creator_accounts(full_name, email)";
       let { data, error } = await supabaseAdmin
         .from("brands")
         .select(COLONNES + ", formule")

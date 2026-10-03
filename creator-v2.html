@@ -824,6 +824,22 @@
       <div class="page-title">Ma page</div>
       <div class="page-sub">Ta banni&egrave;re et ton texte de pr&eacute;sentation, visibles par tout le monde</div>
 
+      <!-- Pays d'expedition (30 septembre 2026) : il fixe le forfait colis. -->
+      <div class="card" style="padding:22px;max-width:860px;margin-bottom:18px">
+        <div class="card-header" style="margin-bottom:12px">Pays d'expédition</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <select id="mp-pays" style="padding:9px 12px;border:1px solid var(--gray-200);border-radius:8px;font-size:13px;background:var(--white);min-width:200px">
+            <option value="BE">Belgique</option><option value="FR">France</option><option value="NL">Pays-Bas</option>
+            <option value="LU">Luxembourg</option><option value="DE">Allemagne</option><option value="ES">Espagne</option>
+          </select>
+          <button class="btn-save" onclick="enregistrerPaysExpedition()" id="mp-pays-btn">Enregistrer</button>
+          <div id="mp-pays-msg" style="font-size:13px;display:none"></div>
+        </div>
+        <div style="font-size:12px;color:var(--gray-400);margin-top:12px;line-height:1.6">
+          Le pays d'où tu envoies tes colis. Pour chaque commande, tu reçois un forfait colis : 4,90 € si ton client habite dans le même pays que toi, 6,40 € s'il habite dans un autre pays.
+        </div>
+      </div>
+
       <div class="card" style="padding:22px;max-width:860px">
         <div class="card-header" style="margin-bottom:18px">Banni&egrave;re</div>
         <div id="mp-apercu-banniere"
@@ -1168,7 +1184,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-10-03-traductions';
+  const APP_VERSION = '2026-10-03-frais-de-port';
 
   async function checkAppVersion() {
     try {
@@ -2323,6 +2339,8 @@
       maPage = await res.json();
       banniereChoisie = null;
       document.getElementById('mp-cadrage').value = cadrageValide(maPage.banner_position);
+      // Pays d'expedition : non renseigne = Belgique, comme le calcul serveur.
+      document.getElementById('mp-pays').value = maPage.ship_country || 'BE';
       // Le curseur n'apparait que si la base sait le retenir.
       document.getElementById('mp-bloc-cadrage').style.display =
         maPage.cadrage_disponible === false ? 'none' : '';
@@ -2387,6 +2405,30 @@
     m.textContent = texte;
     m.style.color = couleur;
     m.style.display = 'block';
+  }
+
+  // Pays d'expedition : un envoi a part, sans toucher a la banniere.
+  async function enregistrerPaysExpedition() {
+    const bouton = document.getElementById('mp-pays-btn');
+    const msg = document.getElementById('mp-pays-msg');
+    const dire = (t, c) => { msg.textContent = t; msg.style.color = c; msg.style.display = t ? 'block' : 'none'; };
+    bouton.disabled = true;
+    dire('Enregistrement…', 'var(--gray-500)');
+    try {
+      const res = await fetch(API_BASE + '/creator/marque', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify({ brand_id: currentBrand.id, ship_country: document.getElementById('mp-pays').value })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { dire(data.error || 'Erreur', 'var(--red)'); return; }
+      if (maPage) maPage.ship_country = data.ship_country || document.getElementById('mp-pays').value;
+      dire(data.inchange ? 'Rien n\'avait changé.' : '\u2713 Enregistré.', 'var(--green)');
+    } catch (err) {
+      dire('Erreur réseau, réessaie.', 'var(--red)');
+    } finally {
+      bouton.disabled = false;
+    }
   }
 
   async function enregistrerMaPage() {

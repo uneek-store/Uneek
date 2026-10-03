@@ -8,6 +8,7 @@ import { stockParCouleur, lireStock, ecrireStock, stockTotal } from "./lib/stock
 import { controlerAcces } from "./lib/session.js";
 import { limiter } from "./lib/limite.js";
 import { nomTransporteur, lienSuivi } from "./lib/suivi.js";
+import { calculerFrais, paysValide, PAYS_LIVRES } from "./lib/livraison.js";
 import crypto from "crypto";
 import {
   confirmationCommande,
@@ -71,7 +72,11 @@ async function inscrireVirements(order, orderItems, chargeId) {
   const parMarque = new Map();
   for (const item of orderItems) {
     if (!item.brand_id) continue;
-    const cents = Math.round((parseFloat(item.creator_payout) || 0) * 100);
+    // Part sur les articles + forfait colis (frais de port, 30 septembre
+    // 2026) : le forfait est porte par UNE ligne de chaque marque, et part
+    // dans le meme virement, 14 jours apres la commande.
+    const cents = Math.round((parseFloat(item.creator_payout) || 0) * 100)
+      + Math.round((parseFloat(item.shipping_payout) || 0) * 100);
     if (cents <= 0) continue;
     parMarque.set(item.brand_id, (parMarque.get(item.brand_id) || 0) + cents);
   }
@@ -283,6 +288,7 @@ export default async function handler(req, res) {
           commission_amount: item.commission_amount || 0,
           creator_payout: item.creator_payout || 0,
           fulfillment_status: item.fulfillment_status || "pending",
+          shipping_payout: item.shipping_payout || 0,
           // Numero de suivi saisi par le createur (30 septembre 2026).
           tracking_number: item.tracking_number || null,
           tracking_carrier_name: nomTransporteur(item.tracking_carrier) || null,
@@ -313,6 +319,10 @@ export default async function handler(req, res) {
           // panier abandonne au paiement : les deux s'affichaient a l'identique,
           // avec leur montant, dans la liste des commandes.
           payment_status: order.payment_status || "pending",
+          // Frais de port payes par le client (30 septembre 2026).
+          shipping_country: order.shipping_country || null,
+          shipping_fee: order.shipping_fee || 0,
+          service_fee: order.service_fee || 0,
           shipping_status,
           created_at: order.created_at,
           items,
@@ -424,8 +434,55 @@ export default async function handler(req, res) {
         };
       });
 
-      // Le montant vient d'etre calcule a partir des prix du catalogue, pas
-      // de ce qu'annonce le navigateur : c'est lui qui fait foi face a Stripe.
+      // FRAIS DE PORT (30 septembre 2026) — reference : api/lib/livraison.js.
+      // Livraison une fois par commande + frais de service par marque, payes
+      // par le client ; un forfait par marque verse au createur.
+      // Jamais de refus ici : quand cette ligne s'execute, le client a deja
+      // paye. Un pays manquant (ancien onglet) est lu dans l'adresse ; a
+      // defaut, le calcul traite chaque colis comme partant a l'etranger, et
+      // un montant qui ne colle pas est signale "non paye" plus bas, comme
+      // avant — la commande existe quand meme.
+      let paysClient = paysValide(customer.country);
+      if (!paysClient) {
+        const fin = String(customer.address || "").split(",").pop().trim().toLowerCase();
+        paysClient = Object.keys(PAYS_LIVRES).find((k) => PAYS_LIVRES[k].toLowerCase() === fin) || null;
+      }
+      const marquesDuPanier = [...new Set(orderItems.map((l) => l.brand_id).filter(Boolean))];
+      let paysDesMarques = [];
+      if (marquesDuPanier.length) {
+        const { data: lignesMarques, error: errMarques } = await supabaseAdmin
+          .from("brands")
+          .select("id, ship_country")
+          .in("id", marquesDuPanier);
+        if (errMarques) {
+          console.error("[livraison] pays des marques illisible :", errMarques.message,
+            "— marques traitees comme belges");
+        }
+        paysDesMarques = marquesDuPanier.map((id) => {
+          const m = (lignesMarques || []).find((x) => String(x.id) === String(id));
+          return { brand_id: id, pays: m ? m.ship_country : null };
+        });
+      }
+      const frais = calculerFrais(paysClient, paysDesMarques);
+
+      // Le forfait de chaque marque sur sa PREMIERE ligne : une marque, un
+      // colis, un forfait — meme avec plusieurs pieces.
+      const dejaPorte = new Set();
+      for (const l of orderItems) {
+        const id = l.brand_id ? String(l.brand_id) : null;
+        if (id && !dejaPorte.has(id) && frais.forfaits[id] !== undefined) {
+          l.shipping_payout = frais.forfaits[id] / 100;
+          dejaPorte.add(id);
+        } else {
+          l.shipping_payout = 0;
+        }
+      }
+      const totalArticles = totalAmount;
+      totalAmount = Math.round(totalArticles * 100 + frais.total_frais) / 100;
+
+      // Le montant vient d'etre calcule a partir des prix du catalogue et
+      // des frais de port, pas de ce qu'annonce le navigateur : c'est lui qui
+      // fait foi face a Stripe.
       const paiement = await verifierPaiement(
         payment_intent_id,
         Math.round(totalAmount * 100)
@@ -446,8 +503,12 @@ export default async function handler(req, res) {
           // ecrire la confirmation, ET l'e-mail « ton colis est parti » envoye
           // des jours plus tard, quand plus rien d'autre ne la connait.
           lang: customer.lang || null,
+          // Ce que le client a paye : articles + livraison + frais de service.
           total_amount: totalAmount,
           uneek_commission: totalCommission,
+          shipping_country: paysClient,
+          shipping_fee: frais.livraison / 100,
+          service_fee: frais.service / 100,
           // Toujours enregistre, meme si la verification n'a pas abouti :
           // c'est la cle qui permet au webhook de retrouver la commande.
           payment_id: payment_intent_id || null,

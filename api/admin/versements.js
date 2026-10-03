@@ -136,7 +136,7 @@ export default async function handler(req, res) {
     if (payees.length) {
       const { data, error } = await supabaseAdmin
         .from("order_items")
-        .select("order_id, brand_id, product_price, quantity, creator_payout, commission_amount, commission_percent")
+        .select("order_id, brand_id, product_price, quantity, creator_payout, shipping_payout, commission_amount, commission_percent")
         .in("order_id", payees.map((c) => c.id));
       if (error) throw new Error("lignes de commande : " + error.message);
       lignes = data || [];
@@ -218,7 +218,9 @@ export default async function handler(req, res) {
       const m = mois(cle);
       const b = marqueDuMois(m, l.brand_id);
       const vente = cents(l.product_price) * (l.quantity || 1);
-      const part = cents(l.creator_payout);
+      // Ce qui est du au createur : sa part sur l'article + le forfait colis
+      // (frais de port, 30 septembre 2026), exactement ce qui part au virement.
+      const part = cents(l.creator_payout) + cents(l.shipping_payout);
       const commission = cents(l.commission_amount);
 
       m.commandes.add(l.order_id);
