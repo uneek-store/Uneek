@@ -18,7 +18,6 @@ export default async function handler(req, res) {
   const acces = controlerAcces(req, { admin: true, nom: "/api/admin/pending" });
   if (!acces.ok) return res.status(401).json({ error: "Non autorisé" });
 
-  // TODO: Vérifier que c'est bien l'admin (via le token)
 
   try {
     // --- LISTE DE TOUTES LES MODIFICATIONS ---

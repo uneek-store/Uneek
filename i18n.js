@@ -757,7 +757,13 @@
     "Minimum 3 pi\u00e8ces - c'est dans les r\u00e8gles UNEEK.": { en: "Minimum 3 pieces \u2014 it's in the UNEEK rules.", nl: "Minimaal 3 stuks \u2014 dat staat in de UNEEK-regels.", de: "Mindestens 3 St\u00fcck \u2014 so steht es in den UNEEK-Regeln.", es: "M\u00ednimo 3 piezas \u2014 est\u00e1 en las reglas de UNEEK." },
     "Minimum 3 pi\u00e8ces par taille propos\u00e9e - c'est dans les r\u00e8gles UNEEK.": { en: "Minimum 3 pieces per size offered \u2014 it's in the UNEEK rules.", nl: "Minimaal 3 stuks per aangeboden maat \u2014 dat staat in de UNEEK-regels.", de: "Mindestens 3 St\u00fcck pro angebotener Gr\u00f6\u00dfe \u2014 so steht es in den UNEEK-Regeln.", es: "M\u00ednimo 3 piezas por talla ofrecida \u2014 est\u00e1 en las reglas de UNEEK." },
     "Laisse 0 pour une taille que tu ne proposes pas.": { en: "Leave 0 for a size you don't offer.", nl: "Laat 0 staan voor een maat die je niet aanbiedt.", de: "Lass 0 stehen bei einer Gr\u00f6\u00dfe, die du nicht anbietest.", es: "Deja 0 para una talla que no ofreces." },
-    "Minimum 3 pi\u00e8ces par taille propos\u00e9e.": { en: "Minimum 3 pieces per size offered.", nl: "Minimaal 3 stuks per aangeboden maat.", de: "Mindestens 3 St\u00fcck pro angebotener Gr\u00f6\u00dfe.", es: "M\u00ednimo 3 piezas por talla ofrecida." }
+    "Minimum 3 pi\u00e8ces par taille propos\u00e9e.": { en: "Minimum 3 pieces per size offered.", nl: "Minimaal 3 stuks per aangeboden maat.", de: "Mindestens 3 St\u00fcck pro angebotener Gr\u00f6\u00dfe.", es: "M\u00ednimo 3 piezas por talla ofrecida." },
+    "pi\u00e8ces disponibles": { en: "pieces available", nl: "stuks beschikbaar", de: "St\u00fccke verf\u00fcgbar", es: "piezas disponibles" },
+    "pi\u00e8ces": { en: "pieces", nl: "stuks", de: "St\u00fccke", es: "piezas" },
+    "depuis": { en: "est.", nl: "sinds", de: "seit", es: "desde" },
+    "Tu as d\u00e9j\u00e0 un compte ?": { en: "Already have an account?", nl: "Heb je al een account?", de: "Hast du schon ein Konto?", es: "\u00bfYa tienes una cuenta?" },
+    "pour pr\u00e9remplir tes infos.": { en: "to fill in your details automatically.", nl: "om je gegevens vooraf in te vullen.", de: "damit deine Daten vorausgef\u00fcllt werden.", es: "para rellenar tus datos autom\u00e1ticamente." },
+    "mode test, aucun argent r\u00e9el n'est d\u00e9bit\u00e9": { en: "test mode \u2014 no real money is charged", nl: "testmodus \u2014 er wordt geen echt geld afgeschreven", de: "Testmodus \u2014 es wird kein echtes Geld abgebucht", es: "modo de prueba \u2014 no se cobra dinero real" }
   };
 
   /* ---------- 2. phrases avec un chiffre ou un nom au milieu ---------- */

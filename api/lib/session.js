@@ -28,7 +28,14 @@ function secret() {
 }
 
 export function modeAuth() {
-  return String(process.env.AUTH_MODE || "observation").toLowerCase();
+  const choisi = String(process.env.AUTH_MODE || "").toLowerCase();
+  if (choisi) return choisi;
+  // Defaut SUR : des qu'un secret existe, on refuse pour de bon. Le mode
+  // observation laisse TOUT passer ; en faire le defaut, c'est rouvrir le
+  // site en grand le jour ou AUTH_MODE disparait d'un environnement.
+  // On ne garde "observation" que sans secret du tout : la, rien ne peut
+  // etre verifie, et refuser bloquerait un site jamais configure.
+  return secret() ? "strict" : "observation";
 }
 
 function signature(corps) {
