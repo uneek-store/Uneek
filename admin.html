@@ -531,6 +531,7 @@
             <div class="fin-case-sous" id="fin-toi-pct">&nbsp;</div>
           </div>
           <div class="fin-case-bas">
+            <div class="fin-duo"><span class="fin-duo-lab">Livraison <span id="fin-port-detail" style="font-weight:400;color:var(--gray-400)"></span></span><span class="fin-duo-val" id="fin-port">&mdash;</span></div>
             <div class="fin-duo"><span class="fin-duo-lab">Frais Stripe</span><span class="fin-duo-val" id="fin-frais">&mdash;</span></div>
             <div class="fin-duo total"><span class="fin-duo-lab">Il te reste</span><span class="fin-duo-val" id="fin-net">&euro;0</span></div>
           </div>
@@ -720,7 +721,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-10-03-frais-de-port';
+  const APP_VERSION = '2026-10-03-finances-livraison';
 
   async function checkAppVersion() {
     try {
@@ -2055,8 +2056,18 @@
     // chiffre faux sur la seule ligne qui dit ce que tu gardes vraiment.
     const fraisConnus = m.frais_cents !== null && m.frais_cents !== undefined;
     document.getElementById('fin-frais').textContent = fraisConnus ? '− ' + euros(m.frais_cents) : '—';
+    // Livraison (3 octobre 2026) : ce que les clients ont paye (livraison +
+    // frais de service) moins les forfaits colis dus aux createurs. Negatif
+    // quand les paniers de plusieurs marques coutent plus qu'ils ne rapportent.
+    const port = m.port_cents || 0, forfaits = m.forfaits_cents || 0;
+    const solde = port - forfaits;
+    const elPort = document.getElementById('fin-port');
+    elPort.textContent = (port || forfaits) ? (solde < 0 ? '− ' + euros(-solde) : '+ ' + euros(solde)) : '—';
+    elPort.style.color = solde < 0 ? 'var(--red)' : '';
+    document.getElementById('fin-port-detail').textContent = (port || forfaits)
+      ? '(' + euros(port) + ' encaissés − ' + euros(forfaits) + ' de forfaits)' : '';
     document.getElementById('fin-net').textContent = fraisConnus
-      ? euros(m.toi_cents - m.frais_cents) : euros(m.toi_cents);
+      ? euros(m.toi_cents + solde - m.frais_cents) : euros(m.toi_cents + solde);
 
     document.getElementById('fin-titre-marques').textContent = 'Par marque — ' + m.nom;
 
@@ -2070,7 +2081,7 @@
             + (b.createur ? '<div style="font-size:11px;font-weight:400;color:var(--gray-400)">' + esc(b.createur) + '</div>' : '')
             + '</td><td class="sec">' + euros(b.ventes_cents) + '</td>'
             + '<td class="sec">' + tauxTexte(b) + '</td>'
-            + '<td class="sec">' + euros(b.createurs_cents) + '</td>'
+            + '<td class="sec">' + euros(b.createurs_cents) + (b.forfaits_cents > 0 ? '<div style="font-size:11px;color:var(--gray-400);margin-top:2px;white-space:nowrap">+ ' + euros(b.forfaits_cents) + ' de forfaits colis</div>' : '') + '</td>'
             + '<td class="sec">' + euros(b.toi_cents) + '</td>'
             + '<td>' + (b.a_la_main_cents > 0
                 ? '<span class="fin-rouge">' + euros(b.a_la_main_cents) + '</span>'

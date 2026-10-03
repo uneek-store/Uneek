@@ -123,7 +123,8 @@ export default async function handler(req, res) {
     //    rien a personne : l'inclure gonflerait la dette envers les createurs.
     const { data: commandes, error: erreurCommandes } = await supabaseAdmin
       .from("orders")
-      .select("id, created_at, stripe_charge_id")
+      // shipping_fee / service_fee : frais de port payes par le client (3 octobre 2026).
+      .select("id, created_at, stripe_charge_id, shipping_fee, service_fee")
       .eq("payment_status", "paid");
     if (erreurCommandes) throw new Error("commandes : " + erreurCommandes.message);
 
@@ -184,6 +185,11 @@ export default async function handler(req, res) {
           ventes_cents: 0,
           createurs_cents: 0,
           toi_cents: 0,
+          // Livraison : ce que les clients ont paye (livraison + frais de
+          // service) et les forfaits colis dus aux createurs. La difference
+          // est pour UNEEK — elle peut etre negative (paniers multi-marques).
+          port_cents: 0,
+          forfaits_cents: 0,
           frais_cents: 0,
           frais_complets: true, // faux des qu'une charge du mois manque
           taux_min: null,
@@ -203,6 +209,7 @@ export default async function handler(req, res) {
           compte_relie: !!(compte && compte.stripe_account_id),
           ventes_cents: 0,
           createurs_cents: 0,
+          forfaits_cents: 0,
           toi_cents: 0,
           suivi_cents: 0,
           taux_min: null,
@@ -218,9 +225,13 @@ export default async function handler(req, res) {
       const m = mois(cle);
       const b = marqueDuMois(m, l.brand_id);
       const vente = cents(l.product_price) * (l.quantity || 1);
-      // Ce qui est du au createur : sa part sur l'article + le forfait colis
-      // (frais de port, 30 septembre 2026), exactement ce qui part au virement.
-      const part = cents(l.creator_payout) + cents(l.shipping_payout);
+      // La part du createur sur l'article reste seule ici, pour que
+      // ventes = createurs + toi continue de tomber juste. Le forfait colis
+      // est compte a part : il s'ajoute a ce qui part au virement.
+      const part = cents(l.creator_payout);
+      const forfait = cents(l.shipping_payout);
+      m.forfaits_cents += forfait;
+      b.forfaits_cents += forfait;
       const commission = cents(l.commission_amount);
 
       m.commandes.add(l.order_id);
@@ -244,6 +255,7 @@ export default async function handler(req, res) {
       const cle = moisDeLaCommande.get(c.id);
       if (!cle || !parMois.has(cle)) continue;
       const m = parMois.get(cle);
+      m.port_cents += cents(c.shipping_fee) + cents(c.service_fee);
       if (!c.stripe_charge_id) { m.frais_complets = false; continue; }
       const f = fraisDe.get(c.stripe_charge_id);
       if (f === undefined) m.frais_complets = false;
@@ -295,12 +307,14 @@ export default async function handler(req, res) {
         return {
           cle, nom: nomDuMois(cle), commandes: 0, ventes_cents: 0,
           createurs_cents: 0, toi_cents: 0, frais_cents: null,
+          port_cents: 0, forfaits_cents: 0, port_solde_cents: 0,
           a_la_main_cents: 0, taux_min: null, taux_max: null, marques: [],
         };
       }
       const marquesTriees = [...m.marques.values()]
         .map((b) => {
-          const restant = Math.max(0, b.createurs_cents - b.suivi_cents);
+          // Ce qui doit partir au virement : part sur les articles + forfaits.
+          const restant = Math.max(0, b.createurs_cents + b.forfaits_cents - b.suivi_cents);
           return {
             brand_id: b.brand_id,
             nom: b.nom,
@@ -308,6 +322,7 @@ export default async function handler(req, res) {
             compte_relie: b.compte_relie,
             ventes_cents: b.ventes_cents,
             createurs_cents: b.createurs_cents,
+            forfaits_cents: b.forfaits_cents,
             toi_cents: b.toi_cents,
             a_la_main_cents: restant,
             taux_min: b.taux_min,
@@ -323,6 +338,9 @@ export default async function handler(req, res) {
         ventes_cents: m.ventes_cents,
         createurs_cents: m.createurs_cents,
         toi_cents: m.toi_cents,
+        port_cents: m.port_cents,
+        forfaits_cents: m.forfaits_cents,
+        port_solde_cents: m.port_cents - m.forfaits_cents,
         frais_cents: m.frais_complets ? m.frais_cents : null,
         a_la_main_cents: marquesTriees.reduce((s, b) => s + b.a_la_main_cents, 0),
         taux_min: m.taux_min,
