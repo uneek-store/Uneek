@@ -965,10 +965,10 @@
 
     <label>Catégorie</label>
     <select id="f-cat">
-      <option>Tops</option>
-      <option>Bottoms</option>
-      <option>Outerwear</option>
-      <option>Accessories</option>
+      <option value="Tops">Tops</option>
+      <option value="Bottoms">Bottoms</option>
+      <option value="Outerwear">Outerwear</option>
+      <option value="Accessories">Accessories</option>
     </select>
 
     <label>Description</label>
@@ -1168,7 +1168,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-10-03-photos-pastilles';
+  const APP_VERSION = '2026-10-03-traductions';
 
   async function checkAppVersion() {
     try {
@@ -2032,7 +2032,7 @@
   }
 
   // --- PHOTOS DU PRODUIT ---
-  const MAX_IMAGES = 5;
+  const MAX_IMAGES = 9;
   let selectedImages = [];
   // La couleur de chaque photo, dans le MEME ordre que selectedImages.
   // Une case vide veut dire "toutes les couleurs".
@@ -2108,7 +2108,9 @@
     }
     brancherMenusCouleurPhoto();
     const cnt = document.getElementById('imgCount');
-    cnt.textContent = selectedImages.length + ' / ' + MAX_IMAGES + ' photo' + (selectedImages.length > 1 ? 's' : '');
+    // Le nombre et le mot sont separes : "1 / 9 photo" en un seul morceau
+    // serait une cle differente a chaque photo ajoutee, donc jamais traduite.
+    cnt.innerHTML = '<span>' + selectedImages.length + ' / ' + MAX_IMAGES + '</span> <span>photos</span>';
     cnt.className = 'img-count' + (selectedImages.length >= MAX_IMAGES ? ' full' : '');
   }
 
@@ -2653,7 +2655,10 @@
       const fautivesEdit = tropPeuDeStock();
       const errEdit = document.getElementById('stockError');
       if (fautivesEdit.length > 0) {
-        errEdit.textContent = 'Minimum 3 pièces par taille proposée — à corriger : ' + fautivesEdit.join(', ');
+        // La phrase d'un cote, la liste de l'autre : melangees, la cle
+        // changerait a chaque taille fautive et ne serait jamais traduite.
+        errEdit.innerHTML = '<div>Minimum 3 pièces par taille proposée.</div><div>'
+          + fautivesEdit.map(function (f) { return esc(f); }).join(' · ') + '</div>';
         errEdit.style.display = 'block';
         return;
       }
@@ -2673,7 +2678,8 @@
       const fautives = tropPeuDeStock();
       const err = document.getElementById('stockError');
       if (fautives.length > 0) {
-        err.textContent = 'Minimum 3 pièces par taille — à corriger : ' + fautives.join(', ');
+        err.innerHTML = '<div>Minimum 3 pièces par taille proposée.</div><div>'
+          + fautives.map(function (f) { return esc(f); }).join(' · ') + '</div>';
         err.style.display = 'block';
         return;
       }
@@ -2750,9 +2756,15 @@
     if (champ) champ.value = COULEURS_CHOISIES.join(', ');
     var note = document.getElementById('f-couleurs-note');
     if (note) {
-      note.textContent = COULEURS_CHOISIES.length
-        ? COULEURS_CHOISIES.map(libelleCouleur).join(' \u00b7 ')
-        : 'Choisis les couleurs disponibles';
+      if (COULEURS_CHOISIES.length) {
+        // Un nom de couleur par element : colles ensemble, ils formeraient
+        // une chaine ("Rouge \u00b7 Vert") que le dictionnaire ne connait pas.
+        note.innerHTML = COULEURS_CHOISIES.map(function (v) {
+          return '<span style="margin-right:10px">' + esc(libelleCouleur(v)) + '</span>';
+        }).join('');
+      } else {
+        note.textContent = 'Choisis les couleurs disponibles';
+      }
     }
     updateSizeGrid();
     // Les menus sous les photos listent les couleurs du produit : ils doivent
@@ -2905,9 +2917,10 @@
     if (titre) titre.style.display = unique ? 'none' : '';
     const note = document.getElementById('noteStock');
     if (note) {
-      note.textContent = unique
-        ? "Minimum 3 pi\u00e8ces - c'est dans les r\u00e8gles UNEEK."
-        : "Minimum 3 pi\u00e8ces par taille propos\u00e9e - c'est dans les r\u00e8gles UNEEK. Laisse 0 pour une taille que tu ne proposes pas.";
+      note.innerHTML = unique
+        ? "<span>Minimum 3 pi\u00e8ces - c'est dans les r\u00e8gles UNEEK.</span>"
+        : "<span>Minimum 3 pi\u00e8ces par taille propos\u00e9e - c'est dans les r\u00e8gles UNEEK.</span>"
+          + " <span>Laisse 0 pour une taille que tu ne proposes pas.</span>";
     }
     updateSizeGrid();
   }
