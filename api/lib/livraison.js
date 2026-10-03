@@ -11,7 +11,7 @@
 //   - client dans le meme pays que la marque : la livraison seule ;
 //   - client dans un autre pays : livraison + frais de service de sa marque,
 //     l'etiquette coutant plus cher quand le colis passe une frontiere.
-// Le forfait s'ajoute au virement deja prevu, 14 jours apres la commande.
+// Le forfait s'ajoute au virement deja prevu, 21 jours apres l'expedition.
 //
 // Tout est en CENTIMES : pas d'arrondi flottant sur de l'argent.
 

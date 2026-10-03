@@ -1184,7 +1184,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-10-03-carte-en-direct';
+  const APP_VERSION = '2026-10-03-versement-21-jours';
 
   async function checkAppVersion() {
     try {
@@ -1745,7 +1745,7 @@
       }
       if (d.virements_actifs) {
         etatEl.innerHTML = '<strong style="color:var(--green,#00b341)">Compte relié.</strong>'
-          + '<br>Tes ventes te sont versées automatiquement 14 jours après chaque commande.';
+          + '<br>Tes ventes te sont versées automatiquement 21 jours après l\'expédition de chaque commande.';
         btn.textContent = 'Modifier mes informations bancaires';
         btn.style.display = '';
         return;

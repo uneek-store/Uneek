@@ -53,7 +53,7 @@ async function verifierPaiement(paymentIntentId, montantAttenduEnCents) {
 }
 
 // Inscrit la part qui revient a chaque createur sur la liste des virements.
-// Le robot de /api/cron/stripe-transfers viendra la lire 14 jours plus tard
+// Le robot de /api/cron/stripe-transfers viendra la lire 21 jours apres l'expedition
 // et executera le virement. Sans cette etape, l'argent encaisse reste chez
 // UNEEK indefiniment.
 //
@@ -74,7 +74,7 @@ async function inscrireVirements(order, orderItems, chargeId) {
     if (!item.brand_id) continue;
     // Part sur les articles + forfait colis (frais de port, 30 septembre
     // 2026) : le forfait est porte par UNE ligne de chaque marque, et part
-    // dans le meme virement, 14 jours apres la commande.
+    // dans le meme virement, 21 jours apres l'expedition.
     const cents = Math.round((parseFloat(item.creator_payout) || 0) * 100)
       + Math.round((parseFloat(item.shipping_payout) || 0) * 100);
     if (cents <= 0) continue;
@@ -540,7 +540,7 @@ export default async function handler(req, res) {
       }
 
       // Inscrire la part de chaque createur sur la liste des virements.
-      // C'est ce que le robot des 14 jours viendra lire. Sans cette etape,
+      // C'est ce que le robot des virements viendra lire. Sans cette etape,
       // l'argent reste indefiniment chez UNEEK.
       // Volontairement sans jamais faire echouer la commande : le client a
       // paye, sa commande doit exister. Une part manquante se rattrape a la

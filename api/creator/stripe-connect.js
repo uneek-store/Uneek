@@ -5,7 +5,7 @@
 // POURQUOI CE FICHIER EXISTE
 // Jusqu'ici, aucun createur n'avait de compte Stripe. Les commandes etaient
 // encaissees par UNEEK et la part du createur ne repartait jamais : le robot
-// des virements a 14 jours tournait chaque nuit sur une liste toujours vide.
+// des virements tournait chaque nuit sur une liste toujours vide.
 // Ce fichier est le premier maillon manquant — celui par lequel le createur
 // declare a Stripe qui il est et sur quel compte il veut etre paye.
 //

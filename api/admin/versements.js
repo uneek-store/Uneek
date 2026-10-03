@@ -30,9 +30,11 @@
 import Stripe from "stripe";
 import { supabaseAdmin } from "../lib/supabase.js";
 import { controlerAcces } from "../lib/session.js";
+import { JOURS_APRES_EXPEDITION, dateDeLiberation, rangerParColis } from "../lib/virement.js";
 
-// Meme delai que le robot des virements (/api/cron/stripe-transfers).
-const JOURS_AVANT_VIREMENT = 14;
+// Meme regle que le robot des virements (/api/cron/stripe-transfers) :
+// 21 jours apres l'expedition du colis. Voir api/lib/virement.js.
+const JOURS_AVANT_VIREMENT = JOURS_APRES_EXPEDITION;
 // Combien de mois on renvoie au maximum, meme si la boutique est plus vieille.
 const MOIS_MAX = 24;
 
@@ -137,7 +139,7 @@ export default async function handler(req, res) {
     if (payees.length) {
       const { data, error } = await supabaseAdmin
         .from("order_items")
-        .select("order_id, brand_id, product_price, quantity, creator_payout, shipping_payout, commission_amount, commission_percent")
+        .select("order_id, brand_id, product_price, quantity, creator_payout, shipping_payout, commission_amount, commission_percent, fulfillment_status, shipped_at")
         .in("order_id", payees.map((c) => c.id));
       if (error) throw new Error("lignes de commande : " + error.message);
       lignes = data || [];
@@ -266,7 +268,8 @@ export default async function handler(req, res) {
     // le mois de la commande d'origine — pas celui du virement.
     let exigible_cents = 0;
     let prochaineLiberation = null;
-    const limite = Date.now() - JOURS_AVANT_VIREMENT * 24 * 60 * 60 * 1000;
+    const parColis = rangerParColis(lignes);
+    const aLInstant = Date.now();
 
     for (const v of virements || []) {
       const montant = parseInt(v.amount, 10) || 0;
@@ -276,14 +279,14 @@ export default async function handler(req, res) {
         marqueDuMois(parMois.get(cle), brandId).suivi_cents += montant;
       }
       if (v.status === "pending") {
-        const ne = new Date(v.created_at).getTime();
-        if (ne < limite) {
+        // Colis pas encore (entierement) expedie : liberation === null, rien
+        // n'est exigible et aucune date ne peut etre annoncee.
+        const liberation = dateDeLiberation(parColis.get(v.order_id + "|" + brandId), v.created_at);
+        if (liberation === null) continue;
+        if (liberation <= aLInstant) {
           exigible_cents += montant;
-        } else {
-          const liberation = ne + JOURS_AVANT_VIREMENT * 24 * 60 * 60 * 1000;
-          if (prochaineLiberation === null || liberation < prochaineLiberation) {
-            prochaineLiberation = liberation;
-          }
+        } else if (prochaineLiberation === null || liberation < prochaineLiberation) {
+          prochaineLiberation = liberation;
         }
       }
     }

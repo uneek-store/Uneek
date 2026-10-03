@@ -1,8 +1,10 @@
 // /api/cron/stripe-transfers.js
-// Cron job pour transférer l'argent aux créateurs après 14 jours
+// Cron job pour transférer l'argent aux créateurs 21 jours après
+// l'expédition de leur colis (règle : api/lib/virement.js).
 
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
+import { JOURS_APRES_EXPEDITION, dateDeLiberation, rangerParColis } from '../lib/virement.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const supabase = createClient(
@@ -21,25 +23,58 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1. Récupérer toutes les pending_transfers qui ont > 14 jours
-    const fourteenDaysAgo = new Date();
-    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+    // 1. Les virements en attente. Un colis part toujours APRES la commande :
+    //    une ligne de moins de 21 jours ne peut donc pas etre mure. Ce premier
+    //    tri evite de lire toute la table.
+    const seuil = new Date();
+    seuil.setDate(seuil.getDate() - JOURS_APRES_EXPEDITION);
 
-    const { data: pendingTransfers, error: fetchError } = await supabase
+    const { data: candidats, error: fetchError } = await supabase
       .from('pending_transfers')
       .select('*')
       .eq('status', 'pending')
-      .lt('created_at', fourteenDaysAgo.toISOString());
+      .lt('created_at', seuil.toISOString());
 
     if (fetchError) {
       console.error('Erreur lors de la récupération des transferts :', fetchError);
       return res.status(500).json({ error: 'Failed to fetch pending transfers' });
     }
 
-    if (!pendingTransfers || pendingTransfers.length === 0) {
+    // 1 bis. On ne garde que les colis ENTIEREMENT expedies depuis au moins
+    //    21 jours. Un colis pas encore parti (ou renvoye) attend : rien n'est
+    //    vire, la ligne reste « pending » et sera relue la nuit suivante.
+    let pendingTransfers = [];
+    let enAttenteExpedition = 0;
+    if (candidats && candidats.length) {
+      const [comptes, lignes] = await Promise.all([
+        supabase.from('creator_accounts').select('id, brand_id')
+          .in('id', [...new Set(candidats.map((t) => t.creator_id))]),
+        supabase.from('order_items').select('order_id, brand_id, fulfillment_status, shipped_at')
+          .in('order_id', [...new Set(candidats.map((t) => t.order_id))]),
+      ]);
+      if (comptes.error || lignes.error) {
+        // Dans le doute, on ne vire RIEN : mieux vaut un jour de retard qu'un
+        // virement parti trop tot.
+        console.error('Lecture des expeditions impossible :',
+          (comptes.error || lignes.error).message);
+        return res.status(500).json({ error: 'Failed to read shipments' });
+      }
+      const marqueDe = new Map((comptes.data || []).map((c) => [c.id, c.brand_id]));
+      const parColis = rangerParColis(lignes.data);
+      const maintenant = Date.now();
+      for (const t of candidats) {
+        const colis = parColis.get(t.order_id + '|' + marqueDe.get(t.creator_id));
+        const liberation = dateDeLiberation(colis, t.created_at);
+        if (liberation !== null && liberation <= maintenant) pendingTransfers.push(t);
+        else enAttenteExpedition++;
+      }
+    }
+
+    if (pendingTransfers.length === 0) {
       return res.status(200).json({
         message: 'No transfers to process',
-        processedCount: 0
+        processedCount: 0,
+        waitingCount: enAttenteExpedition
       });
     }
 
