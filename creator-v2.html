@@ -1184,7 +1184,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-10-03-frais-de-port';
+  const APP_VERSION = '2026-10-03-carte-en-direct';
 
   async function checkAppVersion() {
     try {
@@ -4725,7 +4725,9 @@
         var ventes = parseInt(($('stat-sales').textContent || '0').replace(/\D/g, ''), 10) || 0;
         var vis = D && D.visites ? D.visites : 0;
         if (!vis) { texte('fqConv', '—'); texte('fqConvN', '0'); return; }
-        var conv = Math.round(ventes / vis * 1000) / 10;
+        // Jamais plus de 100 % : une vente faite depuis un navigateur non compte
+        // (createur, admin, commande test) n'a pas de visite en face.
+        var conv = Math.min(100, Math.round(ventes / vis * 1000) / 10);
         texte('fqConv', String(conv).replace('.', ',') + ' %');
         texte('fqConvN', '≈ ' + Math.round(conv));
       } catch (e) { /* rien */ }
@@ -4874,6 +4876,12 @@
         affDirect(d.en_ce_moment);
         if (typeof d.aujourdhui === 'number') texte('fqAuj', nb(d.aujourdhui));
         if (D) { D.direct = d.direct || []; dessinerPoints(); }
+        // Une nouvelle visite aujourd'hui : on recharge la carte, les pays et
+        // les chiffres sans attendre que le createur rafraichisse la page.
+        if (D && typeof d.aujourdhui === 'number' && d.aujourdhui !== D.aujourdhui) {
+          D.aujourdhui = d.aujourdhui;
+          charger();
+        }
       } catch (e) { /* rien */ }
     }
     setInterval(direct, 5000);
