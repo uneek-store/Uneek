@@ -831,6 +831,7 @@
           <select id="mp-pays" style="padding:9px 12px;border:1px solid var(--gray-200);border-radius:8px;font-size:13px;background:var(--white);min-width:200px">
             <option value="BE">Belgique</option><option value="FR">France</option><option value="NL">Pays-Bas</option>
             <option value="LU">Luxembourg</option><option value="DE">Allemagne</option><option value="ES">Espagne</option>
+            <option value="IT">Italie</option><option value="PT">Portugal</option>
           </select>
           <button class="btn-save" onclick="enregistrerPaysExpedition()" id="mp-pays-btn">Enregistrer</button>
           <div id="mp-pays-msg" style="font-size:13px;display:none"></div>
@@ -1184,7 +1185,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-10-03-commission-15';
+  const APP_VERSION = '2026-10-07-italie-portugal';
 
   async function checkAppVersion() {
     try {

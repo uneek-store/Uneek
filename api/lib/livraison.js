@@ -29,6 +29,9 @@ export const PAYS_LIVRES = {
   LU: "Luxembourg",
   DE: "Allemagne",
   ES: "Espagne",
+  // Ajoutes le 7 octobre 2026 (decision d'Axel).
+  IT: "Italie",
+  PT: "Portugal",
 };
 
 // Une marque dont le pays d'expedition n'est pas encore renseigne est

@@ -179,6 +179,8 @@ a{text-decoration:none;}
 .pd-thumbs-col img:hover{opacity:0.85;}
 .pd-thumbs-col img.actif{opacity:1;border-color:var(--black);}
 .pd-size.selected{background:var(--black);color:var(--white);border-color:var(--black);}
+/* Taille epuisee (7 octobre) : le carre reste visible, plus clair, barre en travers, non cliquable. */
+.pd-size.out-of-stock,.pd-size.out-of-stock:hover{color:var(--gray-400);border-color:var(--gray-200);cursor:not-allowed;opacity:0.55;background:linear-gradient(to top right,transparent calc(50% - 0.5px),var(--gray-400) calc(50% - 0.5px),var(--gray-400) calc(50% + 0.5px),transparent calc(50% + 0.5px));}
 /* ANIMATIONS */
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
 @keyframes doubleTapHeart{0%{transform:translate(-50%,-50%) scale(0) rotate(-15deg);opacity:0;}10%{transform:translate(-50%,-50%) scale(1.4);opacity:1;}35%{transform:translate(-50%,-50%) scale(1.15);opacity:1;}75%{transform:translate(-50%,-50%) scale(1.05);opacity:0.8;}100%{transform:translate(-50%,-50%) scale(1.3);opacity:0;}}
@@ -401,7 +403,7 @@ let stripeExpressElement = null;
 // demande le montant a /api/livraison, qui utilise la meme regle que la
 // commande (api/lib/livraison.js). Le serveur recalcule tout a la commande.
 // ==========================================
-const NOMS_PAYS = { BE: 'Belgique', FR: 'France', NL: 'Pays-Bas', LU: 'Luxembourg', DE: 'Allemagne', ES: 'Espagne' };
+const NOMS_PAYS = { BE: 'Belgique', FR: 'France', NL: 'Pays-Bas', LU: 'Luxembourg', DE: 'Allemagne', ES: 'Espagne', IT: 'Italie', PT: 'Portugal' };
 let FRAIS_LIVRAISON = null;   // { pays, cle, livraison, service, total_frais } en centimes
 let DEVIS_EN_COURS = 0;
 
@@ -940,6 +942,28 @@ function getAvailableSizes(product, couleur) {
   return out;
 }
 
+// Toutes les tailles a MONTRER sur la fiche, epuisees comprises (stock 0) :
+// une taille partie reste affichee, barree, pour qu'on voie qu'elle existe.
+// (7 octobre 2026 — getAvailableSizes, elle, ne rend que ce qui est en stock.)
+function getSizesAffichees(product, couleur) {
+  const lignes = stockLignes(product.sizes_stock)
+    .filter(l => couleur === undefined || couleur === null || l.couleur === couleur);
+  const vues = {};
+  const out = [];
+  lignes.forEach(l => {
+    const q = Math.max(0, Number(l.qte) || 0);
+    if (vues[l.taille] === undefined) { vues[l.taille] = out.length; out.push({ size: l.taille, stock: q }); }
+    else { out[vues[l.taille]].stock += q; }
+  });
+  out.sort(function (a, b) { return comparerTailles(a.size, b.size); });
+  return out;
+}
+function boutonTailleHTML(s) {
+  return s.stock <= 0
+    ? '<button class="pd-size out-of-stock" disabled aria-disabled="true" title="Épuisé">' + s.size + '</button>'
+    : '<button class="pd-size" onclick="selectSize(this,\'' + s.size + '\')">' + s.size + '</button>';
+}
+
 // Couleurs qui ont au moins une piece en stock.
 function getAvailableColors(product) {
   if (!stockParCouleur(product.sizes_stock)) return [];
@@ -1457,8 +1481,9 @@ function productPage() {
   const related = PRODUCTS.filter(x => x.brand_id === p.brand_id && x.id !== p.id);
   const colors = getAvailableColors(p);
   selectedColor = colors.length ? colors[0] : null;
-  const sizes = getAvailableSizes(p, selectedColor);
-  const hasStock = sizes.length > 0 || colors.length > 0;
+  const enStock = getAvailableSizes(p, selectedColor);
+  const hasStock = enStock.length > 0 || colors.length > 0;
+  const sizes = getSizesAffichees(p, selectedColor);
 
   return `<div>
     <section class="section" style="padding-top:96px">
@@ -1480,7 +1505,7 @@ function productPage() {
           ${hasStock ? `
           <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px">Taille</div>
           <div style="display:flex;gap:8px;margin-bottom:32px;flex-wrap:wrap" id="size-btns">
-            ${sizes.map(s => `<button class="pd-size ${s.stock <= 0 ? 'out-of-stock' : ''}" onclick="selectSize(this,'${s.size}')" ${s.stock <= 0 ? 'disabled style="opacity:0.3;cursor:not-allowed;text-decoration:line-through"' : ''}>${s.size}</button>`).join('')}
+            ${sizes.map(boutonTailleHTML).join('')}
           </div>` : `
           <div style="font-size:14px;color:var(--gray-400);margin-bottom:32px">Tailles bientôt disponibles</div>`}
 
@@ -1534,9 +1559,9 @@ function selectColor(btn, couleur, productId) {
 
   const zone = document.getElementById('size-btns');
   if (p && zone) {
-    const dispo = getAvailableSizes(p, couleur);
+    const dispo = getSizesAffichees(p, couleur);
     zone.innerHTML = dispo.length
-      ? dispo.map(s => '<button class="pd-size" onclick="selectSize(this,\'' + s.size + '\')">' + s.size + '</button>').join('')
+      ? dispo.map(boutonTailleHTML).join('')
       : '<span style="font-size:14px;color:var(--gray-400)">Aucune taille disponible dans cette couleur</span>';
   }
   const addBtn = document.getElementById('add-btn');
@@ -1613,7 +1638,7 @@ function manifestoPage() {
     ["C'est quoi UNEEK exactement ?", "UNEEK est une marketplace qui regroupe des marques de mode indépendantes soigneusement sélectionnées. On donne une vitrine aux créateurs qui méritent d'être vus."],
     ["Comment sont sélectionnées les marques ?", "Chaque marque est évaluée sur la qualité de ses créations, son originalité et son histoire. On refuse volontairement le mass market."],
     ["Quels sont les délais de livraison ?", "Chaque marque expédie sous 3 jours ouvrés, avec un numéro de suivi. Compte ensuite 3 à 7 jours ouvrés en Belgique et en France, 5 à 10 jours ailleurs en Europe."],
-    ["Combien coûte la livraison ?", "4,90 € par commande, une seule fois, même si tu achètes chez plusieurs marques. S'y ajoutent 1,50 € de frais de service par marque, pour préparer et suivre chaque colis. Chaque marque envoie son propre colis, avec son suivi. On livre en Belgique, en France, aux Pays-Bas, au Luxembourg, en Allemagne et en Espagne."],
+    ["Combien coûte la livraison ?", "4,90 € par commande, une seule fois, même si tu achètes chez plusieurs marques. S'y ajoutent 1,50 € de frais de service par marque, pour préparer et suivre chaque colis. Chaque marque envoie son propre colis, avec son suivi. On livre en Belgique, en France, aux Pays-Bas, au Luxembourg, en Allemagne, en Espagne, en Italie et au Portugal."],
     ["Je peux renvoyer une pièce ?", "Oui, tu as 14 jours après réception pour changer d'avis, sans justification. La pièce doit être non portée, avec ses étiquettes. Écris-nous à contact@uneek.store avec ton numéro de commande, on t'indique où la renvoyer. Les frais de renvoi sont à ta charge ; on te rembourse le reste, frais de livraison compris."],
     ["Comment devenir partenaire UNEEK ?", "Si tu es un créateur indépendant, tu peux postuler via notre formulaire 'Devenir Partenaire' accessible depuis le menu."],
   ];
@@ -1750,7 +1775,7 @@ function checkoutPage() {
             <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Code postal</label><input id="co-code" type="text" placeholder="1000" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
             <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Pays</label>
               <select id="co-pays" onchange="majFraisLivraison()" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm);background:var(--white)">
-                <option value="BE">Belgique</option><option value="FR">France</option><option value="NL">Pays-Bas</option><option value="LU">Luxembourg</option><option value="DE">Allemagne</option><option value="ES">Espagne</option>
+                <option value="BE">Belgique</option><option value="FR">France</option><option value="NL">Pays-Bas</option><option value="LU">Luxembourg</option><option value="DE">Allemagne</option><option value="ES">Espagne</option><option value="IT">Italie</option><option value="PT">Portugal</option>
               </select>
             </div>
           </div>
@@ -2327,7 +2352,7 @@ function doLogout() {
 
 function legalPage(type) {
   const pages = {
-    cgv: { title: "Conditions Générales de Vente", items: [["Article 1 — Préambule", "UNEEK est une marketplace de mode indépendante qui met en relation des créateurs et des acheteurs. UNEEK agit en qualité d'intermédiaire : les produits sont vendus par les créateurs, qui en assurent la fabrication et l'expédition. UNEEK encaisse le paiement pour leur compte et demeure l'interlocuteur unique du client pour toute commande passée sur uneek.store.\n\nQuel que soit le créateur, les mêmes conditions s'appliquent à toute commande : le droit de rétractation de quatorze (14) jours décrit à l'article 5 est identique pour toutes les marques référencées, et un créateur ne peut y substituer ses propres conditions. Toute demande de retour, de remboursement ou de réclamation est adressée à contact@uneek.store, qui la traite et procède au remboursement."], ["Article 2 — Produits et prix", "Les produits sont des vêtements et accessoires de marques indépendantes sélectionnées. Les prix sont en euros TTC, fixés librement par chaque créateur."], ["Article 3 — Commande et paiement", "La validation du paiement constitue l'acceptation de la commande. Le paiement est sécurisé. UNEEK ne stocke aucune donnée bancaire."], ["Article 4 — Livraison", "Pays livrés : Belgique, France, Pays-Bas, Luxembourg, Allemagne et Espagne. Chaque créateur expédie les pièces de sa marque sous 3 jours ouvrés, dans un colis suivi ; une commande comprenant plusieurs marques est livrée en plusieurs colis. Délais indicatifs : 3–7 jours ouvrés en Belgique et en France, 5–10 jours vers les autres pays.\n\nFrais de livraison : 4,90 € par commande, facturés une seule fois quel que soit le nombre de marques, auxquels s'ajoutent des frais de service de 1,50 € par marque présente dans la commande. Le montant total est affiché avant la validation du paiement."], ["Article 5 — Droit de rétractation", "14 jours à compter de la réception, sans avoir à se justifier. Produit non porté, non lavé, étiquettes intactes. Frais de renvoi à charge du client, sauf produit défectueux ou non conforme.\n\nLa demande est adressée à contact@uneek.store. Le remboursement intervient au plus tard 14 jours après cette demande. Si toute la commande est renvoyée, il porte sur le prix des pièces, les frais de livraison et les frais de service. Si une partie seulement de la commande est renvoyée, il porte sur le prix des pièces renvoyées ; les frais de livraison et les frais de service restent dus. Le détail figure sur la page « Retours et remboursements »."], ["Article 6 — Garantie légale", "Garantie légale de conformité de 2 ans conformément au Code civil belge."], ["Article 7 — Droit applicable", "Droit belge applicable. Règlement en ligne : ec.europa.eu/consumers/odr"]] },
+    cgv: { title: "Conditions Générales de Vente", items: [["Article 1 — Préambule", "UNEEK est une marketplace de mode indépendante qui met en relation des créateurs et des acheteurs. UNEEK agit en qualité d'intermédiaire : les produits sont vendus par les créateurs, qui en assurent la fabrication et l'expédition. UNEEK encaisse le paiement pour leur compte et demeure l'interlocuteur unique du client pour toute commande passée sur uneek.store.\n\nQuel que soit le créateur, les mêmes conditions s'appliquent à toute commande : le droit de rétractation de quatorze (14) jours décrit à l'article 5 est identique pour toutes les marques référencées, et un créateur ne peut y substituer ses propres conditions. Toute demande de retour, de remboursement ou de réclamation est adressée à contact@uneek.store, qui la traite et procède au remboursement."], ["Article 2 — Produits et prix", "Les produits sont des vêtements et accessoires de marques indépendantes sélectionnées. Les prix sont en euros TTC, fixés librement par chaque créateur."], ["Article 3 — Commande et paiement", "La validation du paiement constitue l'acceptation de la commande. Le paiement est sécurisé. UNEEK ne stocke aucune donnée bancaire."], ["Article 4 — Livraison", "Pays livrés : Belgique, France, Pays-Bas, Luxembourg, Allemagne, Espagne, Italie et Portugal. Chaque créateur expédie les pièces de sa marque sous 3 jours ouvrés, dans un colis suivi ; une commande comprenant plusieurs marques est livrée en plusieurs colis. Délais indicatifs : 3–7 jours ouvrés en Belgique et en France, 5–10 jours vers les autres pays.\n\nFrais de livraison : 4,90 € par commande, facturés une seule fois quel que soit le nombre de marques, auxquels s'ajoutent des frais de service de 1,50 € par marque présente dans la commande. Le montant total est affiché avant la validation du paiement."], ["Article 5 — Droit de rétractation", "14 jours à compter de la réception, sans avoir à se justifier. Produit non porté, non lavé, étiquettes intactes. Frais de renvoi à charge du client, sauf produit défectueux ou non conforme.\n\nLa demande est adressée à contact@uneek.store. Le remboursement intervient au plus tard 14 jours après cette demande. Si toute la commande est renvoyée, il porte sur le prix des pièces, les frais de livraison et les frais de service. Si une partie seulement de la commande est renvoyée, il porte sur le prix des pièces renvoyées ; les frais de livraison et les frais de service restent dus. Le détail figure sur la page « Retours et remboursements »."], ["Article 6 — Garantie légale", "Garantie légale de conformité de 2 ans conformément au Code civil belge."], ["Article 7 — Droit applicable", "Droit belge applicable. Règlement en ligne : ec.europa.eu/consumers/odr"]] },
     privacy: { title: "Politique de confidentialité", items: [["Données collectées", "Nom, prénom, email, adresse de livraison et historique de commandes."], ["Utilisation", "Traitement des commandes, service client, amélioration de la plateforme."], ["Partage", "Données de livraison transmises au créateur uniquement. UNEEK ne vend aucune donnée."], ["Vos droits (RGPD)", "Droit d'accès, rectification, suppression et portabilité. Contact : contact@uneek.store"], ["Sécurité", "Paiements sécurisés. UNEEK ne stocke aucune donnée bancaire."], ["Mesure d'audience", "Nous comptons les passages sur les fiches produits, les mises en favori et les mises au panier, pour renseigner les créateurs sur leurs pièces. Ces compteurs sont anonymes et agrégés : aucune adresse IP, aucun identifiant de visiteur et aucun compte client n'y est associé. Il est donc impossible de relier ces chiffres à une personne, et rien n'est partagé avec un service tiers."]] },
     retours: { title: "Retours et remboursements", items: [
       ["Tu as 14 jours pour changer d'avis",
