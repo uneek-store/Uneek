@@ -116,12 +116,30 @@ a{text-decoration:none;}
 .section-subtitle{font-size:14px;color:var(--gray-500);margin-top:8px;font-weight:300;}
 .section-link{font-size:13px;font-weight:500;letter-spacing:0.5px;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--gray-500);transition:color 0.3s;background:none;border:none;}
 .section-link:hover{color:var(--black);}
+/* LE MENU DU SYSTEME QUAND ON RESTE APPUYE SUR UNE PHOTO
+   Sur telephone, un appui long sur une image ouvre le menu d'iOS ou d'Android
+   (Partager, Copier, Rechercher, Enregistrer la photo). Ca fait "page web
+   ouverte dans un navigateur" au lieu d'une boutique, et surtout ca propose
+   d'enregistrer les photos des createurs. Coupe sur les IMAGES uniquement :
+   le texte de la page reste selectionnable, et le balayage entre les photos
+   de la fiche produit continue de marcher. */
+img{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;}
+
 /* PRODUCT GRID */
 .product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:24px;}
 .product-card{cursor:pointer;position:relative;}
 .product-card-image{aspect-ratio:3/4;overflow:hidden;background:var(--gray-100);position:relative;border-radius:var(--radius-lg);margin-bottom:16px;}
 .product-card-image img{width:100%;height:100%;object-fit:contain;transition:transform 0.3s ease-out;will-change:transform;}
 .product-card:hover .product-card-image img{transform:scale(1.04);}
+/* LA DEUXIEME PHOTO AU SURVOL
+   Un t-shirt a souvent son logo dans le dos : la grille n'en montrait que le
+   devant. La deuxieme photo est posee PAR-DESSUS la premiere, invisible, et
+   se revele quand la souris entre sur la carte. Elle n'est chargee qu'a ce
+   moment-la (voir chargerPhotoSurvol) : la liste publique ne transporte
+   qu'une photo par produit, et doit le rester.
+   Pas de z-index : elle reste donc sous le coeur des favoris (z-index 2). */
+.product-card-image .photo-survol{position:absolute;inset:0;opacity:0;transition:opacity .25s ease;}
+.product-card:hover .photo-survol.prete{opacity:1;}
 .product-card-fav{position:absolute;top:12px;right:12px;width:42px;height:42px;background:rgba(255,255,255,0.9);backdrop-filter:blur(8px);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity 0.3s;z-index:2;border:none;}
 .product-card:hover .product-card-fav{opacity:1;}
 .product-card-fav.is-fav{opacity:1;}
@@ -740,9 +758,10 @@ function addToCart(product, size, couleur) {
 function productCardHTML(p) {
   const b = getBrand(p);
   const isFav = favorites.includes(p.id);
-  return `<div class="product-card" onclick="navigate('product','${p.id}')">
+  return `<div class="product-card" data-produit="${p.id}" onclick="navigate('product','${p.id}')" onmouseenter="survolerCarte(this)">
     <div class="product-card-image">
       <img src="${p.image_url || PLACEHOLDER_IMG}" alt="${p.name}" loading="lazy">
+      <img class="photo-survol" alt="" aria-hidden="true" loading="lazy">
       <button class="product-card-fav ${isFav ? 'is-fav' : ''}" data-fav="${p.id}" onclick="event.stopPropagation();toggleFav('${p.id}')" aria-label="Favori">
         ${isFav ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="url(#heartGrad)" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'}
       </button>
@@ -752,6 +771,79 @@ function productCardHTML(p) {
     <div class="product-card-price">${p.price} &euro;</div>
   </div>`;
 }
+
+// LA DEUXIEME PHOTO AU SURVOL D'UNE CARTE
+//
+// Pourquoi ce n'est pas aussi simple que "mettre la photo 2 dans la carte" :
+// la liste publique (api/products.js) ne transporte QU'UNE photo par produit.
+// C'est volontaire — les photos sont en base64 dans la base, et la liste
+// complete pesait 1,2 Mo. La deuxieme photo est donc demandee au moment ou la
+// souris entre sur la carte, une seule fois par produit, et gardee en memoire.
+// Tant que personne ne survole, rien n'est charge.
+//
+// PHOTO_SURVOL retient aussi les produits qui n'ont PAS de deuxieme photo,
+// pour ne pas redemander a chaque passage. Un echec reseau, lui, n'est jamais
+// retenu : on retentera au survol suivant.
+const PHOTO_SURVOL = {};
+
+async function chargerPhotoSurvol(id) {
+  if (Object.prototype.hasOwnProperty.call(PHOTO_SURVOL, id)) return PHOTO_SURVOL[id];
+
+  const p = (Array.isArray(PRODUCTS) ? PRODUCTS : []).find(x => String(x.id) === String(id));
+  if (!p) return null;
+
+  // La fiche produit a peut-etre deja tout charge : on ne redemande pas.
+  const deja = toutesLesPhotos(p);
+  if (deja.length >= 2) { PHOTO_SURVOL[id] = deja[1]; return PHOTO_SURVOL[id]; }
+
+  // Le produit n'a qu'une seule photo : il n'y a rien a montrer.
+  if (!p.image_count || p.image_count < 2) { PHOTO_SURVOL[id] = null; return null; }
+
+  try {
+    const r = await fetch(API + '/api/products?id=' + encodeURIComponent(id));
+    if (!r.ok) return null;
+    const complet = await r.json();
+    const photos = complet && Array.isArray(complet.image_urls) ? complet.image_urls : [];
+    if (photos.length >= 2) {
+      // La fiche produit profitera du meme chargement si on l'ouvre ensuite.
+      p.image_urls = photos;
+      p.image_colors = Array.isArray(complet.image_colors) ? complet.image_colors : null;
+    }
+    PHOTO_SURVOL[id] = photos.length >= 2 ? photos[1] : null;
+    return PHOTO_SURVOL[id];
+  } catch (e) {
+    console.warn('[uneek] index.html / chargerPhotoSurvol : appel reseau en echec', e);
+    return null;
+  }
+}
+
+function survolerCarte(carte) {
+  if (!carte) return;
+  // Au doigt il n'y a pas de survol : sur telephone on ne telecharge rien.
+  try {
+    if (window.matchMedia && window.matchMedia('(hover: none)').matches) return;
+  } catch (e) { /* un navigateur sans matchMedia : on continue */ }
+
+  const sur = carte.querySelector('.photo-survol');
+  if (!sur || sur.dataset.prete === '1') return;
+  sur.dataset.prete = '1';   // pose tout de suite : pas deux appels par carte
+
+  chargerPhotoSurvol(carte.dataset.produit).then(function (url) {
+    if (!url) { delete sur.dataset.prete; return; }   // on retentera
+    sur.src = url;
+    sur.classList.add('prete');
+    // Si la souris est deja repartie, le CSS ne la montrera pas : c'est le
+    // :hover de la carte qui decide, pas nous.
+  });
+}
+
+// Le menu du systeme quand on reste appuye sur une photo (Partager, Copier,
+// Enregistrer la photo). Le CSS le coupe sur iOS ; ce gestionnaire s'occupe
+// d'Android et du clic droit sur ordinateur. Limite aux IMAGES : tout le
+// reste de la page garde son menu normal.
+document.addEventListener('contextmenu', function (e) {
+  if (e.target && e.target.tagName === 'IMG') e.preventDefault();
+});
 
 // L'effet 3D au survol des photos produit (fonctions tilt / tiltReset) a ete
 // retire le 14 septembre 2026, a la demande d'Axel. Il inclinait l'image

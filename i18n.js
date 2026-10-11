@@ -765,7 +765,8 @@
     "depuis": { en: "est.", nl: "sinds", de: "seit", es: "desde" },
     "Tu as d\u00e9j\u00e0 un compte ?": { en: "Already have an account?", nl: "Heb je al een account?", de: "Hast du schon ein Konto?", es: "\u00bfYa tienes una cuenta?" },
     "pour pr\u00e9remplir tes infos.": { en: "to fill in your details automatically.", nl: "om je gegevens vooraf in te vullen.", de: "damit deine Daten vorausgef\u00fcllt werden.", es: "para rellenar tus datos autom\u00e1ticamente." },
-    "mode test, aucun argent r\u00e9el n'est d\u00e9bit\u00e9": { en: "test mode \u2014 no real money is charged", nl: "testmodus \u2014 er wordt geen echt geld afgeschreven", de: "Testmodus \u2014 es wird kein echtes Geld abgebucht", es: "modo de prueba \u2014 no se cobra dinero real" }
+    "mode test, aucun argent r\u00e9el n'est d\u00e9bit\u00e9": { en: "test mode \u2014 no real money is charged", nl: "testmodus \u2014 er wordt geen echt geld afgeschreven", de: "Testmodus \u2014 es wird kein echtes Geld abgebucht", es: "modo de prueba \u2014 no se cobra dinero real" },
+    "Sa taille ET la taille qu'il porte. Sans la taille port\u00e9e, connaitre sa taille n'aide en rien le client.": { en: "Their height AND the size they are wearing. Without the size worn, their height tells the customer nothing.", nl: "Hun lengte \u00c9N de maat die ze dragen. Zonder de gedragen maat zegt de lengte de klant niets.", de: "Die K\u00f6rpergr\u00f6\u00dfe UND die getragene Gr\u00f6\u00dfe. Ohne die getragene Gr\u00f6\u00dfe sagt die K\u00f6rpergr\u00f6\u00dfe dem Kunden nichts.", es: "Su estatura Y la talla que lleva. Sin la talla que lleva, su estatura no le dice nada al cliente." }
   };
 
   /* ---------- 2. phrases avec un chiffre ou un nom au milieu ---------- */
