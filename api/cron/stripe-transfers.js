@@ -5,6 +5,7 @@
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 import { JOURS_APRES_EXPEDITION, dateDeLiberation, rangerParColis } from '../lib/virement.js';
+import { lireJeton, jetonDeLaRequete } from '../lib/session.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const supabase = createClient(
@@ -27,7 +28,13 @@ export default async function handler(req, res) {
   const bearer = String(req.headers['authorization'] || '');
   const cronVercelSigne = !!process.env.CRON_SECRET && bearer === 'Bearer ' + process.env.CRON_SECRET;
   const secretValide = !!expectedSecret && cronSecret === expectedSecret;
-  if (!cronVercelSigne && !secretValide && !(isVercelCron && !process.env.CRON_SECRET)) {
+  // L'administrateur connecte peut aussi lancer le robot a la main (12 octobre
+  // 2026) : jeton REELLEMENT signe et marque admin, quel que soit AUTH_MODE.
+  // Le robot garde ses regles : rien n'est vire avant les 21 jours.
+  const lu = lireJeton(jetonDeLaRequete(req));
+  const adminSigne = !!(lu.ok && lu.session && lu.session.admin);
+  if (adminSigne) console.log('[virements] lance a la main par', lu.session.email || 'admin');
+  if (!adminSigne && !cronVercelSigne && !secretValide && !(isVercelCron && !process.env.CRON_SECRET)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
