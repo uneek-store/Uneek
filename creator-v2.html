@@ -819,6 +819,24 @@
       </div>
     </div>
 
+    <!-- PAYS D'EXPEDITION OBLIGATOIRE (12 octobre 2026) : il fixe le forfait
+         colis de chaque commande. Sans reponse, la marque etait traitee comme
+         belge et un createur etranger touchait 4,90 EUR au lieu de 6,40 EUR. -->
+    <div id="pays-obligatoire" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,10,10,.72);align-items:center;justify-content:center;padding:16px">
+      <div style="background:var(--white);border-radius:14px;max-width:460px;width:100%;padding:28px 24px;box-shadow:0 20px 60px rgba(0,0,0,.35)">
+        <div style="font-size:20px;font-weight:700;margin-bottom:10px">Avant de commencer : d'où envoies-tu tes colis ?</div>
+        <div style="font-size:13px;color:var(--gray-500);line-height:1.6;margin-bottom:18px">Le pays d'où tu envoies tes colis. Pour chaque commande, tu reçois un forfait colis : 4,90 € si ton client habite dans le même pays que toi, 6,40 € s'il habite dans un autre pays.</div>
+        <select id="po-pays" style="width:100%;padding:11px 12px;border:1px solid var(--gray-200);border-radius:8px;font-size:14px;background:var(--white);margin-bottom:14px">
+          <option value="">Choisis ton pays</option>
+          <option value="BE">Belgique</option><option value="FR">France</option><option value="NL">Pays-Bas</option>
+          <option value="LU">Luxembourg</option><option value="DE">Allemagne</option><option value="ES">Espagne</option>
+          <option value="IT">Italie</option><option value="PT">Portugal</option>
+        </select>
+        <button class="btn-save" id="po-btn" onclick="enregistrerPaysObligatoire()" style="width:100%">Enregistrer</button>
+        <div id="po-msg" style="font-size:13px;margin-top:10px;display:none"></div>
+      </div>
+    </div>
+
     <!-- MA PAGE -->
     <div id="sec-mapage" class="section">
       <div class="page-title">Ma page</div>
@@ -1186,7 +1204,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-10-07-italie-portugal';
+  const APP_VERSION = '2026-10-12-pays-obligatoire';
 
   async function checkAppVersion() {
     try {
@@ -1496,6 +1514,8 @@
       document.getElementById('welcomeSub').textContent = 'Tableau de bord ' + (currentBrand?.name || '');
       loadDashboard();
       checkAppVersion();
+      // Le compte administrateur qui regarde une marque n'a pas a repondre.
+      if (!data.user.is_admin) verifierPaysExpedition();
       // Retour depuis Stripe : on ouvre directement les Paramètres, sinon le
       // créateur atterrit sur la vue d'ensemble sans savoir si ça a marché.
       if (/[?&]stripe=/.test(location.search)) {
@@ -2410,6 +2430,50 @@
     m.textContent = texte;
     m.style.color = couleur;
     m.style.display = 'block';
+  }
+
+  // Pays d'expedition obligatoire (12 octobre 2026) : tant qu'il n'est pas
+  // choisi, une fenetre bloque le panneau. Une erreur reseau ne bloque pas :
+  // on reposera la question a la prochaine connexion.
+  async function verifierPaysExpedition() {
+    try {
+      const res = await fetch(API_BASE + '/creator/marque?brand_id=' + encodeURIComponent(currentBrand.id), {
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+      if (!res.ok) return;
+      const page = await res.json();
+      if (!maPage) maPage = page;
+      if (!page.ship_country) document.getElementById('pays-obligatoire').style.display = 'flex';
+    } catch (err) {
+      console.warn('[uneek] creator-v2.html / verifierPaysExpedition :', err);
+    }
+  }
+
+  async function enregistrerPaysObligatoire() {
+    const choix = document.getElementById('po-pays').value;
+    const msg = document.getElementById('po-msg');
+    const bouton = document.getElementById('po-btn');
+    const dire = (t, c) => { msg.textContent = t; msg.style.color = c; msg.style.display = t ? 'block' : 'none'; };
+    if (!choix) { dire('Choisis un pays dans la liste.', 'var(--red)'); return; }
+    bouton.disabled = true;
+    dire('Enregistrement…', 'var(--gray-500)');
+    try {
+      const res = await fetch(API_BASE + '/creator/marque', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify({ brand_id: currentBrand.id, ship_country: choix })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { dire(data.error || 'Erreur', 'var(--red)'); return; }
+      if (maPage) maPage.ship_country = data.ship_country || choix;
+      const sel = document.getElementById('mp-pays');
+      if (sel) sel.value = choix;
+      document.getElementById('pays-obligatoire').style.display = 'none';
+    } catch (err) {
+      dire('Erreur réseau, réessaie.', 'var(--red)');
+    } finally {
+      bouton.disabled = false;
+    }
   }
 
   // Pays d'expedition : un envoi a part, sans toucher a la banniere.
