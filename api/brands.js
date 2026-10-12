@@ -19,6 +19,21 @@
 
 import { supabaseAdmin } from "./lib/supabase.js";
 
+// Un essai de plus quand Supabase repond par une erreur (12 octobre 2026).
+// La premiere requete apres un moment calme echoue parfois une fois ; la
+// boutique affichait alors une page vide jusqu'au rafraichissement. La
+// requete est RECONSTRUITE a chaque essai (un constructeur supabase-js ne
+// se rejoue pas de facon fiable).
+async function avecUnEssaiDePlus(construire) {
+  let r;
+  try { r = await construire(); } catch (e) { r = { data: null, error: e }; }
+  if (!r || r.error) {
+    await new Promise((ok) => setTimeout(ok, 400));
+    try { r = await construire(); } catch (e) { r = { data: null, error: e }; }
+  }
+  return r;
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -55,14 +70,16 @@ export default async function handler(req, res) {
     }
 
     // Liste de toutes les marques actives (avec créateur)
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await avecUnEssaiDePlus(() => supabaseAdmin
       .from("brands")
       .select("id, name, slug, tagline, city, year, image_url, logo_url, banner_position, products(count), creator_accounts(full_name)")
       .eq("is_active", true)
-      .order("name");
+      .order("name"));
 
     if (error) {
       console.error("Error fetching brands:", error);
+      // Une erreur ne doit JAMAIS etre gardee en cache par Vercel.
+      res.setHeader("Cache-Control", "no-store");
       return res.status(500).json({ error: "Erreur serveur" });
     }
 
@@ -76,6 +93,7 @@ export default async function handler(req, res) {
     return res.status(200).json(brands);
   } catch (err) {
     console.error("Brands API error:", err);
+    res.setHeader("Cache-Control", "no-store");
     return res.status(500).json({ error: "Erreur serveur" });
   }
 }
