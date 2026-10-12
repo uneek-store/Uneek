@@ -9,10 +9,12 @@ import { controlerAcces } from "./lib/session.js";
 import { limiter } from "./lib/limite.js";
 import { nomTransporteur, lienSuivi } from "./lib/suivi.js";
 import { calculerFrais, paysValide, PAYS_LIVRES } from "./lib/livraison.js";
+// Parts des createurs, notification des createurs, remboursement d'une
+// commande refusee : partages avec le webhook Stripe (12 octobre 2026).
+import { inscrireVirements, notifierCreateurs, rembourserPaiement } from "./lib/paiement.js";
 import crypto from "crypto";
 import {
   confirmationCommande,
-  nouvelleCommandeCreateur,
   alerteAdmin,
   envoyerTous,
   ligneArticle,
@@ -31,9 +33,18 @@ async function verifierPaiement(paymentIntentId, montantAttenduEnCents) {
   if (!paymentIntentId || !process.env.STRIPE_SECRET_KEY) return null;
   try {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-    const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const pi = await stripe.paymentIntents.retrieve(paymentIntentId, { expand: ["latest_charge"] });
     if (pi.status !== "succeeded") {
       return { paye: false, motif: pi.status };
+    }
+    // Un paiement deja rembourse (meme en partie) reste « succeeded » chez
+    // Stripe. Sans ce controle, un client rembourse pour une commande refusee
+    // pouvait renvoyer le meme paiement avec un autre panier et obtenir une
+    // commande payee gratuitement (relecture independante du 12 octobre).
+    const ch = pi.latest_charge;
+    if (ch && typeof ch === "object" && (ch.refunded || (ch.amount_refunded || 0) > 0)) {
+      console.error("[paiement]", paymentIntentId, "deja rembourse — refuse comme paiement d'une commande");
+      return { paye: false, motif: "deja_rembourse" };
     }
     // Tolerance d'un centime : les deux montants viennent du meme catalogue,
     // un ecart plus large signale une tentative de payer moins que le panier.
@@ -52,90 +63,8 @@ async function verifierPaiement(paymentIntentId, montantAttenduEnCents) {
   }
 }
 
-// Inscrit la part qui revient a chaque createur sur la liste des virements.
-// Le robot de /api/cron/stripe-transfers viendra la lire 21 jours apres l'expedition
-// et executera le virement. Sans cette etape, l'argent encaisse reste chez
-// UNEEK indefiniment.
-//
-// UNE LIGNE PAR CREATEUR, PAS PAR ARTICLE
-// Une commande peut contenir des pieces de plusieurs marques. On regroupe
-// donc les montants par createur : deux articles de la meme marque donnent
-// une seule ligne, et le createur recoit un virement propre.
-//
-// LES CREATEURS SANS COMPTE STRIPE SONT IGNORES, ET SIGNALES
-// Le robot vire vers un identifiant de compte : sans lui, la ligne serait
-// inexploitable et bloquerait la file a chaque passage. On la saute donc, en
-// l'ecrivant en clair dans les logs pour pouvoir regulariser une fois le
-// createur inscrit.
-async function inscrireVirements(order, orderItems, chargeId) {
-  // Cumuler les parts par marque.
-  const parMarque = new Map();
-  for (const item of orderItems) {
-    if (!item.brand_id) continue;
-    // Part sur les articles + forfait colis (frais de port, 30 septembre
-    // 2026) : le forfait est porte par UNE ligne de chaque marque, et part
-    // dans le meme virement, 21 jours apres l'expedition.
-    const cents = Math.round((parseFloat(item.creator_payout) || 0) * 100)
-      + Math.round((parseFloat(item.shipping_payout) || 0) * 100);
-    if (cents <= 0) continue;
-    parMarque.set(item.brand_id, (parMarque.get(item.brand_id) || 0) + cents);
-  }
-  if (parMarque.size === 0) return;
-
-  // Retrouver le createur de chaque marque et son compte Stripe.
-  const { data: comptes, error } = await supabaseAdmin
-    .from("creator_accounts")
-    .select("id, email, brand_id, stripe_account_id")
-    .in("brand_id", [...parMarque.keys()]);
-
-  if (error) throw new Error("lecture des comptes createurs : " + error.message);
-
-  const lignes = [];
-  for (const [brandId, montant] of parMarque) {
-    // Une meme marque peut avoir plusieurs comptes createurs en base (un
-    // compte d'origine et celui qui tient reellement la boutique). On retient
-    // en priorite celui qui a relie son compte Stripe : sans ce tri, l'ordre
-    // renvoye par la base decide au hasard, et on sauterait un virement
-    // pourtant possible parce qu'on serait tombe sur l'autre compte.
-    const candidats = (comptes || []).filter((c) => c.brand_id === brandId);
-    const relies = candidats.filter((c) => c.stripe_account_id);
-    if (relies.length > 1) {
-      console.warn("[virements] la marque", brandId, "a", relies.length,
-        "comptes Stripe relies — la part part sur", relies[0].email);
-    }
-    const compte = relies[0] || candidats[0];
-    if (!compte) {
-      console.error("[virements] aucun compte createur pour la marque", brandId,
-        "— part de", montant / 100, "EUR non inscrite (commande", order.order_number + ")");
-      continue;
-    }
-    if (!compte.stripe_account_id) {
-      console.warn("[virements]", compte.email,
-        "n'a pas encore relie son compte Stripe — part de", montant / 100,
-        "EUR en attente (commande", order.order_number + ")");
-      continue;
-    }
-    lignes.push({
-      order_id: order.id,
-      creator_id: compte.id,
-      stripe_account_id: compte.stripe_account_id,
-      charge_id: chargeId || null,
-      amount: montant, // en centimes, comme l'attend le robot
-      status: "pending",
-    });
-  }
-
-  if (lignes.length === 0) return;
-
-  const { error: erreurEcriture } = await supabaseAdmin
-    .from("pending_transfers")
-    .insert(lignes);
-
-  if (erreurEcriture) throw new Error("ecriture des virements : " + erreurEcriture.message);
-
-  console.log("[virements]", lignes.length, "part(s) inscrite(s) pour la commande",
-    order.order_number, "-", lignes.reduce((s, l) => s + l.amount, 0) / 100, "EUR");
-}
+// inscrireVirements vit maintenant dans api/lib/paiement.js : le webhook
+// Stripe en a besoin aussi, pour les paiements confirmes apres coup.
 
 function generateOrderNumber() {
   const date = new Date();
@@ -347,6 +276,65 @@ export default async function handler(req, res) {
 
       const { customer, items, payment_intent_id } = req.body;
 
+      // UN PAIEMENT = UNE COMMANDE (12 octobre 2026).
+      // Sans ce controle, renvoyer deux fois le meme identifiant de paiement
+      // (rechargement, double clic, ou requete rejouee expres) creait une
+      // deuxieme commande payee, une deuxieme part createur, un deuxieme
+      // colis — pour un seul paiement. Mesure par tests-argent.mjs.
+      // La commande deja enregistree est renvoyee telle quelle : le client
+      // qui recharge la page voit sa confirmation, rien n'est cree.
+      if (payment_intent_id) {
+        const { data: deja, error: errDeja } = await supabaseAdmin
+          .from("orders")
+          .select("id, order_number, total_amount, uneek_commission, status")
+          .eq("payment_id", payment_intent_id);
+        if (errDeja) {
+          console.error("[commande] verification du paiement deja utilise impossible :", errDeja.message);
+          return res.status(500).json({ error: "Erreur serveur, réessaie dans un instant." });
+        }
+        if (deja && deja.length && deja[0].status === "cancelled") {
+          return res.status(409).json({
+            error: "Cette commande a été annulée. Si le remboursement n'apparaît pas sur ton compte d'ici quelques jours, écris-nous à contact@uneek.store.",
+          });
+        }
+        if (deja && deja.length) {
+          console.warn("[commande] paiement", payment_intent_id, "deja enregistre :",
+            deja[0].order_number, "— aucune nouvelle commande");
+          return res.status(200).json({
+            success: true,
+            deja_enregistree: true,
+            order: {
+              id: deja[0].id,
+              order_number: deja[0].order_number,
+              total: deja[0].total_amount,
+              commission: deja[0].uneek_commission,
+            },
+          });
+        }
+      }
+
+      // Refus APRES paiement (piece partie, produit retire) : le client a deja
+      // paye, on le rembourse aussitot et on le lui dit.
+      const refuser = async (code, message) => {
+        let texte = String(message).replace(/[.\s]*$/, ".");
+        if (payment_intent_id) {
+          const rembourse = await rembourserPaiement(payment_intent_id, message);
+          texte += rembourse
+            ? " Ton paiement a été remboursé automatiquement."
+            : " Écris-nous à contact@uneek.store, on te rembourse.";
+          try {
+            await alerteAdmin("Commande refusée après paiement", [
+              esc(message),
+              rembourse
+                ? "Client remboursé automatiquement par Stripe."
+                : "<strong>REMBOURSEMENT À VÉRIFIER</strong> dans Stripe (paiement " + esc(payment_intent_id) + ").",
+              "Client : " + esc((customer && customer.email) || ""),
+            ], "Voir les commandes");
+          } catch (err) { /* un e-mail ne bloque jamais */ }
+        }
+        return res.status(code).json({ error: texte });
+      };
+
       if (!customer?.email || !customer?.name || !customer?.address) {
         return res.status(400).json({ error: "Informations client manquantes" });
       }
@@ -380,26 +368,20 @@ export default async function handler(req, res) {
       for (const ligne of demande) {
         const product = products.find((p) => p.id === ligne.product_id);
         if (!product) {
-          return res.status(400).json({ error: `Produit introuvable` });
+          return refuser(400, `Produit introuvable`);
         }
         if (ligne.size && product.sizes_stock) {
           if (stockParCouleur(product.sizes_stock) && !ligne.color) {
-            return res.status(400).json({
-              error: `Couleur requise pour ${product.name}`,
-            });
+            return refuser(400, `Couleur requise pour ${product.name}`);
           }
           const available = lireStock(product.sizes_stock, ligne.size, ligne.color);
           if (available === null) {
-            return res.status(400).json({
-              error: `Combinaison indisponible pour ${product.name} (${ligne.color || ""} ${ligne.size})`,
-            });
+            return refuser(400, `Combinaison indisponible pour ${product.name} (${ligne.color || ""} ${ligne.size})`);
           }
           if (available < ligne.quantity) {
             const quoi = (ligne.color ? ligne.color + " " : "") + ligne.size;
-            return res.status(400).json({
-              error: `Stock insuffisant pour ${product.name} ${quoi} (${available} restant(s)`
-                + `, ${ligne.quantity} demandé${ligne.quantity > 1 ? "s" : ""})`,
-            });
+            return refuser(400, `Stock insuffisant pour ${product.name} ${quoi} (${available} restant(s)`
+                + `, ${ligne.quantity} demandé${ligne.quantity > 1 ? "s" : ""})`);
           }
         }
       }
@@ -410,7 +392,9 @@ export default async function handler(req, res) {
         const product = products.find((p) => p.id === item.product_id);
         if (!product) throw new Error(`Produit ${item.product_id} non trouvé`);
 
-        const qty = item.quantity || 1;
+        // Quantite entiere et positive, comme la regle du stock : une quantite
+        // negative ou decimale baissait le total sans baisser le colis.
+        const qty = Math.max(1, parseInt(item.quantity, 10) || 1);
         const lineTotal = product.price * qty;
         // Taux de base : 15 % (decision d'Axel, 3 octobre 2026). Il ne sert que
         // si le produit n'a pas de taux negocie enregistre.
@@ -491,6 +475,15 @@ export default async function handler(req, res) {
       );
       const paye = !!(paiement && paiement.paye);
 
+      // Paiement deja rembourse : il a servi a une commande refusee. On
+      // n'ecrit RIEN — sinon le webhook pourrait plus tard faire passer cette
+      // commande « payee » (relecture independante du 12 octobre).
+      if (paiement && paiement.motif === "deja_rembourse") {
+        return res.status(409).json({
+          error: "Ce paiement a déjà été remboursé. Recommence ta commande depuis ton panier.",
+        });
+      }
+
       // Créer la commande
       const { data: order, error: orderError } = await supabaseAdmin
         .from("orders")
@@ -522,6 +515,20 @@ export default async function handler(req, res) {
         .select()
         .single();
 
+      if (orderError && orderError.code === "23505" && payment_intent_id) {
+        // Deux envois simultanes du meme paiement : la base n'en garde qu'un
+        // (index unique sur orders.payment_id). Celui-ci s'arrete ici, avant
+        // tout stock, toute part createur et tout e-mail.
+        const { data: gagnante } = await supabaseAdmin
+          .from("orders").select("id, order_number, total_amount, uneek_commission")
+          .eq("payment_id", payment_intent_id);
+        const g = (gagnante || [])[0];
+        console.warn("[commande] envoi simultane du paiement", payment_intent_id, "— doublon ecarte");
+        return res.status(200).json({
+          success: true, deja_enregistree: true,
+          order: g ? { id: g.id, order_number: g.order_number, total: g.total_amount, commission: g.uneek_commission } : null,
+        });
+      }
       if (orderError) {
         console.error("Error creating order:", orderError);
         return res.status(500).json({ error: "Erreur création commande" });
@@ -539,24 +546,6 @@ export default async function handler(req, res) {
       if (itemsError) {
         console.error("Error creating order items:", itemsError);
         return res.status(500).json({ error: "Erreur ajout produits à la commande" });
-      }
-
-      // Inscrire la part de chaque createur sur la liste des virements.
-      // C'est ce que le robot des virements viendra lire. Sans cette etape,
-      // l'argent reste indefiniment chez UNEEK.
-      // Volontairement sans jamais faire echouer la commande : le client a
-      // paye, sa commande doit exister. Une part manquante se rattrape a la
-      // main ; une commande perdue, non. Tout echec est donc trace en clair.
-      if (paye) {
-        try {
-          await inscrireVirements(order, orderItems, paiement && paiement.chargeId);
-        } catch (err) {
-          console.error("[virements] echec pour la commande",
-            order.order_number, ":", err && err.message);
-        }
-      } else {
-        console.warn("[virements] commande", order.order_number,
-          "non payee a la creation : parts createurs a inscrire plus tard");
       }
 
       // Réserver le stock (constat 02).
@@ -583,10 +572,10 @@ export default async function handler(req, res) {
           console.error("[commande] " + (order.order_number || order.id)
             + " n'a pas pu etre marquee annulee :", errMarque.message);
         }
-        return res.status(409).json({
-          error: "Le stock de « " + (reservation.produit || "un article")
-            + " » vient de partir. Ta commande n'a pas été validée, rien ne t'a été débité.",
-        });
+        // Le client a deja paye a ce stade : on le rembourse (12 octobre 2026).
+        // L'ancien message disait « rien ne t'a ete debite » — c'etait faux.
+        return refuser(409, "Le stock de « " + (reservation.produit || "un article")
+          + " » vient de partir. Ta commande n'a pas été validée");
       }
 
       // Ce que la reservation a pris, et comment le rendre. Le jour ou le
@@ -598,6 +587,27 @@ export default async function handler(req, res) {
       // partir des lignes de la commande.
       console.log("[stock] reserve pour " + (order.order_number || order.id) + " : "
         + reservation.journal.map((e) => e.product_id).join(", "));
+
+      // Inscrire la part de chaque createur sur la liste des virements.
+      // APRES la reservation du stock (12 octobre 2026) : une commande annulee
+      // faute de stock ne doit laisser aucune part createur derriere elle.
+      // C'est ce que le robot des virements viendra lire. Sans cette etape,
+      // l'argent reste indefiniment chez UNEEK.
+      // Volontairement sans jamais faire echouer la commande : le client a
+      // paye, sa commande doit exister. Une part manquante se rattrape a la
+      // main ; une commande perdue, non. Tout echec est donc trace en clair.
+      if (paye) {
+        try {
+          await inscrireVirements(order, orderItems, paiement && paiement.chargeId);
+        } catch (err) {
+          console.error("[virements] echec pour la commande",
+            order.order_number, ":", err && err.message);
+        }
+      } else {
+        console.warn("[virements] commande", order.order_number,
+          "non payee a la creation : parts createurs a inscrire plus tard");
+      }
+
 
       // --- Notifications par e-mail ---
       // Placees APRES la commande et le decrement de stock, et enfermees dans
@@ -612,10 +622,6 @@ export default async function handler(req, res) {
         };
         const brandIds = [...new Set(orderItems.map((i) => i.brand_id).filter(Boolean))];
 
-        const { data: comptes } = await supabaseAdmin
-          .from("creator_accounts")
-          .select("email, full_name, brand_id, lang, is_admin, stripe_account_id")
-          .in("brand_id", brandIds);
         const { data: marques } = await supabaseAdmin
           .from("brands")
           .select("id, name, email")
@@ -630,38 +636,6 @@ export default async function handler(req, res) {
 
         const taches = [confirmationCommande(pourEmail, articlesClient)];
 
-        // Un e-mail par marque concernee, ne contenant que ses propres articles.
-        for (const bid of brandIds) {
-          // Meme piege que pour les virements, quelques lignes plus haut :
-          // une marque peut avoir plusieurs comptes createurs en base. Le
-          // premier renvoye par la base n'est pas forcement celui qui tient
-          // la boutique — ici c'etait un compte administrateur rattache a la
-          // marque, et la notification partait chez lui, dans sa langue.
-          const candidats = (comptes || []).filter((c) => c.brand_id === bid);
-          const compte = candidats.find((c) => c.stripe_account_id)
-            || candidats.find((c) => !c.is_admin)
-            || candidats[0];
-          if (candidats.length > 1) {
-            console.warn("[email] la marque", bid, "a", candidats.length,
-              "comptes createurs — la notification part chez",
-              compte && compte.email);
-          }
-          const marque = (marques || []).find((m) => m.id === bid);
-          const destinataire = (compte && compte.email) || (marque && marque.email);
-          if (!destinataire) {
-            console.warn("[email] aucune adresse pour la marque", bid);
-            continue;
-          }
-          taches.push(nouvelleCommandeCreateur(
-            destinataire,
-            (compte && compte.full_name) || (marque && marque.name) || "",
-            pourEmail,
-            orderItems.filter((i) => i.brand_id === bid),
-            // Le createur lit dans SA langue, pas dans celle du client.
-            (compte && compte.lang) || null
-          ));
-        }
-
         // Alerte interne : etre prevenu de chaque commande sans avoir a
         // surveiller le panneau admin.
         taches.push(alerteAdmin(
@@ -671,11 +645,21 @@ export default async function handler(req, res) {
             orderItems.map((i) => ligneArticle(i)).join("<br>"),
             "Total : " + prix(order.total_amount),
             "Livraison : " + esc(order.shipping_address),
+            paye
+              ? "Paiement : confirmé par Stripe"
+              : "<strong>Paiement : NON CONFIRMÉ</strong> (" + esc((paiement && paiement.motif) || "Stripe injoignable")
+                + "). Les créateurs ne sont pas prévenus tant que Stripe ne confirme pas.",
           ],
           "Voir la commande"
         ));
 
         await envoyerTous(taches);
+
+        // Les createurs ne sont prevenus QUE d'une commande payee (12 octobre
+        // 2026). Avant, une commande au paiement non confirme leur etait
+        // annoncee, et apparaissait a expedier dans leur panneau. Si la banque
+        // confirme plus tard, c'est le webhook Stripe qui les previent.
+        if (paye) await notifierCreateurs(pourEmail, orderItems);
       } catch (err) {
         console.error("[email] notifications de commande ignorees :", err && err.message);
       }

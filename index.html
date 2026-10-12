@@ -2069,6 +2069,11 @@ async function creerPaymentIntent(cmd) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         amount: cmd.amountInCents,
+        // Le serveur recalcule le montant a partir du panier et du pays
+        // (12 octobre 2026) : amount ne sert plus qu'a verifier que le total
+        // affiche ici est toujours le bon.
+        items: cmd.orderData.items,
+        country: cmd.orderData.customer.country,
         email: cmd.orderData.customer.email,
         name: cmd.orderData.customer.name,
         description: 'Commande UNEEK — ' + cart.map(i => i.name).join(', ').slice(0, 200)
@@ -2245,6 +2250,18 @@ async function enregistrerCommandePayee(orderData, paymentIntentId, prenom) {
       <p style="font-size:16px;color:var(--gray-500);font-weight:300;max-width:480px;line-height:1.7;margin-bottom:8px">Merci ${prenom || ''} ! Ta commande <strong>${data.order.order_number}</strong> est en cours de préparation.</p>
       <p style="font-size:14px;color:var(--gray-400);font-weight:300;margin-bottom:40px">Total : ${data.order.total} &euro; &mdash; paiement accepté</p>
       <button class="btn btn-dark" onclick="navigate('shop')">Continuer le shopping &rarr;</button>
+    </div>${footerHTML()}`;
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    return;
+  }
+
+  // Commande refusee apres paiement (piece partie entre-temps) : le serveur
+  // a rembourse le client et le dit dans son message (12 octobre 2026).
+  if (data && data.error && /rembours/i.test(data.error)) {
+    document.getElementById('app').innerHTML = `<div style="min-height:80vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px">
+      <h2 style="font-family:var(--font-display);font-size:28px;font-weight:700;margin-bottom:16px">Ta commande n'a pas pu être validée</h2>
+      <p style="font-size:15px;color:var(--gray-500);font-weight:300;max-width:520px;line-height:1.7;margin-bottom:40px">${echapper(data.error)}</p>
+      <button class="btn btn-dark" onclick="navigate('shop')">Retour au shop &rarr;</button>
     </div>${footerHTML()}`;
     window.scrollTo({ top: 0, behavior: 'instant' });
     return;

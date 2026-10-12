@@ -31,9 +31,18 @@ export default async function handler(req, res) {
       // Récupérer les order_items de cette marque avec les infos de commande
       const { data, error } = await supabaseAdmin
         .from("order_items")
-        .select("*, orders(order_number, customer_name, customer_nickname, customer_email, shipping_address, status, lang, created_at), products(name)")
+        .select("*, orders(order_number, customer_name, customer_nickname, customer_email, shipping_address, status, payment_status, lang, created_at), products(name)")
         .eq("brand_id", brand_id)
         ;
+
+      // Seules les commandes PAYEES sont a expedier (12 octobre 2026). Avant,
+      // un panier abandonne au paiement, ou paye au mauvais montant,
+      // apparaissait ici comme une vente : le createur pouvait l'expedier.
+      const jamaisPayee = ["pending", "failed", "cancelled"];
+      const payees = (data || []).filter((item) =>
+        jamaisPayee.indexOf(item.orders && item.orders.payment_status) === -1
+        // Annulee faute de stock puis remboursee : plus rien a expedier.
+        && !(item.orders && item.orders.status === "cancelled"));
 
       if (error) {
         console.error("Error fetching creator orders:", error);
@@ -41,7 +50,7 @@ export default async function handler(req, res) {
       }
 
       // Reformater pour le frontend
-      const orders = (data || []).map(item => ({
+      const orders = payees.map(item => ({
         id: item.id,
         order_number: item.orders?.order_number,
         created_at: item.orders?.created_at || item.created_at || null,
@@ -58,6 +67,8 @@ export default async function handler(req, res) {
         color: item.color || null,
         price: item.product_price,
         shipping_status: item.fulfillment_status || "pending",
+        // « refunded » / « partially_refunded » : le panneau peut le signaler.
+        payment_status: (item.orders && item.orders.payment_status) || null,
         total_amount: item.product_price * item.quantity,
         creator_payout: item.creator_payout,
         // Numero de suivi (30 septembre 2026) : saisi par le createur au
@@ -126,6 +137,25 @@ export default async function handler(req, res) {
           console.warn("[auth] REFUS — expedition d'un article d'une autre marque"
             + " — jeton " + marqueDuJeton + " / article " + ligneCible.brand_id);
           return res.status(403).json({ error: "Cet article n'appartient pas à ta marque" });
+        }
+      }
+
+      // PAS D'EXPEDITION D'UNE COMMANDE NON PAYEE (12 octobre 2026).
+      if (ligneCible.order_id) {
+        const { data: cmd, error: errCmd } = await supabaseAdmin
+          .from("orders")
+          .select("id, status, payment_status")
+          .eq("id", ligneCible.order_id)
+          .maybeSingle();
+        if (errCmd) {
+          console.error("Error reading order payment:", errCmd);
+          return res.status(500).json({ error: "Erreur serveur" });
+        }
+        if (cmd && (cmd.status === "cancelled"
+          || ["pending", "failed", "cancelled", "refunded"].indexOf(cmd.payment_status) !== -1)) {
+          return res.status(409).json({
+            error: "Cette commande n'est pas payée : ne l'expédie pas. Écris à contact@uneek.store si tu as un doute.",
+          });
         }
       }
 

@@ -291,6 +291,35 @@ export default async function handler(req, res) {
       }
     }
 
+    // 5 bis. LA CAGNOTTE LIVRAISON, depuis le debut (12 octobre 2026).
+    // Ce que les clients ont paye pour la livraison et les frais de service,
+    // moins les forfaits colis dus aux createurs, sur TOUTES les commandes
+    // payees. Les 1,50 EUR gagnes sur un panier d'une seule marque servent de
+    // coussin aux paniers de plusieurs marques, qui coutent plus qu'ils ne
+    // rapportent. Separe en deux pour voir qui alimente et qui consomme.
+    const forfaitsDeLaCommande = new Map();
+    const marquesDeLaCommande = new Map();
+    for (const l of lignes) {
+      forfaitsDeLaCommande.set(l.order_id, (forfaitsDeLaCommande.get(l.order_id) || 0) + cents(l.shipping_payout));
+      if (!marquesDeLaCommande.has(l.order_id)) marquesDeLaCommande.set(l.order_id, new Set());
+      if (l.brand_id) marquesDeLaCommande.get(l.order_id).add(l.brand_id);
+    }
+    const cagnotte = {
+      solde_cents: 0,
+      une_marque: { commandes: 0, solde_cents: 0 },
+      plusieurs_marques: { commandes: 0, solde_cents: 0 },
+    };
+    for (const c of payees) {
+      // Commandes d'avant les frais de port (30 septembre) : rien a compter.
+      if (!marquesDeLaCommande.has(c.id)) continue;
+      const solde = cents(c.shipping_fee) + cents(c.service_fee) - (forfaitsDeLaCommande.get(c.id) || 0);
+      if (solde === 0 && !(cents(c.shipping_fee) + cents(c.service_fee))) continue;
+      const groupe = marquesDeLaCommande.get(c.id).size > 1 ? cagnotte.plusieurs_marques : cagnotte.une_marque;
+      groupe.commandes += 1;
+      groupe.solde_cents += solde;
+      cagnotte.solde_cents += solde;
+    }
+
     // 6. Mise en forme : une entree par mois, sans trou, du plus ancien au
     //    plus recent, et jamais moins de six pour que le graphique tienne.
     const maintenant = cleDuMois(new Date().toISOString());
@@ -360,6 +389,7 @@ export default async function handler(req, res) {
         ? null
         : new Date(prochaineLiberation).toISOString(),
       delai_jours: JOURS_AVANT_VIREMENT,
+      cagnotte_livraison: cagnotte,
     });
   } catch (err) {
     console.error("[versements]", err && err.message);

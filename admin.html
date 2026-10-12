@@ -538,6 +538,17 @@
         </div>
       </div>
 
+      <!-- Cagnotte livraison (12 octobre 2026) : le coussin des paniers multi-marques, depuis le debut. -->
+      <div class="card" id="fin-cagnotte" style="display:none;padding:18px 20px;margin-bottom:16px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap">
+          <div>
+            <div class="fin-case-titre">Cagnotte livraison <span style="font-weight:400;color:var(--gray-400)">— depuis le début</span></div>
+            <div style="font-size:12.5px;color:var(--gray-600);margin-top:4px;max-width:560px" id="fin-cagnotte-detail"></div>
+          </div>
+          <div class="fin-case-val" id="fin-cagnotte-val">&euro;0</div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
           Mois par mois
@@ -721,7 +732,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-10-03-commission-15';
+  const APP_VERSION = '2026-10-12-cagnotte-livraison';
 
   async function checkAppVersion() {
     try {
@@ -2028,6 +2039,25 @@
     });
   }
 
+  // Cagnotte livraison : meme chiffre quel que soit le mois affiche.
+  function afficherCagnotte() {
+    const c = finData && finData.cagnotte_livraison;
+    const bloc = document.getElementById('fin-cagnotte');
+    if (!c || !bloc) return;
+    const signe = function (v) { return v < 0 ? '− ' + euros(-v) : '+ ' + euros(v); };
+    const n = function (k) { return k + (k === 1 ? ' commande' : ' commandes'); };
+    bloc.style.display = '';
+    const val = document.getElementById('fin-cagnotte-val');
+    val.textContent = signe(c.solde_cents);
+    val.style.color = c.solde_cents < 0 ? 'var(--red)' : '#059669';
+    const u = c.une_marque, p = c.plusieurs_marques;
+    document.getElementById('fin-cagnotte-detail').textContent = (u.commandes || p.commandes)
+      ? 'Paniers d\'une seule marque : ' + signe(u.solde_cents) + ' (' + n(u.commandes) + ') · '
+        + 'paniers de plusieurs marques : ' + signe(p.solde_cents) + ' (' + n(p.commandes) + ').'
+        + (c.solde_cents < 0 ? ' La cagnotte est vide : la différence est prise sur ta commission.' : '')
+      : 'Aucune commande avec frais de port pour l\'instant.';
+  }
+
   function afficherMois() {
     const tout = (finData && finData.mois) || [];
     const m = tout[finIndex];
@@ -2071,6 +2101,8 @@
       ? '(' + euros(port) + ' encaissés − ' + euros(forfaits) + ' de forfaits)' : '';
     document.getElementById('fin-net').textContent = fraisConnus
       ? euros(m.toi_cents + solde - m.frais_cents) : euros(m.toi_cents + solde);
+
+    afficherCagnotte();
 
     document.getElementById('fin-titre-marques').textContent = 'Par marque — ' + m.nom;
 
