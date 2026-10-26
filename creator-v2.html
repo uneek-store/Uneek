@@ -842,23 +842,6 @@
       <div class="page-title">Ma page</div>
       <div class="page-sub">Ta banni&egrave;re et ton texte de pr&eacute;sentation, visibles par tout le monde</div>
 
-      <!-- Pays d'expedition (30 septembre 2026) : il fixe le forfait colis. -->
-      <div class="card" style="padding:22px;max-width:860px;margin-bottom:18px">
-        <div class="card-header" style="margin-bottom:12px">Pays d'expédition</div>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          <select id="mp-pays" style="padding:9px 12px;border:1px solid var(--gray-200);border-radius:8px;font-size:13px;background:var(--white);min-width:200px">
-            <option value="BE">Belgique</option><option value="FR">France</option><option value="NL">Pays-Bas</option>
-            <option value="LU">Luxembourg</option><option value="DE">Allemagne</option><option value="ES">Espagne</option>
-            <option value="IT">Italie</option><option value="PT">Portugal</option>
-          </select>
-          <button class="btn-save" onclick="enregistrerPaysExpedition()" id="mp-pays-btn">Enregistrer</button>
-          <div id="mp-pays-msg" style="font-size:13px;display:none"></div>
-        </div>
-        <div style="font-size:12px;color:var(--gray-400);margin-top:12px;line-height:1.6">
-          Le pays d'où tu envoies tes colis. Pour chaque commande, tu reçois un forfait colis : 4,90 € si ton client habite dans le même pays que toi, 6,40 € s'il habite dans un autre pays.
-        </div>
-      </div>
-
       <div class="card" style="padding:22px;max-width:860px">
         <div class="card-header" style="margin-bottom:18px">Banni&egrave;re</div>
         <div id="mp-apercu-banniere"
@@ -925,6 +908,25 @@
         <button class="btn-save" id="stripe-btn" onclick="relierStripe()" style="display:none"></button>
         <div id="stripe-msg" style="font-size:12px;margin-top:10px;display:none"></div>
       </div>
+
+      <!-- Pays d'expedition (30 septembre 2026) : il fixe le forfait colis.
+           Deplace de « Ma page » vers les Parametres le 26 octobre 2026. -->
+      <div class="settings-card">
+        <div class="settings-title">Pays d'expédition</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <select id="mp-pays" style="padding:9px 12px;border:1px solid var(--gray-200);border-radius:8px;font-size:13px;background:var(--white);min-width:200px">
+            <option value="BE">Belgique</option><option value="FR">France</option><option value="NL">Pays-Bas</option>
+            <option value="LU">Luxembourg</option><option value="DE">Allemagne</option><option value="ES">Espagne</option>
+            <option value="IT">Italie</option><option value="PT">Portugal</option>
+          </select>
+          <button class="btn-save" onclick="enregistrerPaysExpedition()" id="mp-pays-btn">Enregistrer</button>
+          <div id="mp-pays-msg" style="font-size:13px;display:none"></div>
+        </div>
+        <div style="font-size:12px;color:var(--gray-400);margin-top:12px;line-height:1.6">
+          Le pays d'où tu envoies tes colis. Pour chaque commande, tu reçois un forfait colis : 4,90 € si ton client habite dans le même pays que toi, 6,40 € s'il habite dans un autre pays.
+        </div>
+      </div>
+
 
       <div class="settings-card">
         <div class="settings-title">Changer l'adresse email</div>
@@ -1204,7 +1206,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-10-12-pays-obligatoire';
+  const APP_VERSION = '2026-10-26-pays-parametres';
 
   async function checkAppVersion() {
     try {
@@ -1540,6 +1542,7 @@
     SECTION_OUVERTE = id;
     if (!currentBrand) return;
     if (id === 'mapage') chargerMaPage();
+    else if (id === 'settings') chargerPaysExpedition();
     else if (id === 'edits') loadEdits();
     else if (id === 'products') loadProducts();
     else if (id === 'orders') loadOrders();
@@ -2442,10 +2445,30 @@
       });
       if (!res.ok) return;
       const page = await res.json();
-      if (!maPage) maPage = page;
+      // Ne PAS remplir maPage ici : chargerMaPage s'en sert pour savoir si la
+      // page (banniere, cadrage) est deja initialisee.
+      const sel = document.getElementById('mp-pays');
+      if (sel) sel.value = page.ship_country || 'BE';
       if (!page.ship_country) document.getElementById('pays-obligatoire').style.display = 'flex';
     } catch (err) {
       console.warn('[uneek] creator-v2.html / verifierPaysExpedition :', err);
+    }
+  }
+
+  // Parametres : affiche le pays enregistre dans le menu deroulant.
+  async function chargerPaysExpedition() {
+    const sel = document.getElementById('mp-pays');
+    if (!sel || !currentBrand) return;
+    if (maPage) { sel.value = maPage.ship_country || 'BE'; return; }
+    try {
+      const res = await fetch(API_BASE + '/creator/marque?brand_id=' + encodeURIComponent(currentBrand.id), {
+        headers: { 'Authorization': 'Bearer ' + authToken }
+      });
+      if (!res.ok) return;
+      const page = await res.json();
+      sel.value = page.ship_country || 'BE';
+    } catch (err) {
+      console.warn('[uneek] creator-v2.html / chargerPaysExpedition :', err);
     }
   }
 
