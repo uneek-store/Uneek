@@ -8,7 +8,7 @@ import { stockParCouleur, lireStock, ecrireStock, stockTotal } from "./lib/stock
 import { controlerAcces } from "./lib/session.js";
 import { limiter } from "./lib/limite.js";
 import { nomTransporteur, lienSuivi } from "./lib/suivi.js";
-import { calculerFrais, paysValide, PAYS_LIVRES } from "./lib/livraison.js";
+import { calculerFrais, paysValide, PAYS_LIVRES, PAYS_MARQUE_PAR_DEFAUT } from "./lib/livraison.js";
 // Parts des createurs, notification des createurs, remboursement d'une
 // commande refusee : partages avec le webhook Stripe (12 octobre 2026).
 import { inscrireVirements, notifierCreateurs, rembourserPaiement } from "./lib/paiement.js";
@@ -624,14 +624,19 @@ export default async function handler(req, res) {
 
         const { data: marques } = await supabaseAdmin
           .from("brands")
-          .select("id, name, email")
+          .select("id, name, email, ship_country")
           .in("id", brandIds);
 
         // Le client voit la marque sous chaque article : c'est ce qui fait
         // comprendre qu'UNEEK reunit des createurs, et non un seul magasin.
         const articlesClient = orderItems.map((i) => {
           const marque = (marques || []).find((m) => m.id === i.brand_id);
-          return marque ? { ...i, brand_name: marque.name } : i;
+          // brand_country (26 octobre 2026) : « Vendu par marque — pays » dans
+          // la confirmation. Pays non renseigne = Belgique, comme le calcul
+          // des frais (api/lib/livraison.js).
+          return marque
+            ? { ...i, brand_name: marque.name, brand_country: paysValide(marque.ship_country) || PAYS_MARQUE_PAR_DEFAUT }
+            : i;
         });
 
         const taches = [confirmationCommande(pourEmail, articlesClient)];

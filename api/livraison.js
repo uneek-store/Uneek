@@ -9,7 +9,7 @@
 
 import { supabaseAdmin } from "./lib/supabase.js";
 import { limiter } from "./lib/limite.js";
-import { calculerFrais, paysValide, TARIFS } from "./lib/livraison.js";
+import { calculerFrais, paysValide, TARIFS, PAYS_MARQUE_PAR_DEFAUT } from "./lib/livraison.js";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -59,6 +59,13 @@ export default async function handler(req, res) {
       service: frais.service,
       service_par_marque: TARIFS.service_par_marque,
       total_frais: frais.total_frais,
+      // Qui vend (26 octobre 2026) : le pays d'expedition de chaque marque,
+      // pour la ligne « Vendu par » du checkout. Information publique ; les
+      // forfaits, eux, ne sortent toujours pas.
+      vendeurs: marques.map((id) => {
+        const m = lignes.find((x) => String(x.id) === String(id));
+        return { brand_id: id, pays: (m && paysValide(m.ship_country)) || PAYS_MARQUE_PAR_DEFAUT };
+      }),
     });
   } catch (err) {
     console.error("[livraison] devis :", err && err.message);

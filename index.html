@@ -425,6 +425,26 @@ const NOMS_PAYS = { BE: 'Belgique', FR: 'France', NL: 'Pays-Bas', LU: 'Luxembour
 let FRAIS_LIVRAISON = null;   // { pays, cle, livraison, service, total_frais } en centimes
 let DEVIS_EN_COURS = 0;
 
+// « Vendu par » : une ligne par marque du panier, avec son pays
+// d'expedition quand le devis l'a donne. Chaque morceau de texte est un
+// noeud a part, pour que i18n.js traduise « Vendu par » et le nom du pays.
+function blocVendeurs(vendeurs) {
+  const marques = [];
+  cart.forEach(i => {
+    if (i.brand_id && !marques.some(m => m.id === i.brand_id)) marques.push({ id: i.brand_id, nom: i._brand_name || '' });
+  });
+  if (!marques.length) return '';
+  const lignes = marques.map(m => {
+    const v = (vendeurs || []).find(x => String(x.brand_id) === String(m.id));
+    const pays = v && NOMS_PAYS[v.pays] ? NOMS_PAYS[v.pays] : '';
+    return '<div><span style="font-weight:500;color:var(--black)">' + echapper(m.nom) + '</span>'
+      + (pays ? ' &middot; <span>' + pays + '</span>' : '') + '</div>';
+  }).join('');
+  return '<div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:4px">Vendu par</div>'
+    + lignes
+    + '<div style="margin-top:6px;color:var(--gray-500)">UNEEK intervient comme intermédiaire : chaque pièce est vendue par son créateur.</div>';
+}
+
 function clePanier() {
   return cart.map(i => i.id).filter(Boolean).sort().join(',');
 }
@@ -456,6 +476,8 @@ async function majFraisLivraison() {
     if (liv) liv.textContent = euros(data.livraison);
     if (serv) serv.textContent = euros(data.service);
     if (tot) tot.textContent = euros(totalCents);
+    const blocV = document.getElementById('co-vendeurs');
+    if (blocV && Array.isArray(data.vendeurs)) blocV.innerHTML = blocVendeurs(data.vendeurs);
     // Les formulaires Stripe doivent annoncer le meme montant que le paiement.
     try { if (stripeElements) stripeElements.update({ amount: totalCents }); } catch (e) {}
     try { if (stripeExpressElements) stripeExpressElements.update({ amount: totalCents }); } catch (e) {}
@@ -2011,6 +2033,9 @@ function checkoutPage() {
               <div style="font-size:14px;font-weight:500">${item.price} &euro;</div>
             </div>`;
           }).join('')}
+          <!-- Qui vend (26 octobre 2026) : UNEEK est un intermediaire. Le pays de
+               chaque marque arrive avec le devis des frais (majFraisLivraison). -->
+          <div id="co-vendeurs" style="font-size:12px;line-height:1.6;color:var(--gray-600);font-weight:300;margin-bottom:18px">${blocVendeurs(null)}</div>
           <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:12px;color:var(--gray-600);font-weight:300"><span>Sous-total</span><span>${total} &euro;</span></div>
           <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:12px;color:var(--gray-600);font-weight:300"><span>Livraison &middot; une seule fois</span><span id="co-livraison">&hellip;</span></div>
           <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px;color:var(--gray-600);font-weight:300"><span>Frais de service</span><span id="co-service">&hellip;</span></div>

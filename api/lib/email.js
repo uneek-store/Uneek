@@ -241,6 +241,23 @@ export async function envoyerTous(taches) {
 // --- les 4 e-mails --------------------------------------------------------
 
 // 1. Le client vient de commander.
+// « Vendu par » : une ligne par marque de la commande, avec son pays
+// d'expedition (brand_country, ajoute par api/orders.js), puis la phrase
+// sur le role d'intermediaire d'UNEEK. Rien si aucune marque n'est connue.
+export function vendeurs(items, lg) {
+  const vus = new Map();
+  for (const i of items || []) {
+    if (i && i.brand_name && !vus.has(i.brand_name)) vus.set(i.brand_name, i.brand_country || null);
+  }
+  if (!vus.size) return "";
+  const lignes = [...vus.entries()].map(([nom, pays]) => {
+    const p = pays ? t("pays_" + String(pays).toUpperCase(), lg) : "";
+    return '<strong>' + esc(nom) + '</strong>' + (p ? ' — ' + esc(p) : "");
+  });
+  return bloqueInfo(t("c_vendu_par", lg), lignes)
+    + '<p style="margin:0 0 18px;font-size:13px;color:#666;line-height:1.6">' + t("c_intermediaire", lg) + '</p>';
+}
+
 export async function confirmationCommande(order, items) {
   const lg = choisirLangue(order);
   const marques = [...new Set((items || []).map((i) => i.brand_name).filter(Boolean))];
@@ -276,6 +293,10 @@ export async function confirmationCommande(order, items) {
     + '<tr><td style="font-size:15px;font-weight:600;padding-top:4px">' + t("total", lg) + '</td>' 
     + '<td style="font-size:15px;font-weight:600;padding-top:4px;text-align:right">'
     + prix(order.total_amount) + '</td></tr></table>'
+    // QUI VEND (26 octobre 2026) : UNEEK est un intermediaire. Le client voit
+    // chaque marque qui lui vend, avec son pays d'expedition, et une phrase
+    // qui le dit clairement (contrat createur v3, articles 2.4 a 2.6).
+    + vendeurs(items, lg)
     + bloqueInfo(t("bloc_livraison", lg), [
         esc(order.customer_name),
         esc(order.shipping_address),
