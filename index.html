@@ -1153,6 +1153,28 @@ function getAvailableColors(product) {
   return out;
 }
 
+// Toutes les couleurs a MONTRER sur la fiche, epuisees comprises : une
+// couleur partie reste affichee, barree et non cliquable, pour qu'on voie
+// qu'elle existe (26 octobre 2026 — meme principe que les tailles du
+// 7 octobre). getAvailableColors, elle, ne rend que ce qui est en stock.
+function getColorsAffichees(product) {
+  if (!stockParCouleur(product.sizes_stock)) return [];
+  const out = [];
+  stockLignes(product.sizes_stock).forEach(l => {
+    if (out.indexOf(l.couleur) === -1) out.push(l.couleur);
+  });
+  return out;
+}
+function boutonCouleurHTML(c, couleurChoisie, productId) {
+  if (getAvailableColors(trouverProduitParId(productId)).indexOf(c) === -1) {
+    return '<button class="pd-size out-of-stock" style="width:auto;padding:0 16px;text-decoration:line-through" disabled aria-disabled="true" title="Épuisé">' + libelleCouleur(c) + '</button>';
+  }
+  return '<button class="pd-size ' + (c === couleurChoisie ? 'selected' : '') + '" style="width:auto;padding:0 16px" onclick="selectColor(this,\'' + String(c).replace(/'/g, "\\'") + '\',\'' + productId + '\')">' + libelleCouleur(c) + '</button>';
+}
+function trouverProduitParId(id) {
+  return PRODUCTS.find(x => x.id === id) || {};
+}
+
 // FOOTER
 function footerHTML() {
   return `<footer class="footer">
@@ -1660,6 +1682,7 @@ function productPage() {
   const related = PRODUCTS.filter(x => x.brand_id === p.brand_id && x.id !== p.id);
   const colors = getAvailableColors(p);
   selectedColor = colors.length ? colors[0] : null;
+  const colorsAffichees = getColorsAffichees(p);
   const enStock = getAvailableSizes(p, selectedColor);
   const hasStock = enStock.length > 0 || colors.length > 0;
   const sizes = getSizesAffichees(p, selectedColor);
@@ -1675,10 +1698,10 @@ function productPage() {
           <h1 style="font-family:var(--font-display);font-size:clamp(28px,3vw,40px);font-weight:700;letter-spacing:-1px;margin-bottom:8px">${p.name}</h1>
           <div style="font-size:20px;color:var(--gray-600);margin-bottom:32px;font-weight:300">${p.price} &euro;</div>
 
-          ${colors.length ? `
-          <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px">Couleur &mdash; <span id="color-label" style="color:var(--black)">${libelleCouleur(colors[0])}</span></div>
+          ${colorsAffichees.length ? `
+          <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px">Couleur &mdash; <span id="color-label" style="color:var(--black)">${colors.length ? libelleCouleur(colors[0]) : 'Épuisé'}</span></div>
           <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap" id="color-btns">
-            ${colors.map((c, i) => `<button class="pd-size ${i === 0 ? 'selected' : ''}" style="width:auto;padding:0 16px" onclick="selectColor(this,'${String(c).replace(/'/g, "\\'")}','${p.id}')">${libelleCouleur(c)}</button>`).join('')}
+            ${colorsAffichees.map(c => boutonCouleurHTML(c, selectedColor, p.id)).join('')}
           </div>` : ''}
 
           ${hasStock ? `
