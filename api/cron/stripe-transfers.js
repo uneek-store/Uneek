@@ -6,6 +6,7 @@ import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 import { JOURS_APRES_EXPEDITION, dateDeLiberation, rangerParColis } from '../lib/virement.js';
 import { lireJeton, jetonDeLaRequete } from '../lib/session.js';
+import { rattraperVirements } from '../lib/paiement.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const supabase = createClient(
@@ -36,6 +37,15 @@ export default async function handler(req, res) {
   if (adminSigne) console.log('[virements] lance a la main par', lu.session.email || 'admin');
   if (!adminSigne && !cronVercelSigne && !secretValide && !(isVercelCron && !process.env.CRON_SECRET)) {
     return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  // 0. Rattrapage (27 octobre 2026) : les parts des createurs qui ont relie
+  //    Stripe APRES la commande sont inscrites maintenant. Jamais bloquant.
+  let rattrapees = 0;
+  try {
+    rattrapees = await rattraperVirements(supabase);
+  } catch (err) {
+    console.error('[virements] rattrapage impossible :', err && err.message);
   }
 
   try {
@@ -109,7 +119,8 @@ export default async function handler(req, res) {
         message: 'No transfers to process',
         processedCount: 0,
         waitingCount: enAttenteExpedition,
-        blockedCount: bloquesPaiement
+        blockedCount: bloquesPaiement,
+        caughtUpCount: rattrapees
       });
     }
 
@@ -216,6 +227,7 @@ export default async function handler(req, res) {
       failedTransfers: errors.length,
       waitingCount: enAttenteExpedition,
       blockedCount: bloquesPaiement,
+      caughtUpCount: rattrapees,
       results,
       errors,
     });

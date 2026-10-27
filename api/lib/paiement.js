@@ -105,6 +105,89 @@ export async function inscrireVirements(order, orderItems, chargeId) {
     order.order_number, "-", lignes.reduce((s, l) => s + l.amount, 0) / 100, "EUR");
 }
 
+
+// RATTRAPAGE DES PARTS EN ATTENTE DE STRIPE (27 octobre 2026)
+//
+// Un createur qui n'a pas encore relie Stripe au moment de la commande n'a
+// pas de ligne dans pending_transfers (voir plus haut). Avant, sa part
+// restait « a verser a la main » pour toujours, meme apres qu'il ait relie
+// son compte. Le robot appelle maintenant cette fonction chaque nuit : pour
+// toute commande PAYEE (ni remboursee, ni annulee) des 180 derniers jours,
+// chaque marque qui a desormais un compte Stripe relie et pas encore de
+// ligne recoit la sienne. Le robot la virera ensuite avec la regle
+// habituelle (21 jours apres l'expedition).
+//
+// UNE LIGNE A LA FOIS : l'index unique pending_transfers(order_id,
+// creator_id) refuse un doublon (23505) sans bloquer les autres marques.
+// Renvoie le nombre de parts rattrapees.
+export async function rattraperVirements(client) {
+  const db = client || supabaseAdmin;
+  const { data: comptes, error: e1 } = await db
+    .from("creator_accounts")
+    .select("id, email, brand_id, stripe_account_id");
+  if (e1) throw new Error("rattrapage, comptes : " + e1.message);
+  const compteRelie = new Map();
+  const marqueDuCompte = new Map();
+  for (const c of comptes || []) {
+    marqueDuCompte.set(c.id, c.brand_id);
+    if (c.brand_id && c.stripe_account_id && !compteRelie.has(c.brand_id)) compteRelie.set(c.brand_id, c);
+  }
+  if (compteRelie.size === 0) return 0;
+
+  const depuis = new Date(Date.now() - 180 * 24 * 3600 * 1000).toISOString();
+  const { data: commandes, error: e2 } = await db
+    .from("orders")
+    .select("id, order_number, status, payment_status, stripe_charge_id, created_at")
+    .eq("payment_status", "paid")
+    .gt("created_at", depuis);
+  if (e2) throw new Error("rattrapage, commandes : " + e2.message);
+  const payees = (commandes || []).filter((c) => c.status !== "cancelled");
+  if (payees.length === 0) return 0;
+  const ids = payees.map((c) => c.id);
+
+  const [{ data: lignes, error: e3 }, { data: parts, error: e4 }] = await Promise.all([
+    db.from("order_items").select("order_id, brand_id, creator_payout, shipping_payout").in("order_id", ids),
+    db.from("pending_transfers").select("order_id, creator_id").in("order_id", ids),
+  ]);
+  if (e3 || e4) throw new Error("rattrapage, lecture : " + (e3 || e4).message);
+
+  const dejaInscrit = new Set((parts || []).map((p) => p.order_id + "|" + marqueDuCompte.get(p.creator_id)));
+  const aInscrire = new Map();
+  for (const l of lignes || []) {
+    if (!l.brand_id || !compteRelie.has(l.brand_id)) continue;
+    const cle = l.order_id + "|" + l.brand_id;
+    if (dejaInscrit.has(cle)) continue;
+    const cents = Math.round((parseFloat(l.creator_payout) || 0) * 100)
+      + Math.round((parseFloat(l.shipping_payout) || 0) * 100);
+    aInscrire.set(cle, (aInscrire.get(cle) || 0) + cents);
+  }
+
+  const commandeDe = new Map(payees.map((c) => [c.id, c]));
+  let rattrapees = 0;
+  for (const [cle, montant] of aInscrire) {
+    if (montant <= 0) continue;
+    const [orderId, brandId] = cle.split("|");
+    const compte = compteRelie.get(brandId);
+    const cmd = commandeDe.get(orderId);
+    const { error } = await db.from("pending_transfers").insert([{
+      order_id: orderId,
+      creator_id: compte.id,
+      stripe_account_id: compte.stripe_account_id,
+      charge_id: (cmd && cmd.stripe_charge_id) || null,
+      amount: montant,
+      status: "pending",
+      // Date de la commande : le robot ne lit que les lignes de plus de
+      // 21 jours ; la vraie liberation se calcule sur l'expedition.
+      created_at: (cmd && cmd.created_at) || new Date().toISOString(),
+    }]);
+    if (error && error.code === "23505") continue;
+    if (error) { console.error("[virements] rattrapage", cle, ":", error.message); continue; }
+    rattrapees++;
+    console.log("[virements] part rattrapee :", compte.email, "commande", cmd && cmd.order_number, "-", montant / 100, "EUR");
+  }
+  return rattrapees;
+}
+
 // Previent chaque marque de la commande, avec SES articles seulement, dans
 // SA langue. Appele uniquement une fois le paiement confirme : un createur
 // ne doit jamais voir (ni expedier) une commande que personne n'a payee.
