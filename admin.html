@@ -732,7 +732,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-10-12-cagnotte-livraison';
+  const APP_VERSION = '2026-10-27-couleurs-anglais';
 
   async function checkAppVersion() {
     try {
@@ -1167,27 +1167,27 @@
   // creator-v2.html, admin.html et api/lib/couleurs.js. Ne le modifier qu'ici,
   // puis le recopier partout.
   var COULEURS_UNEEK = [
-    { code: 'noir',        fr: 'Noir',          hex: '#121212' },
-    { code: 'blanc',       fr: 'Blanc',         hex: '#FFFFFF' },
-    { code: 'ecru',        fr: 'Écru',          hex: '#F1EADA' },
-    { code: 'beige',       fr: 'Beige',         hex: '#D8C6A8' },
-    { code: 'gris',        fr: 'Gris',          hex: '#9B9B9B' },
-    { code: 'gris-chine',  fr: 'Gris chiné',    hex: '#BDBDBD' },
-    { code: 'marron',      fr: 'Marron',        hex: '#6B4A2F' },
-    { code: 'rouge',       fr: 'Rouge',         hex: '#C8102E' },
-    { code: 'bordeaux',    fr: 'Bordeaux',      hex: '#6E1A2B' },
-    { code: 'rose',        fr: 'Rose',          hex: '#E8A0BF' },
-    { code: 'orange',      fr: 'Orange',        hex: '#E8632A' },
-    { code: 'jaune',       fr: 'Jaune',         hex: '#F2C300' },
-    { code: 'vert',        fr: 'Vert',          hex: '#2E7D4F' },
-    { code: 'kaki',        fr: 'Kaki',          hex: '#6E7245' },
-    { code: 'bleu-clair',  fr: 'Bleu clair',    hex: '#8FBCE6' },
-    { code: 'bleu',        fr: 'Bleu',          hex: '#1F5FA9' },
-    { code: 'marine',      fr: 'Bleu marine',   hex: '#1B2A4A' },
-    { code: 'violet',      fr: 'Violet',        hex: '#6A4C93' },
-    { code: 'argente',     fr: 'Argenté',       hex: '#C2C2C2' },
-    { code: 'dore',        fr: 'Doré',          hex: '#C9A227' },
-    { code: 'multicolore', fr: 'Multicolore',   hex: null }
+    { code: 'noir',        fr: 'Noir',          en: 'Black',         hex: '#121212' },
+    { code: 'blanc',       fr: 'Blanc',         en: 'White',         hex: '#FFFFFF' },
+    { code: 'ecru',        fr: 'Écru',          en: 'Ecru',          hex: '#F1EADA' },
+    { code: 'beige',       fr: 'Beige',         en: 'Beige',         hex: '#D8C6A8' },
+    { code: 'gris',        fr: 'Gris',          en: 'Grey',          hex: '#9B9B9B' },
+    { code: 'gris-chine',  fr: 'Gris chiné',    en: 'Heather Grey',  hex: '#BDBDBD' },
+    { code: 'marron',      fr: 'Marron',        en: 'Brown',         hex: '#6B4A2F' },
+    { code: 'rouge',       fr: 'Rouge',         en: 'Red',           hex: '#C8102E' },
+    { code: 'bordeaux',    fr: 'Bordeaux',      en: 'Burgundy',      hex: '#6E1A2B' },
+    { code: 'rose',        fr: 'Rose',          en: 'Pink',          hex: '#E8A0BF' },
+    { code: 'orange',      fr: 'Orange',        en: 'Orange',        hex: '#E8632A' },
+    { code: 'jaune',       fr: 'Jaune',         en: 'Yellow',        hex: '#F2C300' },
+    { code: 'vert',        fr: 'Vert',          en: 'Green',         hex: '#2E7D4F' },
+    { code: 'kaki',        fr: 'Kaki',          en: 'Khaki',         hex: '#6E7245' },
+    { code: 'bleu-clair',  fr: 'Bleu clair',    en: 'Light Blue',    hex: '#8FBCE6' },
+    { code: 'bleu',        fr: 'Bleu',          en: 'Blue',          hex: '#1F5FA9' },
+    { code: 'marine',      fr: 'Bleu marine',   en: 'Navy',          hex: '#1B2A4A' },
+    { code: 'violet',      fr: 'Violet',        en: 'Purple',        hex: '#6A4C93' },
+    { code: 'argente',     fr: 'Argenté',       en: 'Silver',        hex: '#C2C2C2' },
+    { code: 'dore',        fr: 'Doré',          en: 'Gold',          hex: '#C9A227' },
+    { code: 'multicolore', fr: 'Multicolore',   en: 'Multicolour',   hex: null }
   ];
 
   // Ce que les createurs ont deja tape a la main, avant que la liste existe.
@@ -1228,9 +1228,13 @@
   function libelleCouleur(v) {
     var c = codeCouleur(v);
     for (var i = 0; i < COULEURS_UNEEK.length; i++) {
-      if (COULEURS_UNEEK[i].code === c) return COULEURS_UNEEK[i].fr;
+      if (COULEURS_UNEEK[i].code === c) return COULEURS_UNEEK[i].en;
     }
-    return c == null ? '' : String(c);
+    // Une couleur inconnue : on la rend telle quelle, mais avec une majuscule,
+    // pour qu'un vieux 'navy' reste lisible a cote de 'Navy' et 'Black'.
+    if (c == null) return '';
+    c = String(c);
+    return c.charAt(0).toUpperCase() + c.slice(1);
   }
 
   function hexCouleur(v) {

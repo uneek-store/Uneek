@@ -844,6 +844,13 @@ function stockDisponible(product, size, couleur) {
 }
 
 function addToCart(product, size, couleur) {
+  // On attend le PRODUIT, pas son identifiant. Un appel errone mettait
+  // jusqu'ici un article fantome dans le panier — sans nom, sans prix, et
+  // invisible pour le calcul des frais de port. Il ne passe plus.
+  if (!product || typeof product !== 'object' || !product.id) {
+    console.warn('[uneek] index.html / addToCart : appele sans produit', product);
+    return;
+  }
   const dispo = stockDisponible(product, size, couleur);
   if (dispo !== null && dejaAuPanier(product.id, size, couleur) >= dispo) {
     showToast(dispo === 0
@@ -984,27 +991,27 @@ function stockParCouleur(ss) {
 // creator-v2.html, admin.html et api/lib/couleurs.js. Ne le modifier qu'ici,
 // puis le recopier partout.
 var COULEURS_UNEEK = [
-  { code: 'noir',        fr: 'Noir',          hex: '#121212' },
-  { code: 'blanc',       fr: 'Blanc',         hex: '#FFFFFF' },
-  { code: 'ecru',        fr: 'Écru',          hex: '#F1EADA' },
-  { code: 'beige',       fr: 'Beige',         hex: '#D8C6A8' },
-  { code: 'gris',        fr: 'Gris',          hex: '#9B9B9B' },
-  { code: 'gris-chine',  fr: 'Gris chiné',    hex: '#BDBDBD' },
-  { code: 'marron',      fr: 'Marron',        hex: '#6B4A2F' },
-  { code: 'rouge',       fr: 'Rouge',         hex: '#C8102E' },
-  { code: 'bordeaux',    fr: 'Bordeaux',      hex: '#6E1A2B' },
-  { code: 'rose',        fr: 'Rose',          hex: '#E8A0BF' },
-  { code: 'orange',      fr: 'Orange',        hex: '#E8632A' },
-  { code: 'jaune',       fr: 'Jaune',         hex: '#F2C300' },
-  { code: 'vert',        fr: 'Vert',          hex: '#2E7D4F' },
-  { code: 'kaki',        fr: 'Kaki',          hex: '#6E7245' },
-  { code: 'bleu-clair',  fr: 'Bleu clair',    hex: '#8FBCE6' },
-  { code: 'bleu',        fr: 'Bleu',          hex: '#1F5FA9' },
-  { code: 'marine',      fr: 'Bleu marine',   hex: '#1B2A4A' },
-  { code: 'violet',      fr: 'Violet',        hex: '#6A4C93' },
-  { code: 'argente',     fr: 'Argenté',       hex: '#C2C2C2' },
-  { code: 'dore',        fr: 'Doré',          hex: '#C9A227' },
-  { code: 'multicolore', fr: 'Multicolore',   hex: null }
+  { code: 'noir',        fr: 'Noir',          en: 'Black',         hex: '#121212' },
+  { code: 'blanc',       fr: 'Blanc',         en: 'White',         hex: '#FFFFFF' },
+  { code: 'ecru',        fr: 'Écru',          en: 'Ecru',          hex: '#F1EADA' },
+  { code: 'beige',       fr: 'Beige',         en: 'Beige',         hex: '#D8C6A8' },
+  { code: 'gris',        fr: 'Gris',          en: 'Grey',          hex: '#9B9B9B' },
+  { code: 'gris-chine',  fr: 'Gris chiné',    en: 'Heather Grey',  hex: '#BDBDBD' },
+  { code: 'marron',      fr: 'Marron',        en: 'Brown',         hex: '#6B4A2F' },
+  { code: 'rouge',       fr: 'Rouge',         en: 'Red',           hex: '#C8102E' },
+  { code: 'bordeaux',    fr: 'Bordeaux',      en: 'Burgundy',      hex: '#6E1A2B' },
+  { code: 'rose',        fr: 'Rose',          en: 'Pink',          hex: '#E8A0BF' },
+  { code: 'orange',      fr: 'Orange',        en: 'Orange',        hex: '#E8632A' },
+  { code: 'jaune',       fr: 'Jaune',         en: 'Yellow',        hex: '#F2C300' },
+  { code: 'vert',        fr: 'Vert',          en: 'Green',         hex: '#2E7D4F' },
+  { code: 'kaki',        fr: 'Kaki',          en: 'Khaki',         hex: '#6E7245' },
+  { code: 'bleu-clair',  fr: 'Bleu clair',    en: 'Light Blue',    hex: '#8FBCE6' },
+  { code: 'bleu',        fr: 'Bleu',          en: 'Blue',          hex: '#1F5FA9' },
+  { code: 'marine',      fr: 'Bleu marine',   en: 'Navy',          hex: '#1B2A4A' },
+  { code: 'violet',      fr: 'Violet',        en: 'Purple',        hex: '#6A4C93' },
+  { code: 'argente',     fr: 'Argenté',       en: 'Silver',        hex: '#C2C2C2' },
+  { code: 'dore',        fr: 'Doré',          en: 'Gold',          hex: '#C9A227' },
+  { code: 'multicolore', fr: 'Multicolore',   en: 'Multicolour',   hex: null }
 ];
 
 // Ce que les createurs ont deja tape a la main, avant que la liste existe.
@@ -1045,9 +1052,13 @@ function codeCouleur(v) {
 function libelleCouleur(v) {
   var c = codeCouleur(v);
   for (var i = 0; i < COULEURS_UNEEK.length; i++) {
-    if (COULEURS_UNEEK[i].code === c) return COULEURS_UNEEK[i].fr;
+    if (COULEURS_UNEEK[i].code === c) return COULEURS_UNEEK[i].en;
   }
-  return c == null ? '' : String(c);
+  // Une couleur inconnue : on la rend telle quelle, mais avec une majuscule,
+  // pour qu'un vieux 'navy' reste lisible a cote de 'Navy' et 'Black'.
+  if (c == null) return '';
+  c = String(c);
+  return c.charAt(0).toUpperCase() + c.slice(1);
 }
 
 function hexCouleur(v) {
@@ -1194,7 +1205,7 @@ function getColorsAffichees(product) {
 }
 function boutonCouleurHTML(c, couleurChoisie, productId) {
   if (getAvailableColors(trouverProduitParId(productId)).indexOf(c) === -1) {
-    return '<button class="pd-size out-of-stock" style="width:auto;padding:0 16px;text-decoration:line-through" disabled aria-disabled="true" title="Épuisé">' + libelleCouleur(c) + '</button>';
+    return '<button class="pd-size out-of-stock" style="width:auto;padding:0 16px" disabled aria-disabled="true" title="Épuisé">' + libelleCouleur(c) + '</button>';
   }
   return '<button class="pd-size ' + (c === couleurChoisie ? 'selected' : '') + '" style="width:auto;padding:0 16px" onclick="selectColor(this,\'' + String(c).replace(/'/g, "\\'") + '\',\'' + productId + '\')">' + libelleCouleur(c) + '</button>';
 }
@@ -1315,6 +1326,9 @@ function cheminDeRoute(page, data) {
   if (page === 'brand') {
     return data ? '/marque/' + encodeURIComponent(data) : '/marques';
   }
+  // La page « introuvable » n'a pas d'adresse a elle : elle garde celle que
+  // la personne a tapee, sinon l'adresse changerait sous ses yeux.
+  if (page === 'introuvable') return location.pathname;
   const base = ROUTES[page];
   return (base === undefined || base === '') ? '/' : '/' + base;
 }
@@ -1331,7 +1345,9 @@ function routeDeChemin(chemin) {
   if (parts[0] === 'produit') return { page: 'product', data: parts[1] || null };
   if (parts[0] === 'marque') return { page: 'brand', data: parts[1] || null };
   const trouve = Object.keys(ROUTES).filter(k => ROUTES[k] === parts[0]);
-  return trouve.length ? { page: trouve[0], data: null } : { page: 'home', data: null };
+  if (trouve.length) return { page: trouve[0], data: null };
+  // Adresse inconnue : on ne fait pas semblant d'etre l'accueil.
+  return { page: 'introuvable', data: parts.join('/') };
 }
 
 // Quelle partie de la banniere reste visible dans le bandeau.
@@ -1418,7 +1434,8 @@ function majTitre(page, data) {
       partner: 'Devenir Partenaire', checkout: 'Commande', login: 'Connexion',
       register: 'Inscription', profile: 'Mon profil', cgv: 'CGV',
       retours: 'Retours et remboursements',
-      privacy: 'Confidentialité', legal: 'Mentions légales'
+      privacy: 'Confidentialité', legal: 'Mentions légales',
+      introuvable: 'Page introuvable'
     };
     const textes = {
       shop: 'Toutes les pièces des marques indépendantes belges réunies sur UNEEK.',
@@ -1528,6 +1545,19 @@ function homePage() {
   </div>`;
 }
 
+// La page qu'on voit quand l'adresse ne mene nulle part.
+function pageIntrouvableHTML() {
+  return `<div style="padding-top:96px">
+    <section class="section" style="text-align:center;padding-top:80px;padding-bottom:120px">
+      <div style="font-family:var(--font-display);font-size:64px;font-weight:800;color:var(--gray-200);line-height:1">404</div>
+      <h1 class="section-title" style="margin:16px 0 8px">Cette page n'existe pas.</h1>
+      <p style="font-size:14px;color:var(--gray-500);font-weight:300;margin-bottom:32px">Le lien est peut-être périmé, ou l'adresse mal recopiée.</p>
+      <button class="btn btn-primary" onclick="navigate('shop')">Voir la boutique</button>
+    </section>
+    ${footerHTML()}
+  </div>`;
+}
+
 function shopPage() {
   return `<div style="padding-top:96px">
     <section class="section">
@@ -1545,9 +1575,36 @@ function shopPage() {
         </div>
       </div>
       <div class="product-grid" id="shop-grid">${PRODUCTS.map(p => productCardHTML(p)).join('')}</div>
+      ${catalogueEnPanneHTML()}
     </section>
     ${footerHTML()}
   </div>`;
+}
+
+// Le catalogue n'a pas pu etre charge : on le DIT, et on donne un bouton.
+// produitsChargees distingue les deux cas qui se ressemblent a l'ecran :
+// une boutique vraiment vide, et une boutique qui n'a pas pu se charger.
+function catalogueEnPanneHTML() {
+  if (produitsChargees) return '';
+  return '<div id="catalogue-en-panne" style="text-align:center;padding:64px 16px">'
+    + '<div style="font-size:16px;font-weight:500;margin-bottom:8px">Les pièces n\'ont pas pu être chargées.</div>'
+    + '<div style="font-size:14px;color:var(--gray-500);font-weight:300;margin-bottom:24px">Ça vient sûrement de la connexion. On réessaie tout seul, mais tu peux forcer.</div>'
+    + '<button class="btn btn-primary" onclick="reessayerCatalogue(this)">Réessayer</button>'
+    + '</div>';
+}
+
+// Relance le chargement a la demande. Pendant l'essai le bouton le dit, pour
+// qu'on ne clique pas trois fois en croyant qu'il ne se passe rien.
+async function reessayerCatalogue(bouton) {
+  if (bouton) { bouton.disabled = true; bouton.textContent = '\u2026'; }
+  try {
+    await loadData();
+  } catch (e) {
+    console.warn('[uneek] index.html / reessayerCatalogue : appel reseau en echec', e);
+  }
+  if (currentPage === 'shop') { renderPage(); } else if (bouton) {
+    bouton.disabled = false; bouton.textContent = 'R\u00e9essayer';
+  }
 }
 
 let activeCategory = 'Tous', activeBrand = null, searchQuery = '';
@@ -1726,7 +1783,7 @@ function productPage() {
           <div style="font-size:20px;color:var(--gray-600);margin-bottom:32px;font-weight:300">${p.price} &euro;</div>
 
           ${colorsAffichees.length ? `
-          <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px">Couleur &mdash; <span id="color-label" style="color:var(--black)">${colors.length ? libelleCouleur(colors[0]) : 'Épuisé'}</span></div>
+          <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px"><span>Couleur</span> &mdash; <span id="color-label" style="color:var(--black)">${colors.length ? libelleCouleur(colors[0]) : 'Épuisé'}</span></div>
           <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap" id="color-btns">
             ${colorsAffichees.map(c => boutonCouleurHTML(c, selectedColor, p.id)).join('')}
           </div>` : ''}
@@ -2692,6 +2749,7 @@ function renderPage() {
     case 'cgv': app.innerHTML = legalPage('cgv'); break;
     case 'privacy': app.innerHTML = legalPage('privacy'); break;
     case 'legal': app.innerHTML = legalPage('legal'); break;
+    case 'introuvable': app.innerHTML = pageIntrouvableHTML(); break;
     default: app.innerHTML = homePage();
   }
 }
