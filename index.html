@@ -97,6 +97,11 @@ a{text-decoration:none;}
   border:2px solid rgba(255,255,255,.35);border-top-color:#fff;
   animation:rondelle-tourne .6s linear infinite;margin-right:8px;vertical-align:-2px;}
 @keyframes rondelle-tourne{to{transform:rotate(360deg);}}
+/* Voile pendant l'enregistrement de la commande (27 octobre 2026) : le client
+   voit que ca travaille, au lieu d'un ecran fige. */
+.voile-commande{position:fixed;inset:0;z-index:9000;background:rgba(250,250,250,.82);display:flex;align-items:center;justify-content:center;padding:16px}
+.voile-commande .boite{background:#fff;border-radius:14px;padding:26px 30px;box-shadow:0 12px 40px rgba(0,0,0,.12);display:flex;align-items:center;gap:14px;font-size:15px;font-weight:500;color:#111}
+.voile-commande .rondelle{width:22px;height:22px;border-width:3px;margin-right:0;border-color:rgba(0,0,0,.15);border-top-color:#111}
 @media (prefers-reduced-motion:reduce){.rondelle{animation-duration:2s;}}
 .btn-outline{background:transparent;color:var(--black);border:1px solid var(--gray-300);}
 .btn-sm{padding:10px 20px;font-size:11px;}
@@ -2139,6 +2144,22 @@ async function creerPaymentIntent(cmd) {
   return data.clientSecret;
 }
 
+// Affiche (texte) ou retire (null) le voile de chargement de la commande.
+function voileCommande(texte) {
+  let v = document.getElementById('voile-commande');
+  if (!texte) { if (v) v.remove(); return; }
+  if (!v) {
+    v = document.createElement('div');
+    v.id = 'voile-commande';
+    v.className = 'voile-commande';
+    v.setAttribute('role', 'status');
+    v.setAttribute('aria-live', 'polite');
+    v.innerHTML = '<div class="boite"><span class="rondelle"></span><span class="voile-texte"></span></div>';
+    document.body.appendChild(v);
+  }
+  v.querySelector('.voile-texte').textContent = texte;
+}
+
 async function confirmOrder() {
   const cmd = validerCommande();
   if (!cmd) return;
@@ -2202,11 +2223,13 @@ async function confirmOrder() {
     }
 
     // 5. Paiement OK : on enregistre la commande.
-    btn.textContent = 'Enregistrement de la commande...';
+    btn.innerHTML = '<span class="rondelle"></span>Enregistrement de la commande...';
+    voileCommande('Enregistrement de la commande...');
     await enregistrerCommandePayee(cmd.orderData, paymentIntent.id, cmd.prenom);
 
   } catch (err) {
     console.error('Erreur checkout:', err);
+    voileCommande(null);
     montrerErreurPaiement('Erreur réseau, réessaie.');
     boutonNormal();
   }
@@ -2220,16 +2243,24 @@ async function paiementExpress(ev) {
   const cmd = validerCommande();
   if (!cmd) { ev.paymentFailed({ reason: 'fail' }); return; }
   montrerErreurPaiement('');
+  // Meme retour visuel que le paiement par carte (27 octobre 2026).
+  const btnX = document.getElementById('co-btn');
+  const remettre = function () {
+    voileCommande(null);
+    if (btnX) { btnX.innerHTML = 'Confirmer la commande &rarr;'; btnX.disabled = false; btnX.style.opacity = '1'; }
+  };
+  if (btnX) { btnX.innerHTML = '<span class="rondelle"></span>Paiement en cours…'; btnX.disabled = true; btnX.style.opacity = '0.75'; }
   try {
     const { error: erreurSaisie } = await stripeExpressElements.submit();
     if (erreurSaisie) {
       ev.paymentFailed({ reason: 'fail' });
+      remettre();
       montrerErreurPaiement(erreurSaisie.message || 'Paiement impossible.');
       return;
     }
 
     const clientSecret = await creerPaymentIntent(cmd);
-    if (!clientSecret) { ev.paymentFailed({ reason: 'fail' }); return; }
+    if (!clientSecret) { ev.paymentFailed({ reason: 'fail' }); remettre(); return; }
 
     try { localStorage.setItem('uneek_pending_order', JSON.stringify(cmd.orderData)); } catch (err) {}
 
@@ -2246,6 +2277,7 @@ async function paiementExpress(ev) {
     if (erreurPaiement) {
       try { localStorage.removeItem('uneek_pending_order'); } catch (err) {}
       ev.paymentFailed({ reason: 'fail' });
+      remettre();
       montrerErreurPaiement(erreurPaiement.message || 'Le paiement a été refusé.');
       return;
     }
@@ -2253,15 +2285,19 @@ async function paiementExpress(ev) {
     if (!paymentIntent || (paymentIntent.status !== 'succeeded' && paymentIntent.status !== 'processing')) {
       try { localStorage.removeItem('uneek_pending_order'); } catch (err) {}
       ev.paymentFailed({ reason: 'fail' });
+      remettre();
       montrerErreurPaiement('Le paiement n\'a pas abouti.');
       return;
     }
 
+    if (btnX) btnX.innerHTML = '<span class="rondelle"></span>Enregistrement de la commande...';
+    voileCommande('Enregistrement de la commande...');
     await enregistrerCommandePayee(cmd.orderData, paymentIntent.id, cmd.prenom);
 
   } catch (err) {
     console.error('Erreur Apple Pay / Google Pay:', err);
     ev.paymentFailed({ reason: 'fail' });
+      remettre();
     montrerErreurPaiement('Erreur réseau, réessaie.');
   }
 }
@@ -2287,6 +2323,7 @@ async function enregistrerCommandePayee(orderData, paymentIntentId, prenom) {
   }
 
   try { localStorage.removeItem('uneek_pending_order'); } catch (err) {}
+  voileCommande(null);
 
   if (data && data.success) {
     cart = []; saveCart(); renderCart();
@@ -2352,6 +2389,7 @@ async function finaliserPaiementAuRetour() {
     return true;
   }
   const prenom = (orderData.customer && orderData.customer.name) ? orderData.customer.name.split(' ')[0] : '';
+  voileCommande('Enregistrement de la commande...');
   await enregistrerCommandePayee(orderData, piId, prenom);
   return true;
 }
