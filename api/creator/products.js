@@ -36,7 +36,10 @@ function aplatirStock(ss) {
 // --- Details du produit ---------------------------------------------------
 // Chaque marque ecrivait sa description comme elle voulait : avec trente
 // marques, la boutique devenait un patchwork. On demande donc des champs
-// plutot qu'un texte, et les trois premiers sont obligatoires.
+// plutot qu'un texte. Composition et coupe sont obligatoires ; l'entretien
+// est facultatif depuis le 29 octobre 2026 (certaines pieces n'ont pas de
+// consigne particuliere) — s'il est rempli, seules les valeurs de la liste
+// sont gardees.
 // Les valeurs de coupe et d'entretien sont fermees : une marque ne peut pas
 // inventer sa propre formulation, c'est ce qui garde les fiches coherentes.
 
@@ -48,15 +51,11 @@ const ENTRETIENS = [
 
 function detailsManquants(d) {
   if (!d || typeof d !== "object" || Array.isArray(d)) {
-    return ["la composition", "la coupe", "au moins une consigne d'entretien"];
+    return ["la composition", "la coupe"];
   }
   const manque = [];
   if (!String(d.composition || "").trim()) manque.push("la composition");
   if (!COUPES.includes(String(d.coupe || ""))) manque.push("la coupe");
-  const e = d.entretien;
-  if (!Array.isArray(e) || e.filter((x) => ENTRETIENS.includes(x)).length === 0) {
-    manque.push("au moins une consigne d'entretien");
-  }
   return manque;
 }
 
@@ -77,7 +76,8 @@ function nettoyerDetails(d) {
   return propre;
 }
 
-const STOCK_MINIMUM = 3;
+// 3 jusqu'au 29 octobre 2026, abaisse a 2 a la demande d'UNEEK.
+const STOCK_MINIMUM = 2;
 function combinaisonsSousLeMinimum(ss) {
   return aplatirStock(ss)
     .filter((l) => l.qte > 0 && l.qte < STOCK_MINIMUM)

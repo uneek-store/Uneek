@@ -1031,7 +1031,7 @@
       <option value="Ajustée">Ajustée</option>
     </select>
 
-    <label>Entretien *</label>
+    <label>Entretien</label>
     <div id="f-entretien" style="display:flex;flex-wrap:wrap;gap:10px 18px;margin-bottom:6px">
       <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0"><input type="checkbox" value="Lavage à 30°" style="width:auto;margin:0"> Lavage à 30°</label>
       <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0"><input type="checkbox" value="Lavage à 40°" style="width:auto;margin:0"> Lavage à 40°</label>
@@ -1141,7 +1141,7 @@
       </div>
       <label id="stockLabel">Stock initial par taille</label>
       <div class="size-grid" id="sizeGrid"></div>
-      <p class="modal-note" id="noteStock" style="margin-top:6px">Minimum 3 pièces par taille proposée — c'est dans les règles UNEEK. Laisse 0 pour une taille que tu ne proposes pas.</p>
+      <p class="modal-note" id="noteStock" style="margin-top:6px">Minimum 2 pièces par taille proposée — c'est dans les règles UNEEK. Laisse 0 pour une taille que tu ne proposes pas.</p>
       <p id="stockError" style="display:none;color:var(--red);font-size:12px;margin-top:6px;font-weight:500"></p>
     </div>
 
@@ -1206,7 +1206,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-10-27-couleurs-anglais';
+  const APP_VERSION = '2026-10-29-entretien-facultatif-minimum-2';
 
   async function checkAppVersion() {
     try {
@@ -1461,7 +1461,8 @@
     const manque = [];
     if (!d.composition) manque.push('la composition');
     if (!d.coupe) manque.push('la coupe');
-    if (!d.entretien || !d.entretien.length) manque.push('au moins une consigne d\'entretien');
+    // Entretien facultatif depuis le 29 octobre 2026 : certaines pieces
+    // n'ont pas de consigne particuliere.
     return manque;
   }
 
@@ -2791,14 +2792,14 @@
       if (String(commissionVal) === String(o.commission)) delete body.commission_percent;
       if (variants.join(', ') === o.variants) delete body.variants;
       attachImages(body, true);
-      // La regle du minimum 3 ne s'appliquait qu'a la creation : une
+      // La regle du minimum (2 depuis le 29/10/2026, 3 avant) ne s'appliquait qu'a la creation : une
       // modification passait au travers. Elle vaut desormais dans les deux cas.
       const fautivesEdit = tropPeuDeStock();
       const errEdit = document.getElementById('stockError');
       if (fautivesEdit.length > 0) {
         // La phrase d'un cote, la liste de l'autre : melangees, la cle
         // changerait a chaque taille fautive et ne serait jamais traduite.
-        errEdit.innerHTML = '<div>Minimum 3 pièces par taille proposée.</div><div>'
+        errEdit.innerHTML = '<div>Minimum 2 pièces par taille proposée.</div><div>'
           + fautivesEdit.map(function (f) { return esc(f); }).join(' · ') + '</div>';
         errEdit.style.display = 'block';
         return;
@@ -2815,11 +2816,11 @@
     } else {
       body.edit_type = 'new';
       attachImages(body, false);
-      // Regle UNEEK : au moins 3 pieces par combinaison proposee.
+      // Regle UNEEK : au moins 2 pieces par combinaison proposee (3 avant le 29/10/2026).
       const fautives = tropPeuDeStock();
       const err = document.getElementById('stockError');
       if (fautives.length > 0) {
-        err.innerHTML = '<div>Minimum 3 pièces par taille proposée.</div><div>'
+        err.innerHTML = '<div>Minimum 2 pièces par taille proposée.</div><div>'
           + fautives.map(function (f) { return esc(f); }).join(' · ') + '</div>';
         err.style.display = 'block';
         return;
@@ -3059,8 +3060,8 @@
     const note = document.getElementById('noteStock');
     if (note) {
       note.innerHTML = unique
-        ? "<span>Minimum 3 pi\u00e8ces - c'est dans les r\u00e8gles UNEEK.</span>"
-        : "<span>Minimum 3 pi\u00e8ces par taille propos\u00e9e - c'est dans les r\u00e8gles UNEEK.</span>"
+        ? "<span>Minimum 2 pi\u00e8ces - c'est dans les r\u00e8gles UNEEK.</span>"
+        : "<span>Minimum 2 pi\u00e8ces par taille propos\u00e9e - c'est dans les r\u00e8gles UNEEK.</span>"
           + " <span>Laisse 0 pour une taille que tu ne proposes pas.</span>";
     }
     updateSizeGrid();
@@ -3086,7 +3087,7 @@
     return out;
   }
 
-  // Regle UNEEK : au moins 3 pieces des qu'une combinaison est proposee.
+  // Regle UNEEK : au moins 2 pieces des qu'une combinaison est proposee (3 avant le 29/10/2026).
   // Ce qui manque aux photos. Chaine vide = tout va bien.
   //
   // Le resultat est du HTML, et chaque phrase vit dans son propre element :
@@ -3113,7 +3114,7 @@
     const fautives = [];
     document.querySelectorAll('#sizeGrid .stock-cell input').forEach(inp => {
       const q = parseInt(inp.value) || 0;
-      if (q > 0 && q < 3) {
+      if (q > 0 && q < 2) {
         const c = inp.dataset.couleur;
         fautives.push((c ? c + ' ' : '') + inp.dataset.taille + ' (' + q + ')');
       }
