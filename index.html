@@ -1175,6 +1175,11 @@ function getSizesAffichees(product, couleur) {
   out.sort(function (a, b) { return comparerTailles(a.size, b.size); });
   return out;
 }
+// Vrai si la seule taille proposee est « Unique » (bonnet, accessoire...).
+function estTailleUniqueSeule(sizes) {
+  return Array.isArray(sizes) && sizes.length === 1
+    && String(sizes[0].size).trim().toLowerCase() === 'unique';
+}
 function boutonTailleHTML(s) {
   return s.stock <= 0
     ? '<button class="pd-size out-of-stock" disabled aria-disabled="true" title="Épuisé">' + s.size + '</button>'
@@ -1294,7 +1299,10 @@ function detailsProduitHTML(d) {
   };
   const lignes = [];
   if (d.composition) lignes.push(['Composition', proteger(d.composition)]);
-  if (d.coupe) lignes.push(['Coupe', proteger(d.coupe)]);
+  // Coupe de la liste et/ou precision libre du createur (2 novembre 2026).
+  const coupeTexte = [d.coupe, d.coupe_precision].filter(function (v) { return v && String(v).trim(); })
+    .map(proteger).join(' — ');
+  if (coupeTexte) lignes.push(['Coupe', coupeTexte]);
   if (Array.isArray(d.entretien) && d.entretien.length) {
     lignes.push(['Entretien', d.entretien.map(proteger).join(' · ')]);
   }
@@ -1770,6 +1778,13 @@ function productPage() {
   const enStock = getAvailableSizes(p, selectedColor);
   const hasStock = enStock.length > 0 || colors.length > 0;
   const sizes = getSizesAffichees(p, selectedColor);
+  // 2 novembre 2026 : une taille UNIQUE ne s'affiche plus (un bloc « Taille »
+  // avec un seul bouton « Unique » n'apporte rien) ; elle est choisie
+  // d'office. Une seule couleur : on garde « Couleur — Noir », sans bouton.
+  const tailleUnique = estTailleUniqueSeule(sizes);
+  const uniqueDispo = tailleUnique && sizes[0].stock > 0;
+  if (tailleUnique) selectedSize = uniqueDispo ? sizes[0].size : null;
+  const couleurSeule = colorsAffichees.length === 1 && colors.length === 1;
 
   return `<div>
     <section class="section" style="padding-top:96px">
@@ -1783,20 +1798,24 @@ function productPage() {
           <div style="font-size:20px;color:var(--gray-600);margin-bottom:32px;font-weight:300">${p.price} &euro;</div>
 
           ${colorsAffichees.length ? `
-          <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px"><span>Couleur</span> &mdash; <span id="color-label" style="color:var(--black)">${colors.length ? libelleCouleur(colors[0]) : 'Épuisé'}</span></div>
-          <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap" id="color-btns">
+          <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:${couleurSeule ? '24px' : '12px'}"><span>Couleur</span> &mdash; <span id="color-label" style="color:var(--black)">${colors.length ? libelleCouleur(colors[0]) : 'Épuisé'}</span></div>
+          <div style="display:${couleurSeule ? 'none' : 'flex'};gap:8px;margin-bottom:24px;flex-wrap:wrap" id="color-btns">
             ${colorsAffichees.map(c => boutonCouleurHTML(c, selectedColor, p.id)).join('')}
           </div>` : ''}
 
           ${hasStock ? `
-          <div style="font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px">Taille</div>
-          <div style="display:flex;gap:8px;margin-bottom:32px;flex-wrap:wrap" id="size-btns">
+          <div id="size-titre" style="display:${tailleUnique ? 'none' : 'block'};font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-400);margin-bottom:12px">Taille</div>
+          <div style="display:${tailleUnique ? 'none' : 'flex'};gap:8px;margin-bottom:32px;flex-wrap:wrap" id="size-btns">
             ${sizes.map(boutonTailleHTML).join('')}
           </div>` : `
           <div style="font-size:14px;color:var(--gray-400);margin-bottom:32px">Tailles bientôt disponibles</div>`}
 
           <div style="display:flex;gap:12px;margin-bottom:32px">
-            <button id="add-btn" class="btn btn-dark" style="flex:1;justify-content:center;opacity:0.4" onclick="doAddToCart('${p.id}')" disabled>Sélectionne une taille</button>
+            ${uniqueDispo
+              ? `<button id="add-btn" class="btn btn-dark" style="flex:1;justify-content:center;opacity:1" onclick="doAddToCart('${p.id}')">Ajouter au panier</button>`
+              : tailleUnique
+              ? `<button id="add-btn" class="btn btn-dark" style="flex:1;justify-content:center;opacity:0.4" onclick="doAddToCart('${p.id}')" disabled>Épuisé</button>`
+              : `<button id="add-btn" class="btn btn-dark" style="flex:1;justify-content:center;opacity:0.4" onclick="doAddToCart('${p.id}')" disabled>Sélectionne une taille</button>`}
             <button class="pd-fav-btn ${isFav ? 'is-fav' : ''}" data-fav="${p.id}" onclick="toggleFav('${p.id}')" style="width:52px;height:52px;border:1px solid var(--gray-200);background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:var(--radius)">
               ${isFav ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="url(#heartGrad)" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'}
             </button>
@@ -1855,6 +1874,22 @@ function selectColor(btn, couleur, productId) {
     addBtn.textContent = 'Sélectionne une taille';
     addBtn.style.opacity = '0.4';
     addBtn.disabled = true;
+  }
+  // Taille unique : rien a choisir, la taille suit la couleur d'office.
+  if (p) {
+    const dispoU = getSizesAffichees(p, couleur);
+    const unique = estTailleUniqueSeule(dispoU);
+    const titre = document.getElementById('size-titre');
+    if (titre) titre.style.display = unique ? 'none' : 'block';
+    if (zone) zone.style.display = unique ? 'none' : 'flex';
+    if (unique && addBtn) {
+      if (dispoU[0].stock > 0) {
+        selectedSize = dispoU[0].size;
+        addBtn.textContent = 'Ajouter au panier'; addBtn.style.opacity = '1'; addBtn.disabled = false;
+      } else {
+        addBtn.textContent = 'Épuisé';
+      }
+    }
   }
 }
 

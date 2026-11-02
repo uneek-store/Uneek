@@ -73,6 +73,9 @@ function nettoyerDetails(d) {
   const texte = (v) => String(v == null ? "" : v).trim().slice(0, 200);
   if (texte(d.composition)) propre.composition = texte(d.composition);
   if (COUPES.includes(String(d.coupe || ""))) propre.coupe = String(d.coupe);
+  // Precision libre de la coupe (2 novembre 2026), pour une coupe absente
+  // de la liste. Texte court ; il est echappe a l'affichage sur la boutique.
+  if (texte(d.coupe_precision)) propre.coupe_precision = texte(d.coupe_precision).slice(0, 80);
   if (Array.isArray(d.entretien)) {
     const gardes = d.entretien.filter((x) => ENTRETIENS.includes(x));
     if (gardes.length) propre.entretien = gardes;

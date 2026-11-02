@@ -1041,6 +1041,7 @@
       <option value="Courte (crop)">Courte (crop)</option>
       <option value="Longue">Longue</option>
     </select>
+    <input id="f-coupe-precision" placeholder="Ta coupe n'est pas dans la liste ? Décris-la (facultatif)" maxlength="80" style="margin-top:8px" />
 
     <label>Entretien</label>
     <div id="f-entretien" style="display:flex;flex-wrap:wrap;gap:10px 18px;margin-bottom:6px">
@@ -1217,7 +1218,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-11-02-panneaux';
+  const APP_VERSION = '2026-11-02-fiche-et-cadre';
 
   async function checkAppVersion() {
     try {
@@ -1436,6 +1437,7 @@
     const d = {};
     if (val('f-composition')) d.composition = val('f-composition');
     if (val('f-coupe')) d.coupe = val('f-coupe');
+    if (val('f-coupe-precision')) d.coupe_precision = val('f-coupe-precision');
     if (coches.length) d.entretien = coches;
     if (val('f-mannequin')) d.mannequin = val('f-mannequin');
     if (val('f-fabrique')) d.fabrique = val('f-fabrique');
@@ -1446,6 +1448,7 @@
     d = (d && typeof d === 'object') ? d : {};
     document.getElementById('f-composition').value = d.composition || '';
     document.getElementById('f-coupe').value = d.coupe || '';
+    document.getElementById('f-coupe-precision').value = d.coupe_precision || '';
     document.getElementById('f-mannequin').value = d.mannequin || '';
     document.getElementById('f-fabrique').value = d.fabrique || '';
     const liste = Array.isArray(d.entretien) ? d.entretien : [];
@@ -2229,7 +2232,7 @@
     for (const f of files) {
       if (selectedImages.length >= MAX_IMAGES) { refuses++; continue; }
       try {
-        selectedImages.push(await resizeAndReadFile(f, 800));
+        selectedImages.push(await resizeAndReadFile(f, 800, { cadre: true }));
         selectedImageColors.push(null);
       } catch (e) {
         echecs.push(motifEchecPhoto(f));
@@ -2574,12 +2577,109 @@
     }
   }
 
-  function resizeAndReadFile(file, maxSize) {
+  // --- CADRE BLANC AUTOUR D'UNE PHOTO (2 novembre 2026) -------------------
+  // Cas reel : un bonnet en PNG, sur une carte gris clair aux coins arrondis,
+  // entouree de transparence. La transparence devenait du BLANC a l'envoi :
+  // sur la boutique, on voyait un cadre blanc autour du fond gris.
+  // On retire ce cadre UNIQUEMENT s'il est net : une bande vide (transparente
+  // ou blanc pur) sur les QUATRE cotes, puis un fond clair uniforme et
+  // different du blanc. Une photo detouree, ou prise sur fond blanc, n'a pas
+  // ce fond uniforme juste apres la bande : elle n'est pas touchee.
+  // Le resultat garde les proportions de la photo d'origine, complete avec
+  // le fond de la photo elle-meme : plus de cadre, rien de deforme.
+  function retirerCadreBlanc(img) {
+    const W = img.width, H = img.height;
+    if (!W || !H) return null;
+    const k = Math.min(1, 600 / Math.max(W, H));
+    const w = Math.max(1, Math.round(W * k)), h = Math.max(1, Math.round(H * k));
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const x = c.getContext('2d');
+    x.drawImage(img, 0, 0, w, h);
+    const d = x.getImageData(0, 0, w, h).data;
+    const vide = (i) => d[i + 3] < 16 || (d[i] >= 250 && d[i + 1] >= 250 && d[i + 2] >= 250);
+    const ligneVide = (y) => { for (let a = 0; a < w; a++) if (!vide((y * w + a) * 4)) return false; return true; };
+    const colVide = (a) => { for (let y = 0; y < h; y++) if (!vide((y * w + a) * 4)) return false; return true; };
+    let t = 0; while (t < h * 0.25 && ligneVide(t)) t++;
+    let b = 0; while (b < h * 0.25 && ligneVide(h - 1 - b)) b++;
+    let l = 0; while (l < w * 0.25 && colVide(l)) l++;
+    let r = 0; while (r < w * 0.25 && colVide(w - 1 - r)) r++;
+    if (t < 2 || b < 2 || l < 2 || r < 2) return null;
+    if (t >= h * 0.25 || b >= h * 0.25 || l >= w * 0.25 || r >= w * 0.25) return null;
+    // Un vrai cadre est FIN et a peu pres EGAL sur les quatre cotes. Un
+    // vetement clair pose sur fond blanc laisse des marges larges et
+    // inegales : on n'y touche pas.
+    if (t > h * 0.1 || b > h * 0.1 || l > w * 0.1 || r > w * 0.1) return null;
+    const marges = [t, b, l, r];
+    if (Math.max.apply(null, marges) > 2 * Math.min.apply(null, marges) + 2) return null;
+    // Juste apres la bande : un fond clair, uniforme, qui n'est pas du blanc.
+    const fonds = [];
+    const examiner = (pixels) => {
+      const opaques = pixels.filter((i) => d[i + 3] >= 250 && !vide(i));
+      // Bord bien droit : presque toute la ligne est deja dans le fond.
+      if (opaques.length < pixels.length * 0.85) return false;
+      const med = [0, 1, 2].map((ch) => {
+        const v = opaques.map((i) => d[i + ch]).sort((m, n) => m - n);
+        return v[v.length >> 1];
+      });
+      if (Math.min(med[0], med[1], med[2]) < 200) return false;
+      const proches = opaques.filter((i) => Math.abs(d[i] - med[0]) <= 10
+        && Math.abs(d[i + 1] - med[1]) <= 10 && Math.abs(d[i + 2] - med[2]) <= 10).length;
+      if (proches < opaques.length * 0.9) return false;
+      fonds.push(med);
+      return true;
+    };
+    const ligne = (y, a0, a1) => { const o = []; for (let a = a0; a < a1; a++) o.push((y * w + a) * 4); return o; };
+    const col = (a, y0, y1) => { const o = []; for (let y = y0; y < y1; y++) o.push((y * w + a) * 4); return o; };
+    const iw0 = l + Math.round((w - l - r) * 0.1), iw1 = w - r - Math.round((w - l - r) * 0.1);
+    const ih0 = t + Math.round((h - t - b) * 0.1), ih1 = h - b - Math.round((h - t - b) * 0.1);
+    // Deux pixels a l'interieur : la toute premiere ligne melange le fond et
+    // le blanc (anticrenelage) et fausserait la couleur du fond.
+    if (!examiner(ligne(t + 2, iw0, iw1)) || !examiner(ligne(h - 3 - b, iw0, iw1))
+      || !examiner(col(l + 2, ih0, ih1)) || !examiner(col(w - 3 - r, ih0, ih1))) return null;
+    const fond = [0, 1, 2].map((ch) => Math.round(fonds.reduce((n, f) => n + f[ch], 0) / fonds.length));
+    // Il faut un PRODUIT au milieu, nettement different de ce fond. Sinon
+    // (un pull beige qui remplit la photo, par exemple) on ne touche a rien.
+    {
+      const zc = [];
+      for (let y = Math.round(h * 0.4); y < Math.round(h * 0.6); y += 2)
+        for (let a = Math.round(w * 0.4); a < Math.round(w * 0.6); a += 2) zc.push((y * w + a) * 4);
+      const differents = zc.filter((i) => Math.abs(d[i] - fond[0]) > 40 || Math.abs(d[i + 1] - fond[1]) > 40
+        || Math.abs(d[i + 2] - fond[2]) > 40).length;
+      if (differents < zc.length * 0.2) return null;
+    }
+    // Coins arrondis : on rentre un peu, juste assez pour les faire disparaitre.
+    let rayon = 0;
+    while (rayon < (w - l - r) / 4 && vide((t * w + l + rayon) * 4)) rayon++;
+    const marge = Math.ceil(rayon * 0.35) + 1;
+    const sx = (l + marge) / k, sy = (t + marge) / k;
+    const sw = (w - l - r - 2 * marge) / k, sh = (h - t - b - 2 * marge) / k;
+    if (sw < W * 0.4 || sh < H * 0.4) return null;
+    // Memes proportions que l'original, completees avec le fond de la photo.
+    let ow, oh;
+    if (sw / sh > W / H) { ow = sw; oh = sw * H / W; } else { oh = sh; ow = sh * W / H; }
+    const sortie = document.createElement('canvas');
+    sortie.width = Math.round(ow); sortie.height = Math.round(oh);
+    const cx = sortie.getContext('2d');
+    cx.fillStyle = 'rgb(' + fond.join(',') + ')';
+    cx.fillRect(0, 0, sortie.width, sortie.height);
+    cx.drawImage(img, sx, sy, sw, sh,
+      Math.round((sortie.width - sw) / 2), Math.round((sortie.height - sh) / 2), Math.round(sw), Math.round(sh));
+    return sortie;
+  }
+
+  function resizeAndReadFile(file, maxSize, options) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
+        const brute = new Image();
+        brute.onload = function() {
+          // Le cadre blanc n'est retire que pour les photos produit. En cas
+          // de souci, on garde la photo telle quelle : jamais de blocage.
+          let img = brute;
+          if (options && options.cadre) {
+            try { const net = retirerCadreBlanc(brute); if (net) img = net; } catch (err) { img = brute; }
+          }
           const canvas = document.createElement('canvas');
           let w = img.width, h = img.height;
           if (w > maxSize || h > maxSize) {
@@ -2595,8 +2695,8 @@
           ctx.drawImage(img, 0, 0, w, h);
           resolve(canvas.toDataURL('image/jpeg', 0.8));
         };
-        img.onerror = () => reject(new Error('Image illisible'));
-        img.src = e.target.result;
+        brute.onerror = () => reject(new Error('Image illisible'));
+        brute.src = e.target.result;
       };
       reader.onerror = () => reject(new Error('Erreur lecture fichier'));
       reader.readAsDataURL(file);
