@@ -36,14 +36,19 @@ function aplatirStock(ss) {
 // --- Details du produit ---------------------------------------------------
 // Chaque marque ecrivait sa description comme elle voulait : avec trente
 // marques, la boutique devenait un patchwork. On demande donc des champs
-// plutot qu'un texte. Composition et coupe sont obligatoires ; l'entretien
+// plutot qu'un texte. Seule la composition est obligatoire (la coupe est
+// facultative depuis le 2 novembre 2026) ; l'entretien
 // est facultatif depuis le 29 octobre 2026 (certaines pieces n'ont pas de
 // consigne particuliere) — s'il est rempli, seules les valeurs de la liste
 // sont gardees.
 // Les valeurs de coupe et d'entretien sont fermees : une marque ne peut pas
 // inventer sa propre formulation, c'est ce qui garde les fiches coherentes.
 
-const COUPES = ["Ample", "Classique", "Ajustée"];
+// 2 novembre 2026 : liste elargie (Boxy, Oversize...) et coupe FACULTATIVE —
+// certaines pieces n'ont pas de coupe particuliere. Les trois premieres
+// valeurs restent les memes : les produits deja en ligne ne bougent pas.
+const COUPES = ["Ample", "Classique", "Ajustée",
+  "Oversize", "Boxy", "Droite", "Large", "Décontractée", "Baggy", "Cintrée", "Skinny", "Évasée", "Courte (crop)", "Longue"];
 const ENTRETIENS = [
   "Lavage à 30°", "Lavage à 40°", "Lavage à la main",
   "Pas de sèche-linge", "Pas de repassage", "Nettoyage à sec",
@@ -51,11 +56,12 @@ const ENTRETIENS = [
 
 function detailsManquants(d) {
   if (!d || typeof d !== "object" || Array.isArray(d)) {
-    return ["la composition", "la coupe"];
+    return ["la composition"];
   }
   const manque = [];
   if (!String(d.composition || "").trim()) manque.push("la composition");
-  if (!COUPES.includes(String(d.coupe || ""))) manque.push("la coupe");
+  // Coupe facultative : vide = pas de coupe particuliere. Une valeur hors
+  // liste est simplement ignoree par nettoyerDetails, jamais enregistree.
   return manque;
 }
 

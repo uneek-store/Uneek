@@ -1013,15 +1013,15 @@
 
     <div style="border-top:1px solid var(--gray-200);margin:20px 0 6px;padding-top:16px">
       <div style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gray-400)">Détails du produit</div>
-      <div style="font-size:12px;color:var(--gray-400);margin-top:5px;line-height:1.5">Les trois premiers sont obligatoires. Ils s'affichent sur ta fiche produit, au même endroit que pour toutes les autres marques.</div>
+      <div style="font-size:12px;color:var(--gray-400);margin-top:5px;line-height:1.5">La composition est obligatoire. Ces détails s'affichent sur ta fiche produit, au même endroit que pour toutes les autres marques.</div>
     </div>
 
     <label>Composition *</label>
     <input id="f-composition" placeholder="100 % coton" maxlength="200" />
 
-    <label>Coupe *</label>
+    <label>Coupe</label>
     <select id="f-coupe" style="width:100%;padding:11px 13px;border:1px solid var(--gray-200);border-radius:6px;font-size:14px;outline:none;background:#fff">
-      <option value="">— Choisir —</option>
+      <option value="">Pas de coupe particulière</option>
       <!-- L'attribut value est OBLIGATOIRE ici : sans lui, la valeur d'une
            option est son texte, et i18n.js traduit les textes. Un createur
            en anglais envoyait « Loose » au lieu de « Ample », le serveur
@@ -1029,6 +1029,17 @@
       <option value="Ample">Ample</option>
       <option value="Classique">Classique</option>
       <option value="Ajustée">Ajustée</option>
+      <option value="Oversize">Oversize</option>
+      <option value="Boxy">Boxy</option>
+      <option value="Droite">Droite</option>
+      <option value="Large">Large</option>
+      <option value="Décontractée">Décontractée</option>
+      <option value="Baggy">Baggy</option>
+      <option value="Cintrée">Cintrée</option>
+      <option value="Skinny">Skinny</option>
+      <option value="Évasée">Évasée</option>
+      <option value="Courte (crop)">Courte (crop)</option>
+      <option value="Longue">Longue</option>
     </select>
 
     <label>Entretien</label>
@@ -1110,7 +1121,7 @@
     <!-- IMAGE -->
     <div class="img-section" id="imgSection">
       <label>Photos du produit</label>
-      <p class="modal-note" style="margin-top:8px"><strong>Trois photos minimum : devant, dos, et portée sur mannequin.</strong></p>
+      <p class="modal-note" style="margin-top:8px"><strong>Deux photos minimum. Idéalement : devant, dos, et portée sur mannequin si tu en as une.</strong></p>
       <p class="modal-note" style="margin-top:4px">Si le produit existe en plusieurs couleurs, il faut au moins une photo par couleur.</p>
       <p class="modal-note" style="margin-top:4px">Clique sur une couleur sous chaque photo pour la ranger.</p>
       <p class="modal-note" style="margin-top:4px">La première photo est celle affichée sur la boutique.</p>
@@ -1206,7 +1217,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-10-29-entretien-facultatif-minimum-2';
+  const APP_VERSION = '2026-11-02-panneaux';
 
   async function checkAppVersion() {
     try {
@@ -1460,7 +1471,7 @@
   function detailsIncomplets(d) {
     const manque = [];
     if (!d.composition) manque.push('la composition');
-    if (!d.coupe) manque.push('la coupe');
+    // Coupe facultative depuis le 2 novembre 2026.
     // Entretien facultatif depuis le 29 octobre 2026 : certaines pieces
     // n'ont pas de consigne particuliere.
     return manque;
@@ -1983,10 +1994,13 @@
         const note = e.admin_note || '—';
         // Une demande encore en attente peut etre retiree par son auteur.
         // Une demande deja traitee reste dans l'historique : rien a retirer.
+        // 2 novembre 2026 : le bouton etait dans la derniere colonne, souvent
+        // hors de l'ecran (le tableau defile). Il est maintenant juste sous
+        // le statut « En attente », la ou le createur regarde.
         const actions = e.status === 'pending'
-          ? '<button class="btn-retirer" onclick="confirmDeleteEdit(\'' + escJs(e.id) + '\', \'' + escJs(name) + '\')">Retirer</button>'
-          : '<span class="sec">—</span>';
-        html += '<tr><td class="bold">' + esc(name) + '</td><td>' + typeBadge + '</td><td class="sec">' + date + '</td><td>' + statusBadge + '</td><td class="sec">' + note + '</td><td>' + actions + '</td></tr>';
+          ? '<button class="btn-retirer" style="margin-top:6px;display:block" onclick="confirmDeleteEdit(\'' + escJs(e.id) + '\', \'' + escJs(name) + '\')">Supprimer la demande</button>'
+          : '';
+        html += '<tr><td class="bold">' + esc(name) + '</td><td>' + typeBadge + '</td><td class="sec">' + date + '</td><td>' + statusBadge + actions + '</td><td class="sec">' + note + '</td><td>' + (e.status === 'pending' ? '' : '<span class="sec">—</span>') + '</td></tr>';
       });
       document.getElementById('edits-table').innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--gray-400)">Aucune demande</td></tr>';
     } catch (err) {
@@ -3095,8 +3109,10 @@
   // phrase melangee a un nombre ou a une liste ne serait jamais traduite.
   function photosManquantes() {
     const morceaux = [];
-    if (selectedImages.length < 3) {
-      morceaux.push('<div>Il faut au moins 3 photos : devant, dos, et port\u00e9e sur mannequin.</div>');
+    // Minimum abaisse de 3 a 2 le 2 novembre 2026 : certaines pieces
+    // (bonnets, accessoires) n'ont pas de photo portee sur mannequin.
+    if (selectedImages.length < 2) {
+      morceaux.push('<div>Il faut au moins 2 photos.</div>');
     }
     // Une couleur annoncee sans photo a elle, c'est un client qui choisit
     // "vert" et regarde un pull blanc.

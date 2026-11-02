@@ -732,7 +732,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-10-27-couleurs-anglais';
+  const APP_VERSION = '2026-11-02-panneaux';
 
   async function checkAppVersion() {
     try {
@@ -2279,6 +2279,116 @@
     }
   }
 
+  // --- ORDRE DES PHOTOS D'UNE DEMANDE (2 novembre 2026) -------------------
+  // L'admin glisse les photos pour choisir l'ordre affiche sur le site :
+  // la grande photo du haut = la 1re (photo principale), puis les petites
+  // de gauche a droite. L'ordre part avec l'approbation (image_order) et
+  // c'est le serveur qui range les photos ET leurs couleurs ensemble.
+  const PHOTOS_DEMANDE = {};
+  const PHOTOS_DEMANDE_N = {};
+  // Commission tapee par l'admin : survit au rafraichissement automatique.
+  const COMM_SAISIE = {};
+  const ORDRE_PHOTOS = {};
+  let photoGlissee = null;
+
+  function photosDemandeHTML(id) {
+    const photos = PHOTOS_DEMANDE[id] || [];
+    const ordre = ORDRE_PHOTOS[id] || photos.map(function (u, i) { return i; });
+    const idJs = escJs(id);
+    const attrs = function (pos) {
+      return ' draggable="true"'
+        + ' ondragstart="photoDebutGlisser(event,\'' + idJs + '\',' + pos + ')"'
+        + ' ondragover="event.preventDefault()"'
+        + ' ondrop="photoDeposer(event,\'' + idJs + '\',' + pos + ')"';
+    };
+    // Petite poubelle sur chaque photo : l'admin retire une photo qu'il ne
+    // veut pas voir sur le site (2 novembre 2026). On garde toujours au
+    // moins une photo — pour tout refuser, il y a le bouton Refuser.
+    const poubelle = function (pos, t) {
+      if (ordre.length <= 1) return '';
+      return '<button type="button" title="Retirer cette photo" aria-label="Retirer cette photo" onclick="event.stopPropagation();photoRetirer(\'' + idJs + '\',' + pos + ')" style="position:absolute;top:2px;right:2px;width:' + t + 'px;height:' + t + 'px;border:none;border-radius:50%;background:rgba(10,10,10,0.75);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">'
+      + '<svg width="' + (t - 6) + '" height="' + (t - 6) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>';
+    };
+    const premiere = photos[ordre[0]];
+    let html = '<div style="display:flex;flex-direction:column;gap:4px;max-width:96px">'
+      + '<div style="position:relative;width:fit-content">'
+      + '<img class="pending-img" src="' + esc(premiere) + '"' + attrs(0)
+      + ' onclick="openLightbox(this.src)" alt="Photo 1" title="Photo principale — glisse une autre photo ici pour la remplacer" style="cursor:grab" />'
+      + poubelle(0, 20)
+      + '</div>'
+      + '<div style="display:flex;gap:4px;flex-wrap:wrap">';
+    for (let pos = 1; pos < ordre.length; pos++) {
+      html += '<div style="position:relative">'
+        + poubelle(pos, 14)
+        + '<img src="' + esc(photos[ordre[pos]]) + '"' + attrs(pos)
+        + ' onclick="openLightbox(this.src)" alt="Photo ' + (pos + 1) + '" title="Photo ' + (pos + 1) + ' — glisse pour changer l\'ordre"'
+        + ' style="width:28px;height:36px;object-fit:cover;border-radius:4px;cursor:grab;border:1px solid var(--gray-200)" />'
+        + '<span style="position:absolute;top:-5px;left:-5px;background:var(--black,#0A0A0A);color:#fff;font-size:9px;line-height:14px;width:14px;height:14px;border-radius:50%;text-align:center;pointer-events:none">' + (pos + 1) + '</span>'
+        + '</div>';
+    }
+    html += '</div>'
+      + '<div style="font-size:10px;line-height:1.35;color:var(--gray-500)">Glisse les photos pour choisir l\'ordre. En haut = 1re sur le site. Poubelle = photo retirée.</div>'
+      + (ordre.length < photos.length ? '<div style="font-size:10px;line-height:1.35;color:var(--red)">' + (photos.length - ordre.length) + ' photo(s) retirée(s) — <a href="#" onclick="photosRemettre(\'' + idJs + '\');return false" style="color:inherit">tout remettre</a></div>' : '')
+      + '</div>';
+    return html;
+  }
+
+  function photoDebutGlisser(ev, id, pos) {
+    photoGlissee = { id: id, pos: pos };
+    try { ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', String(pos)); } catch (e) { /* rien */ }
+  }
+
+  function photoDeposer(ev, id, pos) {
+    ev.preventDefault();
+    const g = photoGlissee;
+    photoGlissee = null;
+    if (!g || g.id !== id || g.pos === pos) return;
+    const ordre = (ORDRE_PHOTOS[id] || []).slice();
+    // La photo glissee prend la place visee, les autres se decalent.
+    const bouge = ordre.splice(g.pos, 1)[0];
+    ordre.splice(pos, 0, bouge);
+    ORDRE_PHOTOS[id] = ordre;
+    const zone = document.getElementById('photos-' + id);
+    if (zone) zone.innerHTML = photosDemandeHTML(id);
+  }
+
+  function photoRetirer(id, pos) {
+    const ordre = (ORDRE_PHOTOS[id] || []).slice();
+    if (ordre.length <= 1) return;
+    ordre.splice(pos, 1);
+    ORDRE_PHOTOS[id] = ordre;
+    const zone = document.getElementById('photos-' + id);
+    if (zone) zone.innerHTML = photosDemandeHTML(id);
+  }
+
+  function photosRemettre(id) {
+    const photos = PHOTOS_DEMANDE[id] || [];
+    ORDRE_PHOTOS[id] = photos.map(function (u, i) { return i; });
+    const zone = document.getElementById('photos-' + id);
+    if (zone) zone.innerHTML = photosDemandeHTML(id);
+  }
+
+  // Commission corrigee par l'admin dans la demande. null = pas touchee :
+  // le serveur applique alors celle demandee par le createur, comme avant.
+  function commissionAEnvoyer(id) {
+    const champ = document.getElementById('comm-' + id);
+    if (!champ) return null;
+    const v = String(champ.value).trim();
+    if (v === '' || v === String(champ.dataset.orig)) return null;
+    const n = parseFloat(v);
+    return (isFinite(n) && n >= 0 && n <= 100) ? n : null;
+  }
+
+  // Ce qui part avec l'approbation : les photos GARDEES, dans l'ordre voulu.
+  // null = rien n'a bouge, le serveur garde la demande telle quelle.
+  function ordrePhotosAEnvoyer(id) {
+    const ordre = ORDRE_PHOTOS[id];
+    const photos = PHOTOS_DEMANDE[id] || [];
+    if (!Array.isArray(ordre)) return null;
+    const change = ordre.length !== photos.length || ordre.some(function (v, i) { return v !== i; });
+    return change ? ordre.slice() : null;
+  }
+
   async function loadPending() {
     try {
       const res = await fetch(API_BASE + '/admin/pending', { headers: { 'Authorization': 'Bearer ' + authToken } });
@@ -2336,11 +2446,41 @@
           actionHtml = '<span class="badge badge-red">Refusé</span>';
         } else {
           pendingCount++;
-          actionHtml = '<div class="action-btns"><button class="btn-approve" onclick="askHandlePending(\'' + escJs(p.id) + '\', \'approve\', \'' + escJs(prodName) + '\')">Approuver</button><button class="btn-reject" onclick="askHandlePending(\'' + escJs(p.id) + '\', \'reject\', \'' + escJs(prodName) + '\')">Refuser</button></div>';
+          // Commission modifiable avant d'approuver (2 novembre 2026) : un
+          // createur qui a tape 12 au lieu de 20 n'a pas a tout refaire.
+          // Pre-rempli avec ce qu'il demande, sinon avec le taux actuel.
+          const commDemandee = (c.commission_percent !== undefined && c.commission_percent !== null) ? c.commission_percent
+            : ((p.products && p.products.commission_percent !== undefined && p.products.commission_percent !== null) ? p.products.commission_percent : '');
+          actionHtml = '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px">'
+            + '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gray-500);margin-right:8px">Commission'
+            + ' <input id="comm-' + esc(p.id) + '" type="number" min="0" max="100" step="0.5"'
+            + ' value="' + esc(COMM_SAISIE[p.id] !== undefined ? COMM_SAISIE[p.id] : commDemandee) + '" data-orig="' + esc(commDemandee) + '"'
+            + ' oninput="COMM_SAISIE[\'' + escJs(p.id) + '\']=this.value"'
+            + ' style="width:64px;padding:4px 6px;border:1px solid var(--gray-200);border-radius:6px;font-size:12px"> %</label>'
+            + '<div class="action-btns"><button class="btn-approve" onclick="askHandlePending(\'' + escJs(p.id) + '\', \'approve\', \'' + escJs(prodName) + '\')">Approuver</button><button class="btn-reject" onclick="askHandlePending(\'' + escJs(p.id) + '\', \'reject\', \'' + escJs(prodName) + '\')">Refuser</button></div></div>';
+        }
+
+        // Demande en attente avec plusieurs photos : l'admin choisit l'ordre
+        // (2 novembre 2026). On garde les photos ici, la carte les redessine.
+        const ordonnable = p.status === 'pending' && photos.length > 1;
+        if (ordonnable) {
+          PHOTOS_DEMANDE[p.id] = photos;
+          // On repart de zero seulement si rien n'est memorise ou si le
+          // rangement ne colle plus aux photos (demande changee entre-temps) :
+          // une photo mise a la poubelle doit le rester au rafraichissement.
+          const memo = ORDRE_PHOTOS[p.id];
+          const valable = Array.isArray(memo) && memo.length >= 1 && memo.length <= photos.length
+            && memo.every(function (v) { return Number.isInteger(v) && v >= 0 && v < photos.length; });
+          if (!valable || PHOTOS_DEMANDE_N[p.id] !== photos.length) {
+            ORDRE_PHOTOS[p.id] = photos.map(function (u, i) { return i; });
+          }
+          PHOTOS_DEMANDE_N[p.id] = photos.length;
         }
 
         html += '<div class="pending-card" id="pending-' + p.id + '"' + (p.status !== 'pending' ? ' style="opacity:0.7"' : '') + '>' +
-          (photos.length > 1
+          (ordonnable
+          ? '<div id="photos-' + esc(p.id) + '" style="flex-shrink:0">' + photosDemandeHTML(p.id) + '</div>'
+          : photos.length > 1
           ? '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">'
               + '<img class="pending-img" src="' + esc(photos[0]) + '" onclick="openLightbox(this.src)" alt="Photo 1" />'
               + '<div style="display:flex;gap:4px;flex-wrap:wrap;max-width:96px">'
@@ -2423,9 +2563,15 @@
       const res = await fetch(API_BASE + '/admin/pending', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
-        body: JSON.stringify({ edit_id: id, action })
+        body: JSON.stringify(Object.assign({ edit_id: id, action },
+          (action === 'approve' && ordrePhotosAEnvoyer(id)) ? { image_order: ordrePhotosAEnvoyer(id) } : {},
+          (action === 'approve' && commissionAEnvoyer(id) !== null) ? { commission_percent: commissionAEnvoyer(id) } : {}))
       });
       const data = await res.json();
+      // Un echec cote serveur etait affiche comme un succes : on le dit.
+      if (!res.ok) { showToast('Erreur : ' + (data.error || res.status), 'red'); return; }
+      if (action === 'approve') { delete ORDRE_PHOTOS[id]; delete PHOTOS_DEMANDE[id]; }
+      delete COMM_SAISIE[id];
       const card = document.getElementById('pending-' + id);
       if (card) { card.style.opacity = '0.3'; card.style.pointerEvents = 'none'; }
       showToast(action === 'approve' ? '✓ Approuvé — email envoyé au créateur' : '✗ Refusé — email envoyé au créateur', action === 'approve' ? 'green' : 'red');

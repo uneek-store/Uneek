@@ -6,6 +6,19 @@ import { supabaseAdmin } from "../lib/supabase.js";
 import { controlerAcces } from "../lib/session.js";
 import { reponseValidation } from "../lib/email.js";
 
+// Vrai si "ordre" est une selection rangee de n photos : au moins une,
+// chaque index entre 0 et n-1, aucun en double. L'admin peut ainsi changer
+// l'ordre ET retirer des photos (poubelle), mais jamais en inventer.
+function estUnRangement(ordre, n) {
+  if (!Array.isArray(ordre) || ordre.length < 1 || ordre.length > n || n < 1) return false;
+  const vus = new Set();
+  for (const v of ordre) {
+    if (!Number.isInteger(v) || v < 0 || v >= n || vus.has(v)) return false;
+    vus.add(v);
+  }
+  return true;
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -117,7 +130,7 @@ export default async function handler(req, res) {
 
     // --- APPROUVER OU REJETER ---
     if (req.method === "POST") {
-      const { edit_id, action, admin_note, commission_percent, product_id } = req.body;
+      const { edit_id, action, admin_note, commission_percent, product_id, image_order } = req.body;
 
       // --- PUBLIER / DEPUBLIER UN PRODUIT ---
       if (action === "publish" || action === "unpublish") {
@@ -156,7 +169,21 @@ export default async function handler(req, res) {
       }
 
       if (action === "approve") {
-        const c = edit.changes || {};
+        const c = Object.assign({}, edit.changes || {});
+        // ORDRE DES PHOTOS choisi par l'admin dans la demande (2 novembre
+        // 2026) : image_order = [index de la 1re, de la 2e, ...]. N'est pris
+        // en compte que si c'est une selection valide des photos (chaque
+        // photo au plus une fois, aucune inventee) : sinon on garde l'ordre
+        // du createur. Les couleurs des photos suivent le meme rangement.
+        // Depuis la poubelle, image_order peut aussi en contenir MOINS : les
+        // photos absentes ne sont pas publiees.
+        if (Array.isArray(c.image_urls) && estUnRangement(image_order, c.image_urls.length)) {
+          const photos = c.image_urls;
+          const couleurs = Array.isArray(c.image_colors) ? c.image_colors : null;
+          c.image_urls = image_order.map((i) => photos[i]);
+          if (couleurs) c.image_colors = image_order.map((i) => couleurs[i] || null);
+          c.image_url = c.image_urls[0] || c.image_url;
+        }
         // Mapper les champs changes → colonnes products
         const productData = {};
         if (c.name) productData.name = c.name;
