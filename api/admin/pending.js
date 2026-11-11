@@ -176,16 +176,22 @@ export default async function handler(req, res) {
         const avant = Array.isArray(prod.image_urls) ? prod.image_urls : [];
         const deChezNous = (u) => typeof u === "string" && u.length < 2000
           && /^https:\/\/[^\s"'<>]+\/storage\/v1\/object\/public\/product-images\/[^\s"'<>]+$/.test(u);
+        // Une photo gardee telle quelle arrive vide (null) : on la reprend
+        // ici. Les vieilles photos en base64 sont lourdes, les renvoyer
+        // depasserait la taille maximale d'une requete.
+        const finales = [];
         for (let i = 0; i < image_urls.length; i++) {
-          const u = image_urls[i], f = image_from[i];
+          const f = image_from[i];
           if (!Number.isInteger(f) || f < -1 || f >= avant.length) {
             return res.status(400).json({ error: "Photo " + (i + 1) + " : origine invalide" });
           }
+          const u = image_urls[i] == null && f >= 0 ? avant[f] : image_urls[i];
+          finales.push(u);
           if (!(f >= 0 && u === avant[f]) && !deChezNous(u)) {
             return res.status(400).json({ error: "Photo " + (i + 1) + " : adresse refusee" });
           }
         }
-        const maj = { image_urls: image_urls.slice() };
+        const maj = { image_urls: finales };
         if (Object.prototype.hasOwnProperty.call(prod, "image_colors")) {
           const couleurs = Array.isArray(prod.image_colors) ? prod.image_colors : [];
           maj.image_colors = image_from.map((f) => (f >= 0 ? (couleurs[f] || null) : null));

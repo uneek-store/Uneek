@@ -2357,7 +2357,7 @@
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
         body: JSON.stringify({
           product_id: PP.id, action: 'photos',
-          image_urls: PP.liste.map(function (e) { return e.url; }),
+          image_urls: PP.liste.map(function (e) { return (e.from >= 0 && e.url === PP.avant[e.from]) ? null : e.url; }),
           image_from: PP.liste.map(function (e) { return e.from; })
         })
       });
