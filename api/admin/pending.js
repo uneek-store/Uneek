@@ -245,20 +245,47 @@ export default async function handler(req, res) {
         }
 
         if (edit.is_new_product) {
-          const slug = (c.name || "produit").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
-          const { error: createError } = await supabaseAdmin
-            .from("products")
-            .insert({
-              ...productData,
-              slug,
-              brand_id: edit.brand_id,
-              is_published: true,
-              is_pending_review: false,
-            });
+          const base = (c.name || "produit").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "produit";
+          // ADRESSE DEJA PRISE (11 novembre 2026) : un 2e « Cotton Beanie »
+          // (le rouge, apres le noir) voulait la meme adresse /produit/cotton-beanie.
+          // La base refusait, et l'admin ne pouvait plus approuver. On prend
+          // la premiere adresse libre : cotton-beanie, cotton-beanie-2, -3...
+          let dejaPris = [];
+          try {
+            const lu = await supabaseAdmin.from("products").select("slug").like("slug", base + "%");
+            dejaPris = lu.data || [];
+          } catch (e) { dejaPris = []; }   // le doublon sera rattrape a l'insertion
+          const pris = new Set(dejaPris.map((x) => x.slug));
+          let slug = base;
+          for (let n = 2; pris.has(slug) && n < 500; n++) slug = base + "-" + n;
+
+          let createError = null;
+          for (let essai = 0; essai < 3; essai++) {
+            const r = await supabaseAdmin
+              .from("products")
+              .insert({
+                ...productData,
+                slug,
+                brand_id: edit.brand_id,
+                is_published: true,
+                is_pending_review: false,
+              });
+            createError = r.error;
+            // Adresse prise entre-temps (code 23505 = doublon) : on en prend une autre.
+            if (createError && createError.code === "23505") {
+              slug = base + "-" + Date.now().toString(36).slice(-4);
+              continue;
+            }
+            break;
+          }
 
           if (createError) {
             console.error("Error creating product:", createError);
-            return res.status(500).json({ error: "Erreur création produit" });
+            // L'admin voit la vraie raison : « Erreur création produit » seul
+            // ne permettait pas de savoir quoi corriger.
+            return res.status(500).json({
+              error: "Erreur création produit" + (createError.message ? " : " + createError.message : ""),
+            });
           }
         } else {
           const { error: updateError } = await supabaseAdmin
