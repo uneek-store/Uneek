@@ -542,8 +542,14 @@ export default async function handler(req, res) {
           order: g ? { id: g.id, order_number: g.order_number, total: g.total_amount, commission: g.uneek_commission } : null,
         });
       }
+      // DERNIER FILET (11 novembre 2026) : la commande ne s'ecrit toujours
+      // pas. Jamais de client debite sans commande : on le rembourse tout de
+      // suite et l'admin recoit une alerte (refuser fait les deux).
       if (orderError) {
         console.error("Error creating order:", orderError);
+        if (paye) {
+          return refuser(500, "Ta commande n'a pas pu être enregistrée (" + (orderError.code || "erreur") + ")");
+        }
         return res.status(500).json({ error: "Erreur création commande", code: orderError.code || null });
       }
 
@@ -558,6 +564,12 @@ export default async function handler(req, res) {
 
       if (itemsError) {
         console.error("Error creating order items:", itemsError);
+        // Meme filet : commande incomplete = annulee et client rembourse.
+        if (paye) {
+          await supabaseAdmin.from("orders")
+            .update({ status: "cancelled", payment_status: "failed" }).eq("id", order.id);
+          return refuser(500, "Ta commande n'a pas pu être enregistrée (" + (itemsError.code || "articles") + ")");
+        }
         return res.status(500).json({ error: "Erreur ajout produits à la commande" });
       }
 
