@@ -36,7 +36,9 @@ export default async function handler(req, res) {
 
   // La marque vient du jeton signe, jamais de la requete : personne ne peut
   // deposer un fichier dans le dossier d'une autre marque.
-  const marque = (acces.session && acces.session.brand_id) || "sans-marque";
+  // Une photo retouchee par l'admin (11 novembre 2026) va dans « admin ».
+  const marque = (acces.session && acces.session.brand_id)
+    || (acces.session && acces.session.admin ? "admin" : "sans-marque");
 
   // 40 photos par tranche de 10 minutes : large pour un createur qui remplit
   // sa boutique, etroit pour qui voudrait remplir le stockage.

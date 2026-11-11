@@ -130,7 +130,8 @@ export default async function handler(req, res) {
 
     // --- APPROUVER OU REJETER ---
     if (req.method === "POST") {
-      const { edit_id, action, admin_note, commission_percent, product_id, image_order } = req.body;
+      const { edit_id, action, admin_note, commission_percent, product_id, image_order,
+        image_replacements, image_additions } = req.body;
 
       // --- PUBLIER / DEPUBLIER UN PRODUIT ---
       if (action === "publish" || action === "unpublish") {
@@ -170,6 +171,33 @@ export default async function handler(req, res) {
 
       if (action === "approve") {
         const c = Object.assign({}, edit.changes || {});
+        // PHOTOS RETOUCHEES PAR L'ADMIN (11 novembre 2026) : il a telecharge
+        // une photo, l'a retouchee, et l'a renvoyee dans le stockage. Seules
+        // des adresses de notre stockage sont acceptees. Remplacee = meme
+        // place, meme couleur ; ajoutee = a la fin, sans couleur. Si UNE
+        // seule photo ajoutee est douteuse, on n'en ajoute aucune : sinon le
+        // rangement (image_order) viserait les mauvaises photos.
+        if (Array.isArray(c.image_urls)) {
+          const deChezNous = (u) => typeof u === "string" && u.length < 2000
+            && /^https:\/\/[^\s"'<>]+\/storage\/v1\/object\/public\/product-images\/[^\s"'<>]+$/.test(u);
+          const liste = c.image_urls.slice();
+          const couleurs = Array.isArray(c.image_colors) ? liste.map((u, i) => c.image_colors[i] || null) : null;
+          if (image_replacements && typeof image_replacements === "object" && !Array.isArray(image_replacements)) {
+            for (const k of Object.keys(image_replacements)) {
+              const i = Number(k);
+              if (Number.isInteger(i) && i >= 0 && i < liste.length && deChezNous(image_replacements[k])) {
+                liste[i] = image_replacements[k];
+              }
+            }
+          }
+          if (Array.isArray(image_additions) && image_additions.length && image_additions.length <= 9
+              && image_additions.every(deChezNous)) {
+            image_additions.forEach((u) => { liste.push(u); if (couleurs) couleurs.push(null); });
+          }
+          c.image_urls = liste;
+          if (couleurs) c.image_colors = couleurs;
+          c.image_url = liste[0] || c.image_url;
+        }
         // ORDRE DES PHOTOS choisi par l'admin dans la demande (2 novembre
         // 2026) : image_order = [index de la 1re, de la 2e, ...]. N'est pris
         // en compte que si c'est une selection valide des photos (chaque

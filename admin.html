@@ -732,7 +732,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-11-02-panneaux';
+  const APP_VERSION = '2026-11-11-photos-admin';
 
   async function checkAppVersion() {
     try {
@@ -2290,6 +2290,13 @@
   const COMM_SAISIE = {};
   const ORDRE_PHOTOS = {};
   let photoGlissee = null;
+  // Photos retouchees par l'admin (11 novembre 2026). Rien n'est applique
+  // avant « Approuver » : tout part avec l'approbation.
+  const PHOTOS_BASE_N = {};     // nombre de photos envoyees par le createur
+  const PHOTOS_REMPL = {};      // { id: { index: url } } photo remplacee par l'admin
+  const PHOTOS_AJOUTS = {};     // { id: [url, ...] } photos ajoutees par l'admin
+  const GESTION_OUVERTE = {};   // panneau « Gerer les photos » ouvert
+  const ENVOI_EN_COURS = {};    // { id: texte } pendant un envoi
 
   function photosDemandeHTML(id) {
     const photos = PHOTOS_DEMANDE[id] || [];
@@ -2329,8 +2336,197 @@
     html += '</div>'
       + '<div style="font-size:10px;line-height:1.35;color:var(--gray-500)">Glisse les photos pour choisir l\'ordre. En haut = 1re sur le site. Poubelle = photo retirée.</div>'
       + (ordre.length < photos.length ? '<div style="font-size:10px;line-height:1.35;color:var(--red)">' + (photos.length - ordre.length) + ' photo(s) retirée(s) — <a href="#" onclick="photosRemettre(\'' + idJs + '\');return false" style="color:inherit">tout remettre</a></div>' : '')
+      + '<button type="button" onclick="basculerGestion(\'' + idJs + '\')" style="margin-top:4px;padding:5px 8px;font-size:11px;border:1px solid var(--gray-200);border-radius:6px;background:#fff;cursor:pointer;font-family:inherit">'
+      + (GESTION_OUVERTE[id] ? 'Fermer' : 'Gérer les photos') + '</button>'
       + '</div>';
     return html;
+  }
+
+  // --- GERER LES PHOTOS : telecharger, remplacer, ajouter (11 nov. 2026) ---
+  // L'admin telecharge une photo, la retouche chez lui (fond blanc...), puis
+  // la renvoie : elle reprend la meme place et la meme couleur. Les photos
+  // partent dans le stockage tout de suite, mais la demande n'est modifiee
+  // qu'a l'approbation.
+  function redessinerPhotos(id) {
+    const zone = document.getElementById('photos-' + id);
+    if (zone) zone.innerHTML = photosDemandeHTML(id);
+    const g = document.getElementById('gestion-' + id);
+    if (g) g.innerHTML = gestionPhotosHTML(id);
+  }
+
+  function basculerGestion(id) {
+    GESTION_OUVERTE[id] = !GESTION_OUVERTE[id];
+    redessinerPhotos(id);
+  }
+
+  function gestionPhotosHTML(id) {
+    if (!GESTION_OUVERTE[id]) return '';
+    const photos = PHOTOS_DEMANDE[id] || [];
+    const ordre = ORDRE_PHOTOS[id] || photos.map(function (u, i) { return i; });
+    const idJs = escJs(id);
+    const bouton = 'padding:5px 8px;font-size:11px;border:1px solid var(--gray-200);border-radius:6px;background:#fff;cursor:pointer;font-family:inherit;text-align:center;display:block;width:100%';
+    let html = '<div style="margin-top:14px;padding:12px;border:1px solid var(--gray-200);border-radius:10px;background:#fff">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">'
+      + '<div style="font-size:12px;font-weight:600">Photos de la demande</div>'
+      + '<button type="button" onclick="photosToutTelecharger(\'' + idJs + '\')" style="' + bouton + ';width:auto">Tout télécharger</button>'
+      + '</div>'
+      + '<div style="font-size:11px;color:var(--gray-500);margin-bottom:10px;line-height:1.5">Télécharge une photo, retouche-la (fond blanc…), puis « Remplacer » : elle reprend la même place. Glisse pour changer l\'ordre. Rien n\'est publié avant « Approuver ».</div>'
+      + (ENVOI_EN_COURS[id] ? '<div style="font-size:12px;color:var(--blue);margin-bottom:8px">' + esc(ENVOI_EN_COURS[id]) + '</div>' : '')
+      + '<div style="display:flex;flex-wrap:wrap;gap:10px">';
+    ordre.forEach(function (idx, pos) {
+      const modifiee = idx >= (PHOTOS_BASE_N[id] || 0) || (PHOTOS_REMPL[id] && PHOTOS_REMPL[id][idx]);
+      html += '<div style="width:104px">'
+        + '<div style="position:relative">'
+        + '<img src="' + esc(photos[idx]) + '" draggable="true"'
+        + ' ondragstart="photoDebutGlisser(event,\'' + idJs + '\',' + pos + ')" ondragover="event.preventDefault()" ondrop="photoDeposer(event,\'' + idJs + '\',' + pos + ')"'
+        + ' onclick="openLightbox(this.src)" alt="Photo ' + (pos + 1) + '" style="width:104px;height:138px;object-fit:cover;border-radius:8px;border:1px solid var(--gray-200);cursor:grab;display:block" />'
+        + '<span style="position:absolute;top:4px;left:4px;background:var(--black,#0A0A0A);color:#fff;font-size:10px;line-height:18px;min-width:18px;padding:0 4px;border-radius:9px;text-align:center">' + (pos === 0 ? '1 · principale' : (pos + 1)) + '</span>'
+        + (modifiee ? '<span style="position:absolute;bottom:4px;left:4px;background:var(--blue,#2563EB);color:#fff;font-size:9px;padding:1px 6px;border-radius:9px">retouchée</span>' : '')
+        + '</div>'
+        + '<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px">'
+        + '<button type="button" onclick="photoTelecharger(\'' + idJs + '\',' + pos + ')" style="' + bouton + '">Télécharger</button>'
+        + '<label style="' + bouton + '">Remplacer<input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="photoRemplacer(\'' + idJs + '\',' + pos + ',this)"></label>'
+        + (ordre.length > 1 ? '<button type="button" onclick="photoRetirer(\'' + idJs + '\',' + pos + ')" style="' + bouton + ';color:var(--red)">Retirer</button>' : '')
+        + '</div></div>';
+    });
+    html += '<label style="width:104px;height:138px;border:1px dashed var(--gray-300,#ccc);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;font-size:11px;color:var(--gray-500);text-align:center">'
+      + '<span style="font-size:22px;line-height:1">+</span>Ajouter une photo'
+      + '<input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="photoAjouter(\'' + idJs + '\',this)"></label>'
+      + '</div></div>';
+    return html;
+  }
+
+  function nomFichierPhoto(id, pos, url) {
+    const carte = document.querySelector('#pending-' + CSS.escape(id) + ' .pending-name');
+    const base = ((carte && carte.textContent) || 'photo').split('—')[0].trim()
+      .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'photo';
+    const m = /^data:image\/(jpeg|png|webp)/.exec(url) || /\.(jpe?g|png|webp)(\?|$)/i.exec(url);
+    const ext = m ? (m[1] === 'jpeg' ? 'jpg' : m[1].toLowerCase()) : 'jpg';
+    return base + '-' + (pos + 1) + '.' + ext;
+  }
+
+  async function photoTelecharger(id, pos) {
+    const photos = PHOTOS_DEMANDE[id] || [];
+    const ordre = ORDRE_PHOTOS[id] || photos.map(function (u, i) { return i; });
+    const url = photos[ordre[pos]];
+    if (!url) return;
+    const nom = nomFichierPhoto(id, pos, url);
+    try {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const blob = await r.blob();
+      const lien = document.createElement('a');
+      lien.href = URL.createObjectURL(blob);
+      lien.download = nom;
+      document.body.appendChild(lien);
+      lien.click();
+      setTimeout(function () { URL.revokeObjectURL(lien.href); lien.remove(); }, 1500);
+    } catch (e) {
+      // Si le stockage refuse le telechargement direct, on ouvre la photo :
+      // clic droit > Enregistrer l'image.
+      window.open(url, '_blank', 'noopener');
+    }
+  }
+
+  async function photosToutTelecharger(id) {
+    const photos = PHOTOS_DEMANDE[id] || [];
+    const ordre = ORDRE_PHOTOS[id] || photos.map(function (u, i) { return i; });
+    for (let pos = 0; pos < ordre.length; pos++) {
+      await photoTelecharger(id, pos);
+      await new Promise(function (r) { setTimeout(r, 400); });
+    }
+  }
+
+  // Meme preparation que le panneau createur, en un peu plus grand (1200 px)
+  // pour garder la qualite d'une photo retouchee. Fond blanc sous la
+  // transparence : le JPEG n'en a pas.
+  function preparerPhotoAdmin(fichier) {
+    return new Promise(function (ok, ko) {
+      const lecteur = new FileReader();
+      lecteur.onload = function (e) {
+        const img = new Image();
+        img.onload = function () {
+          let w = img.width, h = img.height;
+          const max = 1200;
+          if (w > max || h > max) {
+            if (w > h) { h = Math.round(h * max / w); w = max; } else { w = Math.round(w * max / h); h = max; }
+          }
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          const x = c.getContext('2d');
+          x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, w, h);
+          x.drawImage(img, 0, 0, w, h);
+          let q = 0.88, data = c.toDataURL('image/jpeg', q);
+          while (data.length > 1900000 && q > 0.5) { q -= 0.1; data = c.toDataURL('image/jpeg', q); }
+          ok(data);
+        };
+        img.onerror = function () { ko(new Error('Image illisible')); };
+        img.src = e.target.result;
+      };
+      lecteur.onerror = function () { ko(new Error('Fichier illisible')); };
+      lecteur.readAsDataURL(fichier);
+    });
+  }
+
+  async function envoyerPhotoAdmin(id, fichier) {
+    ENVOI_EN_COURS[id] = 'Envoi de la photo…';
+    redessinerPhotos(id);
+    try {
+      const data = await preparerPhotoAdmin(fichier);
+      const res = await fetch(API_BASE + '/creator/photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify({ data: data })
+      });
+      const r = await res.json().catch(function () { return {}; });
+      if (!res.ok || !r.url) throw new Error(r.error || ('HTTP ' + res.status));
+      return r.url;
+    } catch (e) {
+      showToast('Photo non envoyée : ' + e.message, 'red');
+      return null;
+    } finally {
+      delete ENVOI_EN_COURS[id];
+    }
+  }
+
+  async function photoRemplacer(id, pos, input) {
+    const f = input && input.files && input.files[0];
+    if (!f) return;
+    const url = await envoyerPhotoAdmin(id, f);
+    if (url) {
+      const ordre = ORDRE_PHOTOS[id] || [];
+      const idx = ordre[pos];
+      const base = PHOTOS_BASE_N[id] || 0;
+      if (idx < base) {
+        PHOTOS_REMPL[id] = PHOTOS_REMPL[id] || {};
+        PHOTOS_REMPL[id][idx] = url;
+      } else {
+        (PHOTOS_AJOUTS[id] = PHOTOS_AJOUTS[id] || [])[idx - base] = url;
+      }
+      PHOTOS_DEMANDE[id][idx] = url;
+      showToast('✓ Photo remplacée — elle sera publiée à l\'approbation', 'green');
+    }
+    redessinerPhotos(id);
+  }
+
+  async function photoAjouter(id, input) {
+    const f = input && input.files && input.files[0];
+    if (!f) return;
+    const url = await envoyerPhotoAdmin(id, f);
+    if (url) {
+      (PHOTOS_AJOUTS[id] = PHOTOS_AJOUTS[id] || []).push(url);
+      PHOTOS_DEMANDE[id].push(url);
+      PHOTOS_DEMANDE_N[id] = PHOTOS_DEMANDE[id].length;
+      (ORDRE_PHOTOS[id] = ORDRE_PHOTOS[id] || []).push(PHOTOS_DEMANDE[id].length - 1);
+      showToast('✓ Photo ajoutée — elle sera publiée à l\'approbation', 'green');
+    }
+    redessinerPhotos(id);
+  }
+
+  function photosRetouchees(id) {
+    const r = PHOTOS_REMPL[id] || {};
+    const a = (PHOTOS_AJOUTS[id] || []).filter(Boolean);
+    return { remplacees: Object.keys(r).length ? r : null, ajoutees: a.length ? a : null };
   }
 
   function photoDebutGlisser(ev, id, pos) {
@@ -2348,8 +2544,7 @@
     const bouge = ordre.splice(g.pos, 1)[0];
     ordre.splice(pos, 0, bouge);
     ORDRE_PHOTOS[id] = ordre;
-    const zone = document.getElementById('photos-' + id);
-    if (zone) zone.innerHTML = photosDemandeHTML(id);
+    redessinerPhotos(id);
   }
 
   function photoRetirer(id, pos) {
@@ -2357,15 +2552,13 @@
     if (ordre.length <= 1) return;
     ordre.splice(pos, 1);
     ORDRE_PHOTOS[id] = ordre;
-    const zone = document.getElementById('photos-' + id);
-    if (zone) zone.innerHTML = photosDemandeHTML(id);
+    redessinerPhotos(id);
   }
 
   function photosRemettre(id) {
     const photos = PHOTOS_DEMANDE[id] || [];
     ORDRE_PHOTOS[id] = photos.map(function (u, i) { return i; });
-    const zone = document.getElementById('photos-' + id);
-    if (zone) zone.innerHTML = photosDemandeHTML(id);
+    redessinerPhotos(id);
   }
 
   // Commission corrigee par l'admin dans la demande. null = pas touchee :
@@ -2385,7 +2578,9 @@
     const ordre = ORDRE_PHOTOS[id];
     const photos = PHOTOS_DEMANDE[id] || [];
     if (!Array.isArray(ordre)) return null;
-    const change = ordre.length !== photos.length || ordre.some(function (v, i) { return v !== i; });
+    const retouche = photosRetouchees(id);
+    const change = ordre.length !== photos.length || ordre.some(function (v, i) { return v !== i; })
+      || !!retouche.remplacees || !!retouche.ajoutees;
     return change ? ordre.slice() : null;
   }
 
@@ -2402,7 +2597,7 @@
         const typeBadge = isNew
         ? '<span class="badge badge-blue">Nouveau produit</span>'
         : '<span class="badge badge-orange">' + esc(shortChangeLabel(c)) + '</span>';
-        const photos = Array.isArray(c.image_urls) && c.image_urls.length
+        let photos = Array.isArray(c.image_urls) && c.image_urls.length
         ? c.image_urls
         : (c.image_url ? [c.image_url] : (p.image_url ? [p.image_url] : []));
       const hasPhoto = photos.length > 0;
@@ -2462,8 +2657,16 @@
 
         // Demande en attente avec plusieurs photos : l'admin choisit l'ordre
         // (2 novembre 2026). On garde les photos ici, la carte les redessine.
-        const ordonnable = p.status === 'pending' && photos.length > 1;
+        // 11 novembre 2026 : aussi avec UNE seule photo (l'admin peut la
+        // remplacer ou en ajouter), des que la demande porte sa liste de photos.
+        const ordonnable = p.status === 'pending'
+          && (photos.length > 1 || (Array.isArray(c.image_urls) && c.image_urls.length >= 1));
         if (ordonnable) {
+          // Les photos du createur, avec les retouches de l'admin par-dessus.
+          const rempl = PHOTOS_REMPL[p.id] || {};
+          PHOTOS_BASE_N[p.id] = photos.length;
+          photos = photos.map(function (u, i) { return rempl[i] || u; })
+            .concat((PHOTOS_AJOUTS[p.id] || []).filter(Boolean));
           PHOTOS_DEMANDE[p.id] = photos;
           // On repart de zero seulement si rien n'est memorise ou si le
           // rangement ne colle plus aux photos (demande changee entre-temps) :
@@ -2493,6 +2696,7 @@
           '<div class="pending-bottom"><span class="pending-date">' + formatDate(p.created_at) + '</span>' +
           actionHtml +
           '</div>' +
+          (ordonnable ? '<div id="gestion-' + esc(p.id) + '">' + gestionPhotosHTML(p.id) + '</div>' : '') +
           '</div></div>';
       });
       document.getElementById('pending-list').innerHTML = html || '<div style="text-align:center;padding:32px;color:var(--gray-400)">Aucune demande</div>';
@@ -2565,12 +2769,14 @@
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
         body: JSON.stringify(Object.assign({ edit_id: id, action },
           (action === 'approve' && ordrePhotosAEnvoyer(id)) ? { image_order: ordrePhotosAEnvoyer(id) } : {},
-          (action === 'approve' && commissionAEnvoyer(id) !== null) ? { commission_percent: commissionAEnvoyer(id) } : {}))
+          (action === 'approve' && commissionAEnvoyer(id) !== null) ? { commission_percent: commissionAEnvoyer(id) } : {},
+          (action === 'approve' && photosRetouchees(id).remplacees) ? { image_replacements: photosRetouchees(id).remplacees } : {},
+          (action === 'approve' && photosRetouchees(id).ajoutees) ? { image_additions: photosRetouchees(id).ajoutees } : {}))
       });
       const data = await res.json();
       // Un echec cote serveur etait affiche comme un succes : on le dit.
       if (!res.ok) { showToast('Erreur : ' + (data.error || res.status), 'red'); return; }
-      if (action === 'approve') { delete ORDRE_PHOTOS[id]; delete PHOTOS_DEMANDE[id]; }
+      if (action === 'approve') { delete ORDRE_PHOTOS[id]; delete PHOTOS_DEMANDE[id]; delete PHOTOS_REMPL[id]; delete PHOTOS_AJOUTS[id]; delete GESTION_OUVERTE[id]; }
       delete COMM_SAISIE[id];
       const card = document.getElementById('pending-' + id);
       if (card) { card.style.opacity = '0.3'; card.style.pointerEvents = 'none'; }
