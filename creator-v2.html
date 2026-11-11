@@ -1224,7 +1224,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-11-11-rembourse';
+  const APP_VERSION = '2026-11-11-photos-nettes';
 
   async function checkAppVersion() {
     try {
@@ -2244,7 +2244,7 @@
     for (const f of files) {
       if (selectedImages.length >= MAX_IMAGES) { refuses++; continue; }
       try {
-        selectedImages.push(await resizeAndReadFile(f, 800, { cadre: true }));
+        selectedImages.push(await resizeAndReadFile(f, 1600, { cadre: true }));
         selectedImageColors.push(null);
       } catch (e) {
         echecs.push(motifEchecPhoto(f));
@@ -2680,6 +2680,25 @@
     return sortie;
   }
 
+  // Reduit une image par moities successives jusqu'a la taille voulue :
+  // bien plus net qu'une seule grande reduction. Renvoie l'image d'origine
+  // si elle est deja assez petite.
+  function reduireParPaliers(src, w, h) {
+    let cur = src, cw = src.width, ch = src.height;
+    try {
+      while (cw / 2 >= w && ch / 2 >= h) {
+        const c = document.createElement('canvas');
+        c.width = Math.round(cw / 2); c.height = Math.round(ch / 2);
+        const x = c.getContext('2d');
+        x.imageSmoothingEnabled = true;
+        x.imageSmoothingQuality = 'high';
+        x.drawImage(cur, 0, 0, c.width, c.height);
+        cur = c; cw = c.width; ch = c.height;
+      }
+    } catch (e) { return src; }
+    return cur;
+  }
+
   function resizeAndReadFile(file, maxSize, options) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -2704,8 +2723,18 @@
           // detoure ressortait sur fond NOIR sur toute la boutique.
           ctx.fillStyle = '#FFFFFF';
           ctx.fillRect(0, 0, w, h);
-          ctx.drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', 0.8));
+          // QUALITE (11 novembre 2026) : une reduction d'un seul coup
+          // (4000 px -> 800 px) abimait les fines mailles (col, cotes) :
+          // effet d'escalier et moire. On reduit par moities, en lissage
+          // haute qualite, et on garde 1600 px pour les ecrans Retina.
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(reduireParPaliers(img, w, h), 0, 0, w, h);
+          // Qualite JPEG haute, abaissee seulement si la photo depasse ce que
+          // le stockage accepte (1,5 Mo).
+          let q = 0.9, data = canvas.toDataURL('image/jpeg', q);
+          while (data.length > 1900000 && q > 0.5) { q -= 0.08; data = canvas.toDataURL('image/jpeg', q); }
+          resolve(data);
         };
         brute.onerror = () => reject(new Error('Image illisible'));
         brute.src = e.target.result;

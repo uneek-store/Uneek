@@ -732,7 +732,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-11-11-photos-produits';
+  const APP_VERSION = '2026-11-11-photos-nettes';
 
   async function checkAppVersion() {
     try {
@@ -2602,7 +2602,7 @@
         const img = new Image();
         img.onload = function () {
           let w = img.width, h = img.height;
-          const max = 1200;
+          const max = 1600;
           if (w > max || h > max) {
             if (w > h) { h = Math.round(h * max / w); w = max; } else { w = Math.round(w * max / h); h = max; }
           }
@@ -2610,8 +2610,22 @@
           c.width = w; c.height = h;
           const x = c.getContext('2d');
           x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, w, h);
-          x.drawImage(img, 0, 0, w, h);
-          let q = 0.88, data = c.toDataURL('image/jpeg', q);
+          // Reduction par moities, lissage haute qualite (11 nov. 2026) :
+          // les fines mailles (col, cotes) restent nettes.
+          let src = img, sw = img.width, sh = img.height;
+          try {
+            while (sw / 2 >= w && sh / 2 >= h) {
+              const t = document.createElement('canvas');
+              t.width = Math.round(sw / 2); t.height = Math.round(sh / 2);
+              const tx = t.getContext('2d');
+              tx.imageSmoothingEnabled = true; tx.imageSmoothingQuality = 'high';
+              tx.drawImage(src, 0, 0, t.width, t.height);
+              src = t; sw = t.width; sh = t.height;
+            }
+          } catch (err) { src = img; }
+          x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+          x.drawImage(src, 0, 0, w, h);
+          let q = 0.9, data = c.toDataURL('image/jpeg', q);
           while (data.length > 1900000 && q > 0.5) { q -= 0.1; data = c.toDataURL('image/jpeg', q); }
           ok(data);
         };

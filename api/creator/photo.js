@@ -22,8 +22,8 @@ import crypto from "crypto";
 
 const SEAU = "product-images";
 const TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
-// Le panneau envoie du 800 px compresse : au-dela, c'est que quelque chose
-// n'a pas fonctionne cote navigateur.
+// Le panneau envoie du 1600 px (11 novembre 2026, avant 800 px), compresse
+// sous 1,4 Mo : au-dela, c'est que quelque chose n'a pas fonctionne.
 const POIDS_MAX = 1_500_000;
 
 export default async function handler(req, res) {
