@@ -1068,8 +1068,14 @@
     <!-- Le champ reste, en cache : il porte toujours "Noir, Blanc" et tout ce
          qui le lisait deja continue de fonctionner sans rien changer. -->
     <input id="f-variants" type="hidden" />
-    <div id="f-couleurs" class="couleurs-grille"></div>
-    <p class="modal-note" style="margin-top:6px" id="f-couleurs-note">Choisis les couleurs disponibles</p>
+    <!-- 11 novembre 2026 : retour au champ texte, a la demande d'UNEEK. Le
+         createur tape « Noir, Blanc, Bordeaux ». Chaque nom est ramene a sa
+         couleur UNEEK (noir = Noir = black) : pas de doublon, pas de stock
+         compte deux fois. La grille de pastilles reste dans la page, cachee. -->
+    <input id="f-couleurs-texte" type="text" placeholder="Noir, Blanc, Bordeaux" maxlength="200" oninput="couleursTapees()" autocomplete="off" />
+    <p class="modal-note" style="margin-top:4px">Sépare les couleurs par une virgule.</p>
+    <div id="f-couleurs" class="couleurs-grille" style="display:none"></div>
+    <p class="modal-note" style="margin-top:6px;display:none" id="f-couleurs-note">Choisis les couleurs disponibles</p>
     <p class="modal-note" style="margin-top:2px">Laisse vide si le produit n'existe qu'en une seule couleur.</p>
 
     <style>
@@ -1218,7 +1224,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-11-02-fiche-et-cadre';
+  const APP_VERSION = '2026-11-11-couleurs-texte';
 
   async function checkAppVersion() {
     try {
@@ -3060,6 +3066,37 @@
     Array.prototype.forEach.call(grille.querySelectorAll('.couleur-chip'), function (b) {
       b.onclick = function () { basculerCouleur(b.getAttribute('data-v')); };
     });
+    ecrireVariants();
+    // Le champ texte montre les couleurs du produit, une virgule entre chacune.
+    var texte = document.getElementById('f-couleurs-texte');
+    if (texte) texte.value = COULEURS_CHOISIES.map(libelleCouleur).join(', ');
+  }
+
+  // Le createur tape ses couleurs, separees par des virgules. On ne reecrit
+  // PAS le champ pendant qu'il tape : on met a jour la liste, la grille de
+  // stock et les menus des photos, exactement comme un clic sur une pastille.
+  function couleursTapees() {
+    var champ = document.getElementById('f-couleurs-texte');
+    if (!champ) return;
+    var vues = {};
+    var out = [];
+    String(champ.value || '').split(',').forEach(function (t) {
+      t = t.trim();
+      if (!t) return;
+      var c = codeCouleur(t);
+      var cle = String(c).toLowerCase();
+      if (vues[cle]) return;              // « Noir, noir » : une seule ligne
+      vues[cle] = true;
+      // Une couleur que le produit portait deja garde son orthographe : c'est
+      // la cle de sa ligne de stock.
+      var origine = null;
+      Object.keys(ORTHOGRAPHE_ORIGINE).forEach(function (k) {
+        if (String(k).toLowerCase() === cle) origine = ORTHOGRAPHE_ORIGINE[k];
+      });
+      var connue = COULEURS_UNEEK.some(function (x) { return x.code === c; });
+      out.push(origine !== null ? origine : (connue ? c : t));
+    });
+    COULEURS_CHOISIES = out;
     ecrireVariants();
   }
 
