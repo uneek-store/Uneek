@@ -97,6 +97,21 @@ export default async function handler(req, res) {
       message: "Trop de tentatives. Réessaie dans quelques minutes.",
     })) return;
 
+    // ESPACE PAIEMENTS DU CREATEUR (11 novembre 2026) : lien a usage unique
+    // vers son tableau Stripe Express (solde, versements, IBAN). Possible
+    // seulement une fois son inscription Stripe terminee.
+    if (req.body && req.body.action === "tableau") {
+      if (!compte.stripe_account_id) {
+        return res.status(400).json({ error: "Relie d'abord ton compte bancaire." });
+      }
+      const distant = await stripe.accounts.retrieve(compte.stripe_account_id);
+      if (!distant.details_submitted) {
+        return res.status(400).json({ error: "Termine d'abord ton inscription Stripe." });
+      }
+      const acces = await stripe.accounts.createLoginLink(compte.stripe_account_id);
+      return res.status(200).json({ url: acces.url });
+    }
+
     let accountId = compte.stripe_account_id;
 
     // PAYS DU COMPTE STRIPE (11 novembre 2026) : Stripe fige le pays a la

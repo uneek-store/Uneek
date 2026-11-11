@@ -906,6 +906,7 @@
           Vérification…
         </div>
         <button class="btn-save" id="stripe-btn" onclick="relierStripe()" style="display:none"></button>
+        <button class="btn-save" id="stripe-tableau" onclick="ouvrirTableauStripe()" style="display:none;margin-left:8px;background:#fff;color:var(--black,#0A0A0A);border:1px solid var(--gray-200,#e5e5e5)">Voir mes paiements sur Stripe</button>
         <div id="stripe-msg" style="font-size:12px;margin-top:10px;display:none"></div>
       </div>
 
@@ -1224,7 +1225,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-11-11-photos-nettes';
+  const APP_VERSION = '2026-11-11-tableau-stripe';
 
   async function checkAppVersion() {
     try {
@@ -1788,6 +1789,9 @@
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || 'indisponible');
+      // Espace paiements Stripe : des que l'inscription est terminee.
+      const tableau = document.getElementById('stripe-tableau');
+      if (tableau) tableau.style.display = (d.relie && d.dossier_complet) ? '' : 'none';
 
       if (!d.relie) {
         etatEl.innerHTML = '<strong style="color:var(--red)">Compte bancaire non relié.</strong>'
@@ -1830,6 +1834,32 @@
       window.location.href = d.url;
     } catch (err) {
       showMsg(msg, err.message || 'Erreur, réessaie.', 'var(--red)');
+      btn.disabled = false; btn.textContent = texte;
+    }
+  }
+
+  // Ouvre l'espace paiements Stripe du createur (solde, versements, IBAN),
+  // dans un nouvel onglet : son panneau UNEEK reste ouvert.
+  async function ouvrirTableauStripe() {
+    const btn = document.getElementById('stripe-tableau');
+    const msg = document.getElementById('stripe-msg');
+    const texte = btn.textContent;
+    const onglet = window.open('', '_blank');
+    btn.disabled = true; btn.textContent = 'Ouverture de Stripe…';
+    msg.style.display = 'none';
+    try {
+      const res = await fetch(API_BASE + '/creator/stripe-connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify({ action: 'tableau' })
+      });
+      const d = await res.json();
+      if (!res.ok || !d.url) throw new Error(d.error || 'Stripe injoignable');
+      if (onglet) onglet.location.href = d.url; else window.location.href = d.url;
+    } catch (err) {
+      if (onglet) onglet.close();
+      showMsg(msg, err.message || 'Erreur, réessaie.', 'var(--red)');
+    } finally {
       btn.disabled = false; btn.textContent = texte;
     }
   }
