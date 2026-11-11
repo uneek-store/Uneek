@@ -1224,7 +1224,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-11-11-couleurs-texte';
+  const APP_VERSION = '2026-11-11-rembourse';
 
   async function checkAppVersion() {
     try {
@@ -1922,11 +1922,17 @@
         const isFaded = ['shipped', 'delivered', 'returned'].includes(order.shipping_status);
         const fadedAttr = isFaded ? ' class="faded"' : '';
 
-        totalSales++;
+        // Une commande REMBOURSEE au client reste dans la liste (le createur
+        // doit savoir ce qu'il ne doit plus envoyer), mais elle ne rapporte
+        // rien : ni vente, ni chiffre d'affaires, ni revenu (11 novembre 2026).
+        const rembourse = order.payment_status === 'refunded';
+        if (!rembourse) totalSales++;
         const orderTotal = parseFloat(order.total_amount || items.reduce((s, i) => s + ((i.price || 0) * (i.quantity || 1)), 0));
         const orderPayout = parseFloat(order.creator_payout || orderTotal * 0.88);
-        totalCA += orderTotal;
-        totalRevenue += orderPayout;
+        if (!rembourse) {
+          totalCA += orderTotal;
+          totalRevenue += orderPayout;
+        }
         if (['pending', 'processing'].includes(order.shipping_status)) toShip++;
 
         overviewHtml += '<tr' + fadedAttr + '><td class="bold">' + shortOrder(order.order_number) + '</td><td class="sec">' + esc(productStr) + '</td><td>' + totalQty + '</td><td class="sec">' + esc(order.customer_name || '') + '</td><td>' + surnomHtml(order) + '</td><td>' + statusBadge + '</td></tr>';
@@ -3883,6 +3889,8 @@
     var cour = [], prec = [];
     CMD.forEach(function (o) {
       if (!o.created_at) return;
+      // Remboursee : ne compte ni dans les ventes, ni dans le revenu.
+      if (o.payment_status === 'refunded') return;
       var t = new Date(o.created_at);
       if (t >= debut) cour.push(o);
       else if (t >= debutPrec) prec.push(o);

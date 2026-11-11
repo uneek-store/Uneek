@@ -90,8 +90,8 @@ export default async function handler(req, res) {
     // de renvoyer une erreur. Un onglet avec moins de détail vaut mieux qu'un
     // onglet mort.
     const COLONNES_COMPLETES =
-      "product_id, product_name, size, color, quantity, product_price, creator_payout, orders(created_at, status)";
-    const COLONNES_MINIMALES = "product_id, quantity, orders(created_at)";
+      "product_id, product_name, size, color, quantity, product_price, creator_payout, orders(created_at, status, payment_status)";
+    const COLONNES_MINIMALES = "product_id, quantity, orders(created_at, status, payment_status)";
 
     let lignes = [];
     let ventesCompletes = true;
@@ -126,7 +126,17 @@ export default async function handler(req, res) {
       const t = new Date(d).getTime();
       return !isNaN(t) && t >= depuis;
     };
-    const vendues = (lignes || []).filter(dansLaPeriode);
+    // Une vente, c'est une commande ENCAISSEE et gardee (11 novembre 2026).
+    // Avant, un panier abandonne, une commande annulee ou REMBOURSEE au
+    // client comptait comme une vente : « Mes stats » affichait un revenu
+    // pour une commande test remboursee.
+    const pasUneVente = ["pending", "failed", "cancelled", "refunded"];
+    const encaissee = (l) => {
+      const o = l.orders || {};
+      if (o.status === "cancelled") return false;
+      return pasUneVente.indexOf(o.payment_status) === -1;
+    };
+    const vendues = (lignes || []).filter(dansLaPeriode).filter(encaissee);
 
     // --- 4. on assemble, produit par produit ---
     const par = {};
