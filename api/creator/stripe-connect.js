@@ -25,6 +25,7 @@ import Stripe from "stripe";
 import { supabaseAdmin } from "../lib/supabase.js";
 import { lireJeton, jetonDeLaRequete } from "../lib/session.js";
 import { limiter } from "../lib/limite.js";
+import { paysValide, PAYS_MARQUE_PAR_DEFAUT } from "../lib/livraison.js";
 
 const SITE = process.env.SITE_URL || "https://www.uneek.store";
 
@@ -98,11 +99,40 @@ export default async function handler(req, res) {
 
     let accountId = compte.stripe_account_id;
 
+    // PAYS DU COMPTE STRIPE (11 novembre 2026) : Stripe fige le pays a la
+    // creation du compte. Sans pays, il prenait celui d'UNEEK (Belgique) et
+    // un createur des Pays-Bas ne pouvait pas le changer. On prend le pays
+    // d'expedition de sa marque.
+    let pays = PAYS_MARQUE_PAR_DEFAUT;
+    if (compte.brand_id) {
+      const { data: marque } = await supabaseAdmin
+        .from("brands").select("ship_country").eq("id", compte.brand_id).maybeSingle();
+      pays = paysValide(marque && marque.ship_country) || PAYS_MARQUE_PAR_DEFAUT;
+    }
+
+    // Compte deja cree dans le mauvais pays et pas encore rempli : on le
+    // remplace par un compte neuf dans le bon pays. Un compte deja rempli
+    // n'est jamais touche.
+    if (accountId) {
+      try {
+        const existant = await stripe.accounts.retrieve(accountId);
+        if (existant && !existant.details_submitted && existant.country
+            && String(existant.country).toUpperCase() !== pays) {
+          console.warn("[stripe-connect] compte", accountId, "en", existant.country,
+            "au lieu de", pays, "— remplace (dossier vide)");
+          accountId = null;
+        }
+      } catch (e) {
+        console.warn("[stripe-connect] lecture du compte", accountId, "impossible :", e && e.message);
+      }
+    }
+
     if (!accountId) {
       // Express : Stripe heberge le formulaire d'identite et de compte
       // bancaire, et gere la verification reglementaire a notre place.
       const nouveau = await stripe.accounts.create({
         type: "express",
+        country: pays,
         email: compte.email || undefined,
         business_type: "individual",
         capabilities: {
