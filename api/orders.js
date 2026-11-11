@@ -5,7 +5,7 @@
 import Stripe from "stripe";
 import { supabaseAdmin } from "./lib/supabase.js";
 import { stockParCouleur, lireStock, ecrireStock, stockTotal } from "./lib/stock.js";
-import { controlerAcces } from "./lib/session.js";
+import { controlerAcces, lireJetonClient } from "./lib/session.js";
 import { limiter } from "./lib/limite.js";
 import { nomTransporteur, lienSuivi } from "./lib/suivi.js";
 import { calculerFrais, paysValide, PAYS_LIVRES, PAYS_MARQUE_PAR_DEFAUT } from "./lib/livraison.js";
@@ -75,11 +75,16 @@ function generateOrderNumber() {
   return `UNEEK-${y}${m}${d}-${rand}`;
 }
 
+// Client connecte (11 novembre 2026) : le jeton client est signe
+// ({cid, exp}.signature). L'ancienne lecture (base64 « id:... ») renvoyait
+// un morceau de JSON au lieu de l'identifiant : la base refusait la
+// commande d'un client CONNECTE, apres que sa carte a ete debitee.
+// Jeton illisible = commande sans compte client, jamais un refus.
 function parseToken(token) {
   try {
-    const decoded = Buffer.from(token, "base64").toString("utf-8");
-    const [customerId] = decoded.split(":");
-    return customerId;
+    const lu = lireJetonClient(token);
+    const id = lu && lu.ok ? String(lu.customerId) : null;
+    return id && /^[0-9a-f-]{36}$/i.test(id) ? id : null;
   } catch {
     return null;
   }
@@ -485,9 +490,7 @@ export default async function handler(req, res) {
       }
 
       // Créer la commande
-      const { data: order, error: orderError } = await supabaseAdmin
-        .from("orders")
-        .insert({
+      const ligneCommande = {
           order_number: generateOrderNumber(),
           customer_email: customer.email,
           customer_name: customer.name,
@@ -511,9 +514,19 @@ export default async function handler(req, res) {
           stripe_charge_id: paye ? paiement.chargeId : null,
           paid_at: paye ? new Date().toISOString() : null,
           status: "new",
-        })
-        .select()
-        .single();
+      };
+      let { data: order, error: orderError } = await supabaseAdmin
+        .from("orders").insert(ligneCommande).select().single();
+      // Filet (11 novembre 2026) : si la base refuse la commande a cause du
+      // compte client, on l'enregistre sans compte. Une commande payee ne
+      // doit jamais se perdre pour un detail de rattachement.
+      if (orderError && orderError.code !== "23505" && ligneCommande.customer_id) {
+        console.error("[commande] refusee avec le compte client", ligneCommande.customer_id,
+          ":", orderError.message, "— nouvel essai sans compte");
+        ligneCommande.customer_id = null;
+        ({ data: order, error: orderError } = await supabaseAdmin
+          .from("orders").insert(ligneCommande).select().single());
+      }
 
       if (orderError && orderError.code === "23505" && payment_intent_id) {
         // Deux envois simultanes du meme paiement : la base n'en garde qu'un
@@ -531,7 +544,7 @@ export default async function handler(req, res) {
       }
       if (orderError) {
         console.error("Error creating order:", orderError);
-        return res.status(500).json({ error: "Erreur création commande" });
+        return res.status(500).json({ error: "Erreur création commande", code: orderError.code || null });
       }
 
       const itemsWithOrderId = orderItems.map((item) => ({
