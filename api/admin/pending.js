@@ -154,6 +154,50 @@ export default async function handler(req, res) {
         });
       }
 
+      // --- PHOTOS D'UN PRODUIT DEJA EN LIGNE (11 novembre 2026) ---
+      // L'admin change les photos d'un produit publie sans passer par une
+      // demande du createur : remplacer, ajouter, retirer, ranger.
+      // image_urls = la liste finale, dans l'ordre voulu.
+      // image_from = pour chaque photo, l'index de la photo actuelle dont
+      // elle prend la place (sa couleur suit), ou -1 pour une photo ajoutee.
+      // Une photo qui ne vient pas de la liste actuelle doit venir de notre
+      // stockage : on n'accepte jamais une adresse inventee.
+      if (action === "photos") {
+        const { image_urls, image_from } = req.body;
+        if (!product_id) return res.status(400).json({ error: "product_id requis" });
+        if (!Array.isArray(image_urls) || image_urls.length < 1 || image_urls.length > 12
+            || !Array.isArray(image_from) || image_from.length !== image_urls.length) {
+          return res.status(400).json({ error: "Liste de photos invalide (1 a 12 photos)" });
+        }
+        const { data: prod, error: errProd } = await supabaseAdmin
+          .from("products").select("*").eq("id", product_id).maybeSingle();
+        if (errProd) return res.status(500).json({ error: "Erreur serveur" });
+        if (!prod) return res.status(404).json({ error: "Produit introuvable" });
+        const avant = Array.isArray(prod.image_urls) ? prod.image_urls : [];
+        const deChezNous = (u) => typeof u === "string" && u.length < 2000
+          && /^https:\/\/[^\s"'<>]+\/storage\/v1\/object\/public\/product-images\/[^\s"'<>]+$/.test(u);
+        for (let i = 0; i < image_urls.length; i++) {
+          const u = image_urls[i], f = image_from[i];
+          if (!Number.isInteger(f) || f < -1 || f >= avant.length) {
+            return res.status(400).json({ error: "Photo " + (i + 1) + " : origine invalide" });
+          }
+          if (!(f >= 0 && u === avant[f]) && !deChezNous(u)) {
+            return res.status(400).json({ error: "Photo " + (i + 1) + " : adresse refusee" });
+          }
+        }
+        const maj = { image_urls: image_urls.slice() };
+        if (Object.prototype.hasOwnProperty.call(prod, "image_colors")) {
+          const couleurs = Array.isArray(prod.image_colors) ? prod.image_colors : [];
+          maj.image_colors = image_from.map((f) => (f >= 0 ? (couleurs[f] || null) : null));
+        }
+        const { error: errMaj } = await supabaseAdmin.from("products").update(maj).eq("id", product_id);
+        if (errMaj) {
+          console.error("Error updating product photos:", errMaj);
+          return res.status(500).json({ error: "Erreur mise à jour" });
+        }
+        return res.status(200).json({ success: true, image_urls: maj.image_urls });
+      }
+
       if (!edit_id || !["approve", "reject"].includes(action)) {
         return res.status(400).json({ error: "edit_id et action (approve/reject) requis" });
       }

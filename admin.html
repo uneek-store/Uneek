@@ -732,7 +732,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-11-11-photos-admin';
+  const APP_VERSION = '2026-11-11-photos-produits';
 
   async function checkAppVersion() {
     try {
@@ -2174,7 +2174,11 @@
         const action = published
           ? '<button class="btn-delete-brand" onclick="askTogglePublish(\'' + p.id + '\', \'' + safeName + '\', false)">Dépublier</button>'
           : '<button class="btn-approve" onclick="askTogglePublish(\'' + p.id + '\', \'' + safeName + '\', true)">Publier</button>';
-        html += '<tr' + (published ? '' : ' style="opacity:0.75"') + '><td class="bold">' + p.name + '</td><td class="sec">' + (p.brand_name || p.brands?.name || '') + '</td><td>€' + p.price + '</td><td>' + (p.commission_percent || 15) + '%</td><td>' + stock + '</td><td>' + badge + '</td><td>' + action + '</td></tr>';
+        PRODUITS_PHOTOS[p.id] = { nom: p.name || '', photos: Array.isArray(p.image_urls) ? p.image_urls.slice() : [] };
+        const nbPhotos = PRODUITS_PHOTOS[p.id].photos.length;
+        const vignette = nbPhotos ? '<img src="' + esc(PRODUITS_PHOTOS[p.id].photos[0]) + '" alt="" style="width:30px;height:40px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:8px;border:1px solid var(--gray-200)">' : '';
+        const boutonPhotos = '<button type="button" onclick="ouvrirPhotosProduit(\'' + escJs(p.id) + '\')" style="margin-left:6px;padding:6px 10px;font-size:12px;border:1px solid var(--gray-200);border-radius:8px;background:#fff;cursor:pointer;font-family:inherit;white-space:nowrap">Modifier les photos</button>';
+        html += '<tr' + (published ? '' : ' style="opacity:0.75"') + '><td class="bold">' + vignette + esc(p.name) + '</td><td class="sec">' + (p.brand_name || p.brands?.name || '') + '</td><td>€' + p.price + '</td><td>' + (p.commission_percent || 15) + '%</td><td>' + stock + '</td><td>' + badge + '</td><td style="white-space:nowrap">' + action + boutonPhotos + '</td></tr>';
       });
       document.getElementById('products-table').innerHTML = html || '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--gray-400)">Aucun produit</td></tr>';
       const warn = document.getElementById('unpublishedWarn');
@@ -2214,6 +2218,157 @@
       loadProducts();
     } catch (err) {
       showToast('Erreur: ' + err.message, 'red');
+    }
+  }
+
+  // --- MODIFIER LES PHOTOS D'UN PRODUIT DEJA EN LIGNE (11 novembre 2026) ---
+  // Depuis l'onglet Produits : remplacer, ajouter, retirer, ranger les
+  // photos d'un produit publie. Rien ne change sur le site avant
+  // « Enregistrer ». Chaque photo garde la couleur de la place qu'elle prend.
+  const PRODUITS_PHOTOS = {};
+  let PP = null; // { id, nom, avant: [...], liste: [{ url, from }], envoi }
+  let ppGlisse = null;
+
+  function ouvrirPhotosProduit(id) {
+    const p = PRODUITS_PHOTOS[id];
+    if (!p) return;
+    PP = { id: id, nom: p.nom, avant: p.photos.slice(), liste: p.photos.map(function (u, i) { return { url: u, from: i }; }), envoi: '' };
+    let v = document.getElementById('pp-voile');
+    if (!v) {
+      v = document.createElement('div');
+      v.id = 'pp-voile';
+      v.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:150;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:40px 16px';
+      v.addEventListener('click', function (e) { if (e.target === v) fermerPhotosProduit(); });
+      document.body.appendChild(v);
+    }
+    dessinerPhotosProduit();
+  }
+
+  function fermerPhotosProduit() {
+    const v = document.getElementById('pp-voile');
+    if (v) v.remove();
+    PP = null;
+  }
+
+  function ppChange() {
+    if (!PP) return false;
+    return PP.liste.length !== PP.avant.length
+      || PP.liste.some(function (e, i) { return e.from !== i || e.url !== PP.avant[i]; });
+  }
+
+  function dessinerPhotosProduit() {
+    const v = document.getElementById('pp-voile');
+    if (!v || !PP) return;
+    const bouton = 'padding:5px 8px;font-size:11px;border:1px solid var(--gray-200);border-radius:6px;background:#fff;cursor:pointer;font-family:inherit;text-align:center;display:block;width:100%';
+    let html = '<div style="background:#fff;border-radius:14px;padding:22px;max-width:760px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.2)">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:6px">'
+      + '<div style="font-size:16px;font-weight:700">Photos — ' + esc(PP.nom) + '</div>'
+      + '<button type="button" onclick="fermerPhotosProduit()" style="border:none;background:none;font-size:22px;cursor:pointer;line-height:1">&times;</button></div>'
+      + '<div style="font-size:12px;color:var(--gray-500);margin-bottom:14px;line-height:1.5">Remplace, ajoute, retire ou glisse les photos pour changer l\'ordre. La 1re est la photo principale. Rien ne change sur le site avant « Enregistrer ».</div>'
+      + (PP.envoi ? '<div style="font-size:12px;color:var(--blue);margin-bottom:10px">' + esc(PP.envoi) + '</div>' : '')
+      + '<div style="display:flex;flex-wrap:wrap;gap:12px">';
+    PP.liste.forEach(function (e, pos) {
+      const nouvelle = e.from < 0 || e.url !== PP.avant[e.from];
+      html += '<div style="width:110px">'
+        + '<div style="position:relative">'
+        + '<img src="' + esc(e.url) + '" draggable="true" ondragstart="ppGlisse=' + pos + '" ondragover="event.preventDefault()" ondrop="ppDeposer(event,' + pos + ')"'
+        + ' onclick="openLightbox(this.src)" alt="Photo ' + (pos + 1) + '" style="width:110px;height:146px;object-fit:cover;border-radius:8px;border:1px solid var(--gray-200);cursor:grab;display:block" />'
+        + '<span style="position:absolute;top:4px;left:4px;background:var(--black,#0A0A0A);color:#fff;font-size:10px;line-height:18px;min-width:18px;padding:0 4px;border-radius:9px;text-align:center">' + (pos === 0 ? '1 · principale' : (pos + 1)) + '</span>'
+        + (nouvelle ? '<span style="position:absolute;bottom:4px;left:4px;background:var(--blue,#2563EB);color:#fff;font-size:9px;padding:1px 6px;border-radius:9px">nouvelle</span>' : '')
+        + '</div>'
+        + '<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px">'
+        + '<label style="' + bouton + '">Remplacer<input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="ppRemplacer(' + pos + ',this)"></label>'
+        + (PP.liste.length > 1 ? '<button type="button" onclick="ppRetirer(' + pos + ')" style="' + bouton + ';color:var(--red)">Retirer</button>' : '')
+        + '</div></div>';
+    });
+    if (PP.liste.length < 12) {
+      html += '<label style="width:110px;height:146px;border:1px dashed var(--gray-300,#ccc);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;font-size:11px;color:var(--gray-500);text-align:center">'
+        + '<span style="font-size:22px;line-height:1">+</span>Ajouter une photo'
+        + '<input type="file" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="ppAjouter(this)"></label>';
+    }
+    html += '</div>'
+      + '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">'
+      + '<button type="button" onclick="fermerPhotosProduit()" style="padding:9px 16px;font-size:13px;border:1px solid var(--gray-200);border-radius:8px;background:#fff;cursor:pointer;font-family:inherit">Annuler</button>'
+      + '<button type="button" id="pp-enregistrer" onclick="enregistrerPhotosProduit()"' + (ppChange() && !PP.envoi ? '' : ' disabled') + ' class="btn-approve" style="padding:9px 16px;font-size:13px' + (ppChange() && !PP.envoi ? '' : ';opacity:.5;cursor:default') + '">Enregistrer</button>'
+      + '</div></div>';
+    v.innerHTML = html;
+  }
+
+  async function ppEnvoyer(fichier) {
+    PP.envoi = 'Envoi de la photo…';
+    dessinerPhotosProduit();
+    try {
+      const data = await preparerPhotoAdmin(fichier);
+      const res = await fetch(API_BASE + '/creator/photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify({ data: data })
+      });
+      const r = await res.json().catch(function () { return {}; });
+      if (!res.ok || !r.url) throw new Error(r.error || ('HTTP ' + res.status));
+      return r.url;
+    } catch (e) {
+      showToast('Photo non envoyée : ' + e.message, 'red');
+      return null;
+    } finally {
+      if (PP) PP.envoi = '';
+    }
+  }
+
+  async function ppRemplacer(pos, input) {
+    const f = input && input.files && input.files[0];
+    if (!f || !PP) return;
+    const url = await ppEnvoyer(f);
+    if (url && PP && PP.liste[pos]) PP.liste[pos].url = url;
+    dessinerPhotosProduit();
+  }
+
+  async function ppAjouter(input) {
+    const f = input && input.files && input.files[0];
+    if (!f || !PP) return;
+    const url = await ppEnvoyer(f);
+    if (url && PP) PP.liste.push({ url: url, from: -1 });
+    dessinerPhotosProduit();
+  }
+
+  function ppRetirer(pos) {
+    if (!PP || PP.liste.length <= 1) return;
+    PP.liste.splice(pos, 1);
+    dessinerPhotosProduit();
+  }
+
+  function ppDeposer(ev, pos) {
+    ev.preventDefault();
+    const g = ppGlisse;
+    ppGlisse = null;
+    if (!PP || g === null || g === pos) return;
+    const e = PP.liste.splice(g, 1)[0];
+    PP.liste.splice(pos, 0, e);
+    dessinerPhotosProduit();
+  }
+
+  async function enregistrerPhotosProduit() {
+    if (!PP || !ppChange() || PP.envoi) return;
+    const btn = document.getElementById('pp-enregistrer');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enregistrement…'; }
+    try {
+      const res = await fetch(API_BASE + '/admin/pending', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify({
+          product_id: PP.id, action: 'photos',
+          image_urls: PP.liste.map(function (e) { return e.url; }),
+          image_from: PP.liste.map(function (e) { return e.from; })
+        })
+      });
+      const d = await res.json().catch(function () { return {}; });
+      if (!res.ok || !d.success) throw new Error(d.error || ('HTTP ' + res.status));
+      showToast('✓ Photos mises à jour sur le site', 'green');
+      fermerPhotosProduit();
+      loadProducts();
+    } catch (e) {
+      showToast('Photos non enregistrées : ' + e.message, 'red');
+      if (btn) { btn.disabled = false; btn.textContent = 'Enregistrer'; }
     }
   }
 
