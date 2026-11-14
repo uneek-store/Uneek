@@ -4,6 +4,7 @@
 // GET  ?id=xxx → un produit spécifique
 
 import { supabaseAdmin } from "./lib/supabase.js";
+import { marqueInvisible } from "./lib/invisibles.js";
 
 // Colonnes qui n'ont rien a faire dans une reponse publique (constat 08 de
 // l'audit du 7 septembre). commission_percent, c'est la marge negociee avec
@@ -73,6 +74,8 @@ export default async function handler(req, res) {
 
   try {
     const { id, brand, category } = req.query;
+    // ?apercu=1 : l'admin voit aussi les marques invisibles (voir lib/supabase.js).
+    const apercu = String(req.query.apercu || "") === "1";
 
     // Un produit spécifique
     if (id) {
@@ -86,6 +89,10 @@ export default async function handler(req, res) {
       if (error || !data) return res.status(404).json({ error: "Produit non trouvé" });
       // Marque en pause : le produit n'existe plus pour le public.
       if (data.brands && data.brands.is_active === false) {
+        return res.status(404).json({ error: "Produit non trouvé" });
+      }
+      // Marque invisible : pareil pour un client, pas en apercu.
+      if (!apercu && data.brands && marqueInvisible(data.brands.slug)) {
         return res.status(404).json({ error: "Produit non trouvé" });
       }
       return res.status(200).json(sansChampsPrives(data));
@@ -118,6 +125,8 @@ export default async function handler(req, res) {
     // sur une table jointe ne retire pas la ligne parente.
     const visibles = (data || []).filter(
       (p) => !(p.brands && p.brands.is_active === false)
+        // Marque invisible : hors de la liste publique, sauf en apercu.
+        && (apercu || !(p.brands && marqueInvisible(p.brands.slug)))
     );
 
     // Les photos sont stockees en base64 DANS la base : une liste de 13

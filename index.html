@@ -637,7 +637,7 @@ async function chargerListe(chemin) {
     try {
       // Au 2e et 3e essai, on contourne la copie gardee par Vercel : si
       // c'est elle qui etait mauvaise, la redemander ne servirait a rien.
-      const url = chemin + (i > 0 ? '?essai=' + Date.now() : '');
+      const url = chemin + (i > 0 ? (chemin.indexOf('?') === -1 ? '?' : '&') + 'essai=' + Date.now() : '');
       const r = await fetch(url, ctrl ? { signal: ctrl.signal } : undefined);
       if (!r.ok) throw new Error(chemin + ' : HTTP ' + r.status);
       const data = await r.json();
@@ -668,10 +668,32 @@ function preparerProduits(liste) {
 let marquesChargees = false;
 let produitsChargees = false;
 
+// MODE APERCU (14 novembre 2026) : les marques invisibles (Testify...) ne
+// s'affichent que dans un navigateur ou l'admin a ouvert une fois
+// /?apercu=1. /?apercu=0 revient a la vue client. Rien de secret : c'est un
+// confort de lecture, pas une protection.
+let MODE_APERCU = false;
+try {
+  const q = new URLSearchParams(location.search).get('apercu');
+  if (q === '1') localStorage.setItem('uneek_apercu', '1');
+  if (q === '0') localStorage.removeItem('uneek_apercu');
+  MODE_APERCU = localStorage.getItem('uneek_apercu') === '1';
+} catch (e) { MODE_APERCU = false; }
+function bandeauApercu() {
+  if (!MODE_APERCU || document.getElementById('bandeau-apercu')) return;
+  const b = document.createElement('div');
+  b.id = 'bandeau-apercu';
+  b.style.cssText = 'position:fixed;left:12px;bottom:12px;z-index:400;background:#0A0A0A;color:#fff;font-size:12px;padding:8px 12px;border-radius:999px;box-shadow:0 4px 16px rgba(0,0,0,.2);font-family:var(--font-body)';
+  b.innerHTML = '<span>Mode aperçu : tu vois aussi les marques invisibles.</span> <a href="/?apercu=0" style="color:#fff;text-decoration:underline;margin-left:6px">Vue client</a>';
+  document.body.appendChild(b);
+}
+try { if (document.body) bandeauApercu(); else document.addEventListener('DOMContentLoaded', bandeauApercu); } catch (e) { /* rien */ }
+
 async function loadData() {
+  const suffixe = MODE_APERCU ? '?apercu=1' : '';
   const [rMarques, rProduits] = await Promise.allSettled([
-    marquesChargees ? Promise.resolve(BRANDS) : chargerListe(API + '/api/brands'),
-    produitsChargees ? Promise.resolve(PRODUCTS) : chargerListe(API + '/api/products')
+    marquesChargees ? Promise.resolve(BRANDS) : chargerListe(API + '/api/brands' + suffixe),
+    produitsChargees ? Promise.resolve(PRODUCTS) : chargerListe(API + '/api/products' + suffixe)
   ]);
   if (rMarques.status === 'fulfilled') {
     BRANDS = rMarques.value; marquesChargees = true;
@@ -921,7 +943,7 @@ async function chargerPhotoSurvol(id) {
   if (!p.image_count || p.image_count < 2) { PHOTO_SURVOL[id] = null; return null; }
 
   try {
-    const r = await fetch(API + '/api/products?id=' + encodeURIComponent(id));
+    const r = await fetch(API + '/api/products?id=' + encodeURIComponent(id) + (MODE_APERCU ? '&apercu=1' : ''));
     if (!r.ok) return null;
     const complet = await r.json();
     const photos = complet && Array.isArray(complet.image_urls) ? complet.image_urls : [];
@@ -1693,7 +1715,7 @@ async function chargerPhotosProduit() {
     if (!p || !p.image_count || p.image_count < 2) return;
     if (Array.isArray(p.image_urls) && p.image_urls.length >= p.image_count) return;
 
-    const r = await fetch(API + '/api/products?id=' + encodeURIComponent(p.id));
+    const r = await fetch(API + '/api/products?id=' + encodeURIComponent(p.id) + (MODE_APERCU ? '&apercu=1' : ''));
     if (!r.ok) return;
     const complet = await r.json();
     if (!complet || !Array.isArray(complet.image_urls) || complet.image_urls.length < 2) return;

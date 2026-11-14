@@ -18,6 +18,7 @@
 // /api/admin/brands, qui exige un jeton administrateur.
 
 import { supabaseAdmin } from "./lib/supabase.js";
+import { marqueInvisible } from "./lib/invisibles.js";
 
 // Un essai de plus quand Supabase repond par une erreur (12 octobre 2026).
 // La premiere requete apres un moment calme echoue parfois une fois ; la
@@ -52,6 +53,8 @@ export default async function handler(req, res) {
 
   try {
     const { slug } = req.query;
+    // ?apercu=1 : l'admin voit aussi les marques invisibles (voir lib/supabase.js).
+    const apercu = String(req.query.apercu || "") === "1";
 
     // Une marque spécifique avec ses produits
     if (slug) {
@@ -63,6 +66,7 @@ export default async function handler(req, res) {
         .single();
 
       if (error || !brand) return res.status(404).json({ error: "Marque non trouvée" });
+      if (!apercu && marqueInvisible(brand.slug)) return res.status(404).json({ error: "Marque non trouvée" });
 
       // Filtrer pour ne montrer que les produits publiés
       brand.products = (brand.products || []).filter((p) => p.is_published);
@@ -83,7 +87,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Erreur serveur" });
     }
 
-    const brands = (data || []).map(b => ({
+    const brands = (data || []).filter((b) => apercu || !marqueInvisible(b.slug)).map(b => ({
       ...b,
       product_count: b.products?.[0]?.count || 0,
       creator_name: b.creator_accounts?.[0]?.full_name || "",

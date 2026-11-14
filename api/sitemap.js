@@ -12,6 +12,7 @@
 // repond pas, on renvoie quand meme le plan des pages fixes.
 
 import { supabaseAdmin } from "./lib/supabase.js";
+import { marqueInvisible } from "./lib/invisibles.js";
 
 // Toujours les adresses officielles, quelle que soit l'adresse d'ou vient la
 // demande : un plan de site qui melange www et non-www dit au moteur que les
@@ -68,7 +69,7 @@ export default async function handler(req, res) {
     const [produits, marques] = await Promise.all([
       supabaseAdmin
         .from("products")
-        .select("id, slug, is_published, updated_at, created_at")
+        .select("id, slug, brand_id, is_published, updated_at, created_at")
         .eq("is_published", true),
       supabaseAdmin
         .from("brands")
@@ -76,7 +77,16 @@ export default async function handler(req, res) {
         .eq("is_active", true),
     ]);
 
+    // Marques invisibles (14 novembre 2026) : ni elles ni leurs produits ne
+    // doivent etre proposes aux moteurs de recherche.
+    let invisiblesIds = new Set();
+    try {
+      const { data: lesMarques } = await supabaseAdmin.from("brands").select("id, slug");
+      invisiblesIds = new Set((lesMarques || []).filter((m) => marqueInvisible(m.slug)).map((m) => m.id));
+    } catch (e) { /* plan sans ce filtre plutot que pas de plan */ }
+
     for (const p of (produits && produits.data) || []) {
+      if (p.brand_id && invisiblesIds.has(p.brand_id)) continue;
       // Meme regle que dans la boutique : le slug s'il existe, l'id sinon.
       const ref = p.slug || p.id;
       if (!ref) continue;
@@ -90,6 +100,7 @@ export default async function handler(req, res) {
 
     for (const m of (marques && marques.data) || []) {
       if (!m.slug) continue;
+      if (marqueInvisible(m.slug)) continue;
       urls.push(entree({
         chemin: "/marque/" + encodeURIComponent(m.slug),
         lastmod: jour(m.created_at),
