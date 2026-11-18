@@ -31,7 +31,7 @@ export default async function handler(req, res) {
       // Récupérer les order_items de cette marque avec les infos de commande
       const { data, error } = await supabaseAdmin
         .from("order_items")
-        .select("*, orders(order_number, customer_name, customer_nickname, customer_email, shipping_address, status, payment_status, lang, created_at), products(name)")
+        .select("*, orders(order_number, customer_name, customer_nickname, customer_phone, customer_email, shipping_address, status, payment_status, lang, created_at), products(name)")
         .eq("brand_id", brand_id)
         ;
 
@@ -57,6 +57,8 @@ export default async function handler(req, res) {
         customer_name: item.orders?.customer_name,
         // Surnom a inscrire sur l'emballage : c'est ce que le client a demande.
         customer_nickname: item.orders?.customer_nickname || null,
+        // Telephone du client (18 novembre 2026) : pour le transporteur.
+        customer_phone: item.orders?.customer_phone || null,
         customer_email: item.orders?.customer_email,
         shipping_address: item.orders?.shipping_address,
         product_name: item.products?.name || item.product_name,

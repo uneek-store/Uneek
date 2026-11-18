@@ -2114,6 +2114,7 @@ function checkoutPage() {
           </div>
           <div style="margin-bottom:16px"><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Email</label><input id="co-email" type="email" placeholder="john@exemple.com" value="${user?.email || ''}" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
           <div style="margin-bottom:16px"><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Surnom &mdash; &eacute;crit &agrave; la main sur ton colis *</label><input id="co-nickname" type="text" placeholder="Ton petit nom" maxlength="24" value="${user?.nickname || ''}" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
+          <div style="margin-bottom:16px"><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Téléphone *</label><input id="co-tel" type="tel" autocomplete="tel" placeholder="+32 470 12 34 56" maxlength="30" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
           <div style="margin-bottom:16px"><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Adresse</label><input id="co-addr" type="text" placeholder="Rue de la Mode 42" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
           <div class="co-form-grid-3" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:40px">
             <div><label style="font-size:12px;font-weight:500;color:var(--gray-500);display:block;margin-bottom:6px">Ville</label><input id="co-ville" type="text" placeholder="Bruxelles" style="width:100%;padding:14px 16px;border:1px solid var(--gray-200);font-size:14px;outline:none;border-radius:var(--radius-sm)"></div>
@@ -2192,7 +2193,15 @@ function validerCommande() {
   const codePays = document.getElementById('co-pays')?.value || 'BE';
   const pays = NOMS_PAYS[codePays] || codePays;
   const nickname = document.getElementById('co-nickname')?.value;
+  // Telephone obligatoire (18 novembre 2026), tous formats acceptes : on
+  // exige seulement quelques chiffres, pour ecarter une faute de frappe.
+  const tel = (document.getElementById('co-tel')?.value || '').trim();
   if (!p || !n || !e || !a || !v || !c) { showToast('Remplis tous les champs'); return null; }
+  if ((tel.match(/\d/g) || []).length < 6) {
+    showToast('Ajoute ton numéro de téléphone — utile pour la livraison');
+    document.getElementById('co-tel')?.focus();
+    return null;
+  }
   if (!nickname || !nickname.trim()) {
     showToast('Ajoute un surnom — il sera écrit sur ton colis');
     document.getElementById('co-nickname')?.focus();
@@ -2214,6 +2223,7 @@ function validerCommande() {
         email: e,
         name: `${p} ${n}`,
         nickname: nickname.trim(),
+        phone: tel,
         address: `${a}, ${c} ${v}, ${pays}`,
         country: codePays,
         lang: window.UNEEK_LANG || 'fr'

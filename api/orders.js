@@ -184,6 +184,12 @@ async function restituerStock(journal) {
   }
 }
 
+// Telephone tel que saisi, nettoye. null si vide.
+function telephonePropre(v) {
+  const t = String(v == null ? "" : v).replace(/[^0-9+()\-.\/ ]/g, "").replace(/\s+/g, " ").trim().slice(0, 30);
+  return t || null;
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS");
@@ -244,6 +250,7 @@ export default async function handler(req, res) {
           order_number: order.order_number,
           customer_name: order.customer_name,
           customer_nickname: order.customer_nickname || null,
+          customer_phone: order.customer_phone || null,
           customer_email: order.customer_email,
           shipping_address: order.shipping_address,
           total_amount: order.total_amount,
@@ -495,6 +502,11 @@ export default async function handler(req, res) {
           customer_email: customer.email,
           customer_name: customer.name,
           customer_nickname: customer.nickname || null,
+          // Telephone du client (18 novembre 2026). Nettoye : chiffres, espaces,
+          // + ( ) - . / seulement, 30 caracteres au plus. Pas exige ici : un
+          // onglet ouvert avant la mise a jour ne doit pas bloquer une commande
+          // deja payee — c'est le formulaire qui l'exige.
+          customer_phone: telephonePropre(customer.phone),
           customer_id: customerId,
           shipping_address: customer.address,
           // La langue lue par le client au moment de la commande. Elle sert a
