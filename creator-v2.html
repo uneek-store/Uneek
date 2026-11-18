@@ -821,11 +821,11 @@
 
     <!-- PAYS D'EXPEDITION OBLIGATOIRE (12 octobre 2026) : il fixe le forfait
          colis de chaque commande. Sans reponse, la marque etait traitee comme
-         belge et un createur etranger touchait 4,90 EUR au lieu de 6,40 EUR. -->
+         belge et un createur etranger touchait 4,90 EUR au lieu de 9,40 EUR (6,40 EUR avant le 18/11/2026). -->
     <div id="pays-obligatoire" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,10,10,.72);align-items:center;justify-content:center;padding:16px">
       <div style="background:var(--white);border-radius:14px;max-width:460px;width:100%;padding:28px 24px;box-shadow:0 20px 60px rgba(0,0,0,.35)">
         <div style="font-size:20px;font-weight:700;margin-bottom:10px">Avant de commencer : d'où envoies-tu tes colis ?</div>
-        <div style="font-size:13px;color:var(--gray-500);line-height:1.6;margin-bottom:18px">Le pays d'où tu envoies tes colis. Pour chaque commande, tu reçois un forfait colis : 4,90 € si ton client habite dans le même pays que toi, 6,40 € s'il habite dans un autre pays.</div>
+        <div style="font-size:13px;color:var(--gray-500);line-height:1.6;margin-bottom:18px">Le pays d'où tu envoies tes colis. Pour chaque commande, tu reçois un forfait colis : 4,90 € si ton client habite dans le même pays que toi, 9,40 € s'il habite dans un autre pays.</div>
         <select id="po-pays" style="width:100%;padding:11px 12px;border:1px solid var(--gray-200);border-radius:8px;font-size:14px;background:var(--white);margin-bottom:14px">
           <option value="">Choisis ton pays</option>
           <option value="BE">Belgique</option><option value="FR">France</option><option value="NL">Pays-Bas</option>
@@ -924,7 +924,7 @@
           <div id="mp-pays-msg" style="font-size:13px;display:none"></div>
         </div>
         <div style="font-size:12px;color:var(--gray-400);margin-top:12px;line-height:1.6">
-          Le pays d'où tu envoies tes colis. Pour chaque commande, tu reçois un forfait colis : 4,90 € si ton client habite dans le même pays que toi, 6,40 € s'il habite dans un autre pays.
+          Le pays d'où tu envoies tes colis. Pour chaque commande, tu reçois un forfait colis : 4,90 € si ton client habite dans le même pays que toi, 9,40 € s'il habite dans un autre pays.
         </div>
       </div>
 
@@ -1225,7 +1225,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-11-11-tableau-stripe';
+  const APP_VERSION = '2026-11-18-frais-de-port';
 
   async function checkAppVersion() {
     try {
