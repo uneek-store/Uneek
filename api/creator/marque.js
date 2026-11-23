@@ -31,6 +31,38 @@ import { limiter } from "../lib/limite.js";
 import { paysValide, PAYS_LIVRES } from "../lib/livraison.js";
 import { alerteAdmin, esc } from "../lib/email.js";
 
+// VIDEO DE BANNIERE (23 novembre 2026) — facultative, en plus de la photo.
+// Trop lourde pour passer par le serveur (Vercel refuse au-dela de 4,5 Mo) :
+// le serveur donne au navigateur une adresse d'envoi a usage unique, et la
+// video part directement dans le stockage, dossier videos/<marque>/. Le
+// serveur verifie ensuite sa taille reelle avant de l'enregistrer.
+// 15 secondes (controle dans le panneau) et 15 Mo au plus.
+const SEAU = "product-images";
+const VIDEO_MAX_OCTETS = 15 * 1024 * 1024;
+const VIDEO_TYPES = { "video/mp4": "mp4", "video/quicktime": "mov", "video/webm": "webm" };
+let videoDisponible = null;   // la colonne banner_video_url existe-t-elle ?
+
+async function lireVideo(brandId) {
+  if (videoDisponible === false) return { disponible: false, url: null };
+  const r = await supabaseAdmin.from("brands").select("banner_video_url").eq("id", brandId).single();
+  if (r.error) {
+    if (/banner_video_url|column/i.test(String(r.error.message || ""))) {
+      videoDisponible = false;
+      return { disponible: false, url: null };
+    }
+    return { disponible: true, url: null, erreur: r.error };
+  }
+  videoDisponible = true;
+  return { disponible: true, url: (r.data && r.data.banner_video_url) || null };
+}
+
+// Adresse publique du dossier video de CETTE marque : rien d'autre n'est
+// accepte comme video de banniere.
+function prefixeVideo(brandId) {
+  const { data } = supabaseAdmin.storage.from(SEAU).getPublicUrl("videos/" + brandId + "/");
+  return (data && data.publicUrl) || "";
+}
+
 // Une banniere pese lourd : elle est stockee en texte dans la base. Le
 // panneau la redimensionne deja avant l'envoi ; ce plafond est le garde-fou
 // cote serveur, celui qui ne depend pas du navigateur du createur.
@@ -117,8 +149,11 @@ export default async function handler(req, res) {
     if (req.method === "GET") {
       const { data, error, cadrage } = await lireMarque(brandId);
       if (error || !data) return res.status(404).json({ error: "Marque non trouvée" });
+      const video = await lireVideo(brandId);
       return res.status(200).json({
         ...data,
+        banner_video_url: video.url,
+        video_disponible: video.disponible,
         banner_position: cadrageValide(data.banner_position) === null ? 50 : cadrageValide(data.banner_position),
         cadrage_disponible: cadrage,
       });
@@ -134,6 +169,28 @@ export default async function handler(req, res) {
       })) return;
 
       const corps = req.body || {};
+
+      // 1) Le panneau demande ou envoyer une video : adresse a usage unique.
+      if (corps.action === "preparer_video") {
+        const v = await lireVideo(brandId);
+        if (!v.disponible) return res.status(503).json({ error: "La vidéo de bannière n'est pas encore activée." });
+        const type = String(corps.type || "").toLowerCase();
+        const ext = VIDEO_TYPES[type];
+        if (!ext) return res.status(400).json({ error: "Format non accepté : envoie une vidéo MP4 (ou MOV, WebM)." });
+        const taille = Number(corps.taille) || 0;
+        if (taille <= 0 || taille > VIDEO_MAX_OCTETS) {
+          return res.status(400).json({ error: "La vidéo dépasse 15 Mo. Raccourcis-la ou compresse-la." });
+        }
+        const chemin = "videos/" + brandId + "/" + Date.now() + "-"
+          + Math.random().toString(36).slice(2, 10) + "." + ext;
+        const { data: envoi, error: errEnvoi } = await supabaseAdmin.storage.from(SEAU).createSignedUploadUrl(chemin);
+        if (errEnvoi || !envoi || !envoi.signedUrl) {
+          console.error("[page marque] adresse d'envoi video impossible :", errEnvoi && errEnvoi.message);
+          return res.status(500).json({ error: "Envoi de la vidéo impossible pour le moment." });
+        }
+        const { data: pub } = supabaseAdmin.storage.from(SEAU).getPublicUrl(chemin);
+        return res.status(200).json({ upload_url: envoi.signedUrl, url: pub && pub.publicUrl });
+      }
 
       const { data: avant, error: errAvant, cadrage } = await lireMarque(brandId);
       if (errAvant || !avant) return res.status(404).json({ error: "Marque non trouvée" });
@@ -175,9 +232,42 @@ export default async function handler(req, res) {
         }
       }
 
-      if (!banniereChangee && !cadrageChange && !paysChange) {
+      // 2) Video de banniere : l'adresse d'une video deja envoyee dans SON
+      //    dossier, verifiee dans le stockage (existe, taille, type) ; ou
+      //    null / "" pour la retirer.
+      let videoChangee = false;
+      let videoApres = null;
+      if (Object.prototype.hasOwnProperty.call(corps, "banner_video_url")) {
+        const v = await lireVideo(brandId);
+        if (!v.disponible) return res.status(503).json({ error: "La vidéo de bannière n'est pas encore activée." });
+        videoApres = v.url;
+        const demandee = corps.banner_video_url ? String(corps.banner_video_url) : null;
+        if (demandee) {
+          const prefixe = prefixeVideo(brandId);
+          const nom = prefixe && demandee.indexOf(prefixe) === 0 ? demandee.slice(prefixe.length) : "";
+          if (!nom || !/^[0-9]+-[a-z0-9]+\.(mp4|mov|webm)$/.test(nom)) {
+            return res.status(400).json({ error: "Adresse de vidéo refusée." });
+          }
+          const { data: liste, error: errListe } = await supabaseAdmin.storage
+            .from(SEAU).list("videos/" + brandId, { search: nom, limit: 5 });
+          const fichier = (liste || []).find((f) => f.name === nom);
+          if (errListe || !fichier) return res.status(400).json({ error: "Vidéo introuvable : renvoie-la." });
+          const octets = Number(fichier.metadata && fichier.metadata.size) || 0;
+          const mime = String((fichier.metadata && fichier.metadata.mimetype) || "");
+          if (octets > VIDEO_MAX_OCTETS || (mime && mime.indexOf("video/") !== 0)) {
+            return res.status(400).json({ error: "Cette vidéo dépasse 15 Mo ou n'est pas une vidéo." });
+          }
+          if (demandee !== v.url) { maj.banner_video_url = demandee; videoChangee = true; videoApres = demandee; }
+        } else if (v.url) {
+          maj.banner_video_url = null; videoChangee = true; videoApres = null;
+        }
+      }
+
+      if (!banniereChangee && !cadrageChange && !paysChange && !videoChangee) {
+        const videoActuelle = await lireVideo(brandId);
         return res.status(200).json({
           success: true, inchange: true, ...avant, cadrage_disponible: cadrage,
+          banner_video_url: videoActuelle.url, video_disponible: videoActuelle.disponible,
         });
       }
 
@@ -201,6 +291,7 @@ export default async function handler(req, res) {
         if (banniereChangee) quoi.push(maj.image_url ? "nouvelle bannière" : "bannière retirée");
         if (cadrageChange) quoi.push("cadrage de la bannière ajusté");
         if (paysChange) quoi.push("pays d'expédition : " + (PAYS_LIVRES[maj.ship_country] || maj.ship_country));
+        if (videoChangee) quoi.push(maj.banner_video_url ? "nouvelle vidéo de bannière" : "vidéo de bannière retirée");
 
         const lignes = [
           "<strong>" + esc(apres.name) + "</strong>",
@@ -219,6 +310,8 @@ export default async function handler(req, res) {
         ...apres,
         banner_position: cadrageValide(apres.banner_position) === null ? 50 : cadrageValide(apres.banner_position),
         cadrage_disponible: cadrage,
+        banner_video_url: videoApres !== null || videoChangee ? videoApres : (await lireVideo(brandId)).url,
+        video_disponible: videoDisponible !== false,
       });
     }
 

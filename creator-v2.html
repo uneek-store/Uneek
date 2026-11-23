@@ -868,6 +868,18 @@
           automatiquement redimensionn&eacute;e avant l'envoi : tu peux choisir
           une photo prise au t&eacute;l&eacute;phone sans t'inqui&eacute;ter du poids.
         </div>
+        <!-- VIDEO DE BANNIERE (23 novembre 2026) : facultative. Elle tourne en
+             boucle, sans son, a la place de la photo ; la photo reste en
+             secours (chargement, economie de donnees, video illisible). -->
+        <div id="mp-bloc-video" style="margin-top:22px;padding-top:18px;border-top:1px solid var(--gray-200)">
+          <div style="font-size:13px;font-weight:500;margin-bottom:4px">Vid&eacute;o (facultatif)</div>
+          <div style="font-size:12px;color:var(--gray-400);margin-bottom:10px;line-height:1.6">Elle tourne en boucle, sans son, &agrave; la place de la photo sur ta page. La photo reste affich&eacute;e pendant le chargement. 15 secondes et 15 Mo maximum, de pr&eacute;f&eacute;rence en MP4.</div>
+          <video id="mp-video-apercu" muted loop playsinline autoplay style="display:none;width:100%;max-width:420px;height:150px;object-fit:cover;border-radius:10px;background:#0A0A0A;margin-bottom:10px"></video>
+          <input type="file" id="mp-video-fichier" accept="video/mp4,video/quicktime,video/webm" style="display:none" onchange="choisirVideo(this)">
+          <button class="btn-save" onclick="document.getElementById('mp-video-fichier').click()" id="mp-video-choisir">Choisir une vid&eacute;o</button>
+          <button class="btn-cancel" onclick="retirerVideo()" id="mp-video-retirer" style="display:none;margin-left:8px">Retirer la vid&eacute;o</button>
+          <div id="mp-video-msg" style="font-size:12px;margin-top:8px;display:none"></div>
+        </div>
       </div>
 
       <div class="card" style="padding:22px;max-width:860px;margin-top:18px">
@@ -1225,7 +1237,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-11-18-telephone';
+  const APP_VERSION = '2026-11-23-video-banniere';
 
   async function checkAppVersion() {
     try {
@@ -2413,6 +2425,7 @@
 
   let maPage = null;          // ce qui est enregistre cote serveur
   let banniereChoisie = null; // null = inchangee, '' = retiree, sinon la nouvelle
+  let videoChoisie = null;    // pareil pour la video : null, '' ou son adresse
 
   // 0 = haut de la photo, 50 = centre, 100 = bas. Toute valeur douteuse
   // retombe au centre : le panneau ne doit jamais afficher un curseur casse.
@@ -2436,6 +2449,10 @@
       if (!res.ok) throw new Error('chargement impossible');
       maPage = await res.json();
       banniereChoisie = null;
+      videoChoisie = null;
+      // Le bloc video n'apparait que si la base sait la retenir.
+      document.getElementById('mp-bloc-video').style.display =
+        maPage.video_disponible === false ? 'none' : '';
       document.getElementById('mp-cadrage').value = cadrageValide(maPage.banner_position);
       // Pays d'expedition : non renseigne = Belgique, comme le calcul serveur.
       document.getElementById('mp-pays').value = maPage.ship_country || 'BE';
@@ -2489,6 +2506,8 @@
     hero.style.background = img ? fond : '#0A0A0A';
     hero.style.boxShadow = img ? 'inset 0 0 0 2000px rgba(0,0,0,0.6)' : 'none';
 
+    majApercuVideo();
+
     if (maPage) {
       document.getElementById('mp-apercu-nom').textContent = maPage.name || '—';
       const bouts = [];
@@ -2496,6 +2515,140 @@
       if (maPage.year) bouts.push('Est. ' + maPage.year);
       document.getElementById('mp-apercu-info').textContent = bouts.join('  ·  ');
     }
+  }
+
+  // --- VIDEO DE BANNIERE (23 novembre 2026) ---------------------------------
+  const VIDEO_MAX_OCTETS = 15 * 1024 * 1024;
+  const VIDEO_MAX_SECONDES = 15;
+
+  function videoCourante() {
+    if (videoChoisie !== null) return videoChoisie;
+    return (maPage && maPage.banner_video_url) || '';
+  }
+
+  function direVideo(texte, couleur) {
+    const m = document.getElementById('mp-video-msg');
+    if (!m) return;
+    m.textContent = texte;
+    m.style.color = couleur || 'var(--gray-500)';
+    m.style.display = texte ? 'block' : 'none';
+  }
+
+  // L'apercu du bloc video, et la video dans l'apercu de la page (par-dessus
+  // la photo, assombrie de la meme facon que sur la page publique).
+  function majApercuVideo() {
+    const url = videoCourante();
+    const v = document.getElementById('mp-video-apercu');
+    if (v) {
+      if (url) { if (v.getAttribute('src') !== url) v.src = url; v.style.display = 'block'; }
+      else { v.removeAttribute('src'); v.style.display = 'none'; }
+    }
+    const r = document.getElementById('mp-video-retirer');
+    if (r) r.style.display = url ? 'inline-block' : 'none';
+    const hero = document.getElementById('mp-apercu-hero');
+    if (!hero) return;
+    let hv = document.getElementById('mp-apercu-hero-video');
+    if (url) {
+      if (!hv) {
+        hv = document.createElement('video');
+        hv.id = 'mp-apercu-hero-video';
+        hv.muted = true; hv.loop = true; hv.autoplay = true; hv.playsInline = true;
+        hv.setAttribute('muted', ''); hv.setAttribute('playsinline', '');
+        hv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.4;z-index:1';
+        hero.insertBefore(hv, hero.firstChild);
+      }
+      if (hv.getAttribute('src') !== url) hv.src = url;
+    } else if (hv) {
+      hv.remove();
+    }
+  }
+
+  // Duree de la video, lue par le navigateur lui-meme. Echec = le navigateur
+  // ne sait pas la lire : les visiteurs non plus, sans doute.
+  function dureeVideo(fichier) {
+    return new Promise(function (ok, ko) {
+      const v = document.createElement('video');
+      const adresse = URL.createObjectURL(fichier);
+      const fin = function (fn, val) { clearTimeout(minuteur); URL.revokeObjectURL(adresse); fn(val); };
+      const minuteur = setTimeout(function () { fin(ko, new Error('delai')); }, 20000);
+      v.preload = 'metadata';
+      v.muted = true;
+      v.onloadedmetadata = function () {
+        if (!v.videoWidth) { fin(ko, new Error('illisible')); return; }
+        if (isFinite(v.duration)) { fin(ok, v.duration); return; }
+        // Certaines WebM n'annoncent pas leur duree : on saute tout au bout,
+        // le navigateur la decouvre. Inconnue malgre tout : on laisse passer,
+        // la limite de 15 Mo reste controlee par le serveur.
+        v.ondurationchange = function () { if (isFinite(v.duration)) fin(ok, v.duration); };
+        setTimeout(function () { fin(ok, isFinite(v.duration) ? v.duration : 0); }, 4000);
+        try { v.currentTime = 1e101; } catch (e) { fin(ok, 0); }
+      };
+      v.onerror = function () { fin(ko, new Error('illisible')); };
+      v.src = adresse;
+    });
+  }
+
+  // Envoi direct au stockage, avec la progression (XMLHttpRequest : fetch ne
+  // la donne pas pour un envoi).
+  function envoyerVideo(adresse, fichier, progression) {
+    return new Promise(function (ok, ko) {
+      const x = new XMLHttpRequest();
+      x.open('PUT', adresse);
+      x.setRequestHeader('Content-Type', fichier.type);
+      x.setRequestHeader('x-upsert', 'false');
+      x.setRequestHeader('cache-control', 'max-age=31536000');
+      x.upload.onprogress = function (e) { if (e.lengthComputable && progression) progression(e.loaded / e.total); };
+      x.onload = function () { (x.status >= 200 && x.status < 300) ? ok() : ko(new Error('HTTP ' + x.status)); };
+      x.onerror = function () { ko(new Error('reseau')); };
+      x.send(fichier);
+    });
+  }
+
+  async function choisirVideo(input) {
+    const f = input.files && input.files[0];
+    input.value = '';
+    if (!f) return;
+    if (!/^video\/(mp4|quicktime|webm)$/.test(f.type || '')) {
+      direVideo('Format non accepté : choisis une vidéo MP4 (ou MOV, WebM).', 'var(--red)'); return;
+    }
+    if (f.size > VIDEO_MAX_OCTETS) {
+      direVideo('La vidéo dépasse 15 Mo. Raccourcis-la ou compresse-la.', 'var(--red)'); return;
+    }
+    let duree;
+    try { duree = await dureeVideo(f); }
+    catch (e) {
+      direVideo('Cette vidéo ne peut pas être lue par ton navigateur. Sur iPhone, choisis « Le plus compatible » (Réglages > Appareil photo > Formats), ou exporte-la en MP4.', 'var(--red)');
+      return;
+    }
+    if (duree > VIDEO_MAX_SECONDES + 0.5) {
+      direVideo('La vidéo dure ' + Math.round(duree) + ' secondes : 15 secondes maximum.', 'var(--red)'); return;
+    }
+    const bouton = document.getElementById('mp-video-choisir');
+    bouton.disabled = true;
+    direVideo('Envoi de la vidéo…');
+    try {
+      const res = await fetch(API_BASE + '/creator/marque', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+        body: JSON.stringify({ brand_id: currentBrand.id, action: 'preparer_video', type: f.type, taille: f.size })
+      });
+      const data = await res.json().catch(function () { return {}; });
+      if (!res.ok || !data.upload_url || !data.url) throw new Error(data.error || 'Envoi impossible');
+      await envoyerVideo(data.upload_url, f, function (p) { direVideo('Envoi de la vidéo… ' + Math.round(p * 100) + ' %'); });
+      videoChoisie = data.url;
+      majApercuVideo();
+      direVideo('Vidéo prête — clique sur Publier les modifications pour la mettre en ligne.', 'var(--gray-500)');
+    } catch (e) {
+      direVideo('La vidéo n\'a pas pu être envoyée : ' + e.message, 'var(--red)');
+    } finally {
+      bouton.disabled = false;
+    }
+  }
+
+  function retirerVideo() {
+    videoChoisie = '';
+    majApercuVideo();
+    direVideo('Vidéo retirée — clique sur Publier les modifications pour confirmer.', 'var(--gray-500)');
   }
 
   function direMaPage(texte, couleur) {
@@ -2597,6 +2750,7 @@
     const bouton = document.getElementById('mp-enregistrer');
     const corps = { brand_id: currentBrand.id };
     if (banniereChoisie !== null) corps.image_url = banniereChoisie;
+    if (videoChoisie !== null) corps.banner_video_url = videoChoisie;
     if (maPage && maPage.cadrage_disponible !== false) {
       corps.banner_position = cadrageValide(document.getElementById('mp-cadrage').value);
     }
@@ -2613,6 +2767,8 @@
       if (!res.ok) { direMaPage(data.error || 'Erreur', 'var(--red)'); return; }
       maPage = data;
       banniereChoisie = null;
+      videoChoisie = null;
+      direVideo('');
       if (data.cadrage_disponible !== false) {
         document.getElementById('mp-cadrage').value = cadrageValide(data.banner_position);
       }

@@ -58,12 +58,18 @@ export default async function handler(req, res) {
 
     // Une marque spécifique avec ses produits
     if (slug) {
-      const { data: brand, error } = await supabaseAdmin
+      // banner_video_url (23 novembre 2026) : video de banniere facultative.
+      // Si la colonne venait a manquer, on relit sans elle plutot que de
+      // perdre toute la page marque.
+      const COLS_MARQUE = "id, name, slug, tagline, city, year, image_url, logo_url, is_active, created_at, instagram, banner_position";
+      const lireUne = (avecVideo) => supabaseAdmin
         .from("brands")
-        .select("id, name, slug, tagline, city, year, image_url, logo_url, is_active, created_at, instagram, banner_position" + ", products(*)")
+        .select(COLS_MARQUE + (avecVideo ? ", banner_video_url" : "") + ", products(*)")
         .eq("slug", slug)
         .eq("is_active", true)
         .single();
+      let { data: brand, error } = await lireUne(true);
+      if (error && /banner_video_url/.test(String(error.message || ""))) ({ data: brand, error } = await lireUne(false));
 
       if (error || !brand) return res.status(404).json({ error: "Marque non trouvée" });
       if (!apercu && marqueInvisible(brand.slug)) return res.status(404).json({ error: "Marque non trouvée" });
@@ -74,11 +80,19 @@ export default async function handler(req, res) {
     }
 
     // Liste de toutes les marques actives (avec créateur)
-    const { data, error } = await avecUnEssaiDePlus(() => supabaseAdmin
-      .from("brands")
-      .select("id, name, slug, tagline, city, year, image_url, logo_url, banner_position, products(count), creator_accounts(full_name)")
-      .eq("is_active", true)
-      .order("name"));
+    // Les deux listes sont ecrites en entier : le garde-fou les relit.
+    const lireListe = (avecVideo) => avecUnEssaiDePlus(() => {
+      const table = supabaseAdmin.from("brands");
+      return (avecVideo
+        ? table.select("id, name, slug, tagline, city, year, image_url, logo_url, banner_position, banner_video_url, products(count), creator_accounts(full_name)")
+        : table.select("id, name, slug, tagline, city, year, image_url, logo_url, banner_position, products(count), creator_accounts(full_name)"))
+        .eq("is_active", true)
+        .order("name");
+    });
+    // Video de banniere (23 novembre 2026) : une simple adresse, pas le
+    // fichier. Si la colonne manquait, on relit sans elle.
+    let { data, error } = await lireListe(true);
+    if (error && /banner_video_url/.test(String(error.message || ""))) ({ data, error } = await lireListe(false));
 
     if (error) {
       console.error("Error fetching brands:", error);

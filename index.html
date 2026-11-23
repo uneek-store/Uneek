@@ -1387,6 +1387,23 @@ function routeDeChemin(chemin) {
 // 0 garde le haut, 50 le centre, 100 le bas. Le createur choisit depuis son
 // panneau. Une valeur absente ou farfelue retombe sur 50 : la page ne doit
 // jamais dependre de la proprete de cette donnee.
+// VIDEO DE BANNIERE (23 novembre 2026) : par-dessus la photo, en boucle,
+// sans son. Pas de video pour un visiteur qui economise ses donnees ou qui
+// a demande moins d'animations : il garde la photo. Une video illisible se
+// retire d'elle-meme et la photo reapparait.
+function videoBanniere(b) {
+  const u = b && b.banner_video_url;
+  if (!u || !/^https:\/\//.test(String(u))) return '';
+  try {
+    if (navigator.connection && navigator.connection.saveData) return '';
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return '';
+  } catch (e) { /* on montre la video */ }
+  return '<video src="' + echapper(u) + '" autoplay muted loop playsinline preload="auto" aria-hidden="true"'
+    + ' onerror="this.remove()"'
+    + ' style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center '
+    + cadrageBanniere(b) + '%;opacity:0.65"></video>';
+}
+
 function cadrageBanniere(b) {
   const v = parseInt((b && b.banner_position), 10);
   if (isNaN(v)) return 50;
@@ -1961,6 +1978,7 @@ function brandPage() {
   return `<div>
     <div style="height:70vh;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:var(--black)">
       <img src="${b.image_url || ''}" alt="${echapper(b.name)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center ${cadrageBanniere(b)}%;opacity:0.65">
+      ${videoBanniere(b)}
       <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.8),transparent)"></div>
       <div style="position:relative;z-index:2;text-align:center;color:var(--white)">
         <h1 style="font-family:var(--font-display);font-size:clamp(48px,7vw,80px);font-weight:800;letter-spacing:-2px">${echapper(b.name)}</h1>
