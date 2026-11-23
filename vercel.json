@@ -15,6 +15,9 @@
     },
     "api/cron/stripe-transfers.js": {
       "maxDuration": 60
+    },
+    "api/page-marque.js": {
+      "includeFiles": "index.html"
     }
   },
   "headers": [
@@ -75,6 +78,10 @@
     {
       "source": "/creator",
       "destination": "/creator-v2.html"
+    },
+    {
+      "source": "/marque/:slug",
+      "destination": "/api/page-marque?slug=:slug"
     },
     {
       "source": "/((?!api/).*)",
