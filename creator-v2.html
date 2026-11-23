@@ -873,7 +873,7 @@
              secours (chargement, economie de donnees, video illisible). -->
         <div id="mp-bloc-video" style="margin-top:22px;padding-top:18px;border-top:1px solid var(--gray-200)">
           <div style="font-size:13px;font-weight:500;margin-bottom:4px">Vid&eacute;o (facultatif)</div>
-          <div style="font-size:12px;color:var(--gray-400);margin-bottom:10px;line-height:1.6">Elle tourne en boucle, sans son, &agrave; la place de la photo sur ta page. La photo reste affich&eacute;e pendant le chargement. 15 secondes et 15 Mo maximum, de pr&eacute;f&eacute;rence en MP4.</div>
+          <div style="font-size:12px;color:var(--gray-400);margin-bottom:10px;line-height:1.6">Elle tourne en boucle, sans son, &agrave; la place de la photo sur ta page. La photo reste affich&eacute;e pendant le chargement. 15 secondes maximum. Une vid&eacute;o lourde est compress&eacute;e automatiquement avant l'envoi.</div>
           <video id="mp-video-apercu" muted loop playsinline autoplay style="display:none;width:100%;max-width:420px;height:150px;object-fit:cover;border-radius:10px;background:#0A0A0A;margin-bottom:10px"></video>
           <input type="file" id="mp-video-fichier" accept="video/mp4,video/quicktime,video/webm" style="display:none" onchange="choisirVideo(this)">
           <button class="btn-save" onclick="document.getElementById('mp-video-fichier').click()" id="mp-video-choisir">Choisir une vid&eacute;o</button>
@@ -1237,7 +1237,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-11-23-video-banniere';
+  const APP_VERSION = '2026-11-23-video-compression';
 
   async function checkAppVersion() {
     try {
@@ -2588,6 +2588,57 @@
     });
   }
 
+  // COMPRESSION AUTOMATIQUE (23 novembre 2026) : une video de telephone de
+  // 13 secondes pese souvent 30 a 80 Mo. Le navigateur la rejoue, la
+  // redessine en 1600 px maximum et la reenregistre a 3,5 Mbit/s, sans le
+  // son (la banniere est muette) : quelques Mo. Cela prend le temps de la
+  // video elle-meme. MP4 si le navigateur sait l'ecrire, sinon WebM.
+  function compresserVideo(fichier, progression) {
+    return new Promise(function (ok, ko) {
+      const formats = ['video/mp4;codecs=avc1.42E01E', 'video/mp4;codecs=avc1', 'video/mp4',
+        'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+      let format = null;
+      try { format = formats.find(function (t) { return window.MediaRecorder && MediaRecorder.isTypeSupported(t); }) || null; } catch (e) { format = null; }
+      const c0 = document.createElement('canvas');
+      if (!format || !c0.captureStream) { ko(new Error('compression impossible dans ce navigateur')); return; }
+      const v = document.createElement('video');
+      const adresse = URL.createObjectURL(fichier);
+      v.muted = true; v.playsInline = true; v.preload = 'auto';
+      v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
+      v.onerror = function () { URL.revokeObjectURL(adresse); ko(new Error('illisible')); };
+      v.onloadedmetadata = function () {
+        const echelle = Math.min(1, 1600 / Math.max(v.videoWidth, v.videoHeight));
+        const w = Math.max(2, Math.round(v.videoWidth * echelle / 2) * 2);
+        const h = Math.max(2, Math.round(v.videoHeight * echelle / 2) * 2);
+        c0.width = w; c0.height = h;
+        const ctx = c0.getContext('2d');
+        const flux = c0.captureStream(30);
+        let rec;
+        try { rec = new MediaRecorder(flux, { mimeType: format, videoBitsPerSecond: 3500000 }); }
+        catch (e) { URL.revokeObjectURL(adresse); ko(new Error('compression impossible dans ce navigateur')); return; }
+        const morceaux = [];
+        let fini = false;
+        rec.ondataavailable = function (e) { if (e.data && e.data.size) morceaux.push(e.data); };
+        rec.onstop = function () {
+          URL.revokeObjectURL(adresse);
+          const base = format.split(';')[0];
+          ok(new File(morceaux, 'banniere.' + (base === 'video/mp4' ? 'mp4' : 'webm'), { type: base }));
+        };
+        const dessiner = function () {
+          if (fini) return;
+          try { ctx.drawImage(v, 0, 0, w, h); } catch (e) { /* image suivante */ }
+          if (progression && v.duration) progression(Math.min(1, v.currentTime / v.duration));
+          if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(dessiner); else requestAnimationFrame(dessiner);
+        };
+        v.onended = function () { if (fini) return; fini = true; try { ctx.drawImage(v, 0, 0, w, h); } catch (e) {} setTimeout(function () { rec.stop(); }, 150); };
+        rec.start(250);
+        dessiner();
+        v.play().catch(function () { fini = true; try { rec.stop(); } catch (e) {} ko(new Error('lecture impossible')); });
+      };
+      v.src = adresse;
+    });
+  }
+
   // Envoi direct au stockage, avec la progression (XMLHttpRequest : fetch ne
   // la donne pas pour un envoi).
   function envoyerVideo(adresse, fichier, progression) {
@@ -2605,13 +2656,16 @@
   }
 
   async function choisirVideo(input) {
-    const f = input.files && input.files[0];
+    let f = input.files && input.files[0];
     input.value = '';
     if (!f) return;
     if (!/^video\/(mp4|quicktime|webm)$/.test(f.type || '')) {
       direVideo('Format non accepté : choisis une vidéo MP4 (ou MOV, WebM).', 'var(--red)'); return;
     }
-    if (f.size > VIDEO_MAX_OCTETS) {
+    // Le poids n'est plus un motif de refus ici : une video trop lourde est
+    // compressee plus bas. Seul un fichier enorme (plus de 500 Mo) est refuse
+    // d'emblee, pour ne pas bloquer le navigateur.
+    if (f.size > 500 * 1024 * 1024) {
       direVideo('La vidéo dépasse 15 Mo. Raccourcis-la ou compresse-la.', 'var(--red)'); return;
     }
     let duree;
@@ -2625,8 +2679,18 @@
     }
     const bouton = document.getElementById('mp-video-choisir');
     bouton.disabled = true;
-    direVideo('Envoi de la vidéo…');
     try {
+      // Trop lourde : compression automatique, puis on reverifie le poids.
+      if (f.size > VIDEO_MAX_OCTETS) {
+        direVideo('Compression de la vidéo…');
+        try {
+          f = await compresserVideo(f, function (p) { direVideo('Compression de la vidéo… ' + Math.round(p * 100) + ' %'); });
+        } catch (e) {
+          throw new Error('la vidéo dépasse 15 Mo et ce navigateur ne sait pas la compresser. Essaie avec Chrome ou Safari à jour, ou compresse-la avant.');
+        }
+        if (f.size > VIDEO_MAX_OCTETS) throw new Error('même compressée, elle dépasse 15 Mo. Raccourcis-la.');
+      }
+      direVideo('Envoi de la vidéo…');
       const res = await fetch(API_BASE + '/creator/marque', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
