@@ -1551,8 +1551,10 @@ function homePage() {
       <div class="hero-content">
         <p class="hero-tag">Created by Independent Fashion</p>
         <h1 class="hero-title">They wear what's told.<br>You wear what's <span class="gradient-text">special.</span></h1>
-        <p class="hero-subtitle">UNEEK regroupe les marques indépendantes les plus créatives. Des pièces uniques, sélectionnées pour ceux qui refusent l'ordinaire.</p>
-        <div class="hero-cta">
+        <!-- 24 novembre 2026 : phrase "UNEEK regroupe les marques independantes..."
+             retiree a la demande d'Axel (remplacee par les 3 phrases sous le bandeau).
+             Pour la remettre : sauvegardes-index/avant-24nov-marques-et-sous-titre/ -->
+        <div class="hero-cta" style="margin-top:40px">
           <button class="btn btn-primary" onclick="navigate('shop')">Explorer le Shop <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
         </div>
       </div>
@@ -1967,13 +1969,15 @@ function brandsPage() {
       <div class="brands-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px">
         ${BRANDS.map(b => `
           <div style="position:relative;aspect-ratio:4/5;overflow:hidden;cursor:pointer;background:var(--black);border-radius:var(--radius-lg)" onclick="navigate('brand','${b.slug}')"
-               onmouseover="this.querySelector('img').style.opacity=0.3;this.querySelector('img').style.transform='scale(1.05)'"
-               onmouseout="this.querySelector('img').style.opacity=0.5;this.querySelector('img').style.transform='scale(1)'">
-            <img src="${b.image_url || ''}" alt="${b.name}" style="width:100%;height:100%;object-fit:cover;opacity:0.5;transition:all 0.6s">
-            <div style="position:absolute;bottom:0;left:0;right:0;padding:32px;color:var(--white)">
-              <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;opacity:0.5;margin-bottom:8px">${b.city || ''} ${b.year ? '— <span>depuis</span> ' + b.year : ''}</div>
+               onmouseover="this.querySelector('img').style.transform='scale(1.05)'"
+               onmouseout="this.querySelector('img').style.transform='scale(1)'">
+            <!-- 24 novembre 2026 : photo a pleine luminosite (plus de voile noir),
+                 comme sur la page de la marque. Ombre douce sous le texte. -->
+            <img src="${b.image_url || ''}" alt="${b.name}" style="width:100%;height:100%;object-fit:cover;opacity:1;transition:all 0.6s">
+            <div style="position:absolute;bottom:0;left:0;right:0;padding:32px;color:var(--white);text-shadow:0 2px 18px rgba(0,0,0,0.45)">
+              <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;opacity:0.8;margin-bottom:8px">${b.city || ''} ${b.year ? '— <span>depuis</span> ' + b.year : ''}</div>
               <div style="font-family:var(--font-display);font-size:clamp(28px,3vw,40px);font-weight:700;letter-spacing:-1px;margin-bottom:8px">${b.name}</div>
-              <div style="font-size:14px;opacity:0.6;font-style:italic;font-weight:300">${b.tagline || ''}</div>
+              <div style="font-size:14px;opacity:0.85;font-style:italic;font-weight:300">${b.tagline || ''}</div>
             </div>
           </div>`).join('')}
       </div>
