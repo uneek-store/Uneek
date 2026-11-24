@@ -887,7 +887,7 @@
         <div style="border:1px solid var(--gray-200);border-radius:10px;overflow:hidden">
           <div id="mp-apercu-hero"
                style="height:220px;background:#0A0A0A;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center">
-            <div style="position:relative;z-index:2;text-align:center;color:#FAFAFA;padding:0 20px">
+            <div style="position:relative;z-index:2;text-align:center;color:#FAFAFA;padding:0 20px;text-shadow:0 2px 18px rgba(0,0,0,0.35)">
               <div id="mp-apercu-nom" style="font-size:34px;font-weight:800;letter-spacing:-1px">&mdash;</div>
               <div id="mp-apercu-info" style="font-size:11px;opacity:0.45;letter-spacing:1px;text-transform:uppercase;margin-top:10px"></div>
             </div>
@@ -1237,7 +1237,7 @@
   // Cette page peut rester ouverte pendant qu'une nouvelle version est deployee :
   // le navigateur continue alors d'executer l'ancien code, sans rien signaler.
   // On compare la version du fichier en ligne a celle chargee ici.
-  const APP_VERSION = '2026-11-23-video-compression';
+  const APP_VERSION = '2026-11-24-sans-filigrane';
 
   async function checkAppVersion() {
     try {
@@ -2504,7 +2504,8 @@
 
     // Meme rendu que la page publique : image en fond, assombrie.
     hero.style.background = img ? fond : '#0A0A0A';
-    hero.style.boxShadow = img ? 'inset 0 0 0 2000px rgba(0,0,0,0.6)' : 'none';
+    // 24 novembre 2026 : plus de voile noir, comme sur la page publique.
+    hero.style.boxShadow = 'none';
 
     majApercuVideo();
 
@@ -2554,7 +2555,7 @@
         hv.id = 'mp-apercu-hero-video';
         hv.muted = true; hv.loop = true; hv.autoplay = true; hv.playsInline = true;
         hv.setAttribute('muted', ''); hv.setAttribute('playsinline', '');
-        hv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.4;z-index:1';
+        hv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:1;z-index:1';
         hero.insertBefore(hv, hero.firstChild);
       }
       if (hv.getAttribute('src') !== url) hv.src = url;
